@@ -9,8 +9,10 @@ import {
   MEAL_SLOTS,
   TIME_SLOTS,
   TAX_RATE,
+  CAMPS,
+  RESOURCES,
 } from "./data.js";
-import { activeBookings } from "./store.js";
+import { activeBookings, getRequests } from "./store.js";
 
 function nightsBetween(checkIn, checkOut) {
   const start = new Date(checkIn);
@@ -187,6 +189,125 @@ export function buildInvoice(items, discountCode) {
     tax,
     total,
   };
+}
+
+// ---- Admin analytics -------------------------------------------------------
+
+// Aggregated KPIs for the management dashboard.
+export function getStats() {
+  const requests = getRequests();
+  const byStatus = { pending: 0, approved: 0, paid: 0, rejected: 0 };
+  let paidRevenue = 0;
+  let pipelineRevenue = 0; // pending + approved (not yet paid)
+  let taxCollected = 0;
+  let discountsGiven = 0;
+
+  for (const r of requests) {
+    byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+    const inv = r.invoice || {};
+    if (r.status === "paid") {
+      paidRevenue += inv.total || 0;
+      taxCollected += inv.tax || 0;
+      discountsGiven += inv.discountAmount || 0;
+    } else if (r.status === "pending" || r.status === "approved") {
+      pipelineRevenue += inv.total || 0;
+    }
+  }
+
+  const totalBeds = RESOURCES.filter((r) => r.bookingUnit === "night").reduce(
+    (s, r) => s + r.capacity,
+    0
+  );
+
+  return {
+    requests: { total: requests.length, ...byStatus },
+    revenue: { paid: paidRevenue, pipeline: pipelineRevenue, taxCollected, discountsGiven },
+    resources: {
+      total: RESOURCES.length,
+      totalBeds,
+      byType: RESOURCES.reduce((acc, r) => {
+        acc[r.type] = (acc[r.type] ?? 0) + 1;
+        return acc;
+      }, {}),
+    },
+    camps: CAMPS.map((c) => ({
+      id: c.id,
+      name: c.name,
+      resourceCount: RESOURCES.filter((r) => r.campId === c.id).length,
+    })),
+  };
+}
+
+function coversDate(checkIn, checkOut, date) {
+  return new Date(checkIn) <= new Date(date) && new Date(date) < new Date(checkOut);
+}
+
+// Per-resource utilization on a given date (optionally filtered by camp/type).
+export function getOccupancy(date, { campId, type } = {}) {
+  const bookings = activeBookings();
+  let resources = RESOURCES;
+  if (campId) resources = resources.filter((r) => r.campId === campId);
+  if (type) resources = resources.filter((r) => r.type === type);
+
+  return resources.map((res) => {
+    const resBookings = bookings.filter((b) => b.resourceId === res.id);
+    if (res.bookingUnit === "night") {
+      const used = resBookings
+        .filter((b) => b.unit === "night" && coversDate(b.checkIn, b.checkOut, date))
+        .reduce((s, b) => s + Number(b.guests), 0);
+      return {
+        id: res.id,
+        name: res.name,
+        building: res.building,
+        type: res.type,
+        unit: "night",
+        capacity: res.capacity,
+        used,
+        remaining: res.capacity - used,
+        occupancyPct: Math.round((used / res.capacity) * 100),
+      };
+    }
+    if (res.bookingUnit === "slot") {
+      const bookedSlots = [
+        ...new Set(
+          resBookings
+            .filter((b) => b.unit === "slot" && b.date === date)
+            .flatMap((b) => b.slots || [])
+        ),
+      ];
+      return {
+        id: res.id,
+        name: res.name,
+        building: res.building,
+        type: res.type,
+        unit: "slot",
+        totalSlots: TIME_SLOTS.length,
+        bookedSlots,
+        bookedSlotLabels: bookedSlots.map(
+          (s) => TIME_SLOTS.find((t) => t.id === s)?.label ?? s
+        ),
+        occupancyPct: Math.round((bookedSlots.length / TIME_SLOTS.length) * 100),
+      };
+    }
+    // meal
+    const perMeal = MEAL_SLOTS.map((m) => {
+      const used = resBookings
+        .filter((b) => b.unit === "meal" && b.date === date && b.meal === m.id)
+        .reduce((s, b) => s + Number(b.persons), 0);
+      return { meal: m.id, label: m.label, used };
+    });
+    const totalUsed = perMeal.reduce((s, m) => s + m.used, 0);
+    return {
+      id: res.id,
+      name: res.name,
+      building: res.building,
+      type: res.type,
+      unit: "meal",
+      capacity: res.capacity,
+      perMeal,
+      totalUsed,
+    };
+  });
 }
 
 // Normalizes raw items into the stored booking shape.

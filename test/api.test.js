@@ -141,3 +141,33 @@ test("course request lifecycle: pending -> approved -> paid", async () => {
   const again = await post(`/api/requests/${id}/pay`, {});
   assert.equal(again.status, 409);
 });
+
+test("admin stats aggregates requests and revenue", async () => {
+  const stats = await (await fetch(`${base}/api/admin/stats`)).json();
+  assert.ok(stats.requests.total >= 1);
+  assert.ok(stats.requests.paid >= 1, "expected at least one paid request");
+  assert.ok(stats.revenue.paid > 0, "paid revenue should be positive");
+  assert.ok(stats.revenue.taxCollected > 0);
+  assert.ok(stats.resources.total > 100);
+  assert.ok(stats.resources.totalBeds > 0);
+  assert.equal(stats.camps.length, 2);
+});
+
+test("admin occupancy reflects bookings on a date", async () => {
+  // From the lifecycle test: room abali-sol-301 has 10 guests over 2030-07-01..04,
+  // amphitheater morning on 2030-07-02, dinner for 20 on 2030-07-02.
+  const list = await (
+    await fetch(`${base}/api/admin/occupancy?date=2030-07-02`)
+  ).json();
+
+  const room = list.find((o) => o.id === "abali-sol-301");
+  assert.equal(room.used, 10);
+  assert.equal(room.remaining, room.capacity - 10);
+
+  const amph = list.find((o) => o.id === "abali-amphitheater");
+  assert.ok(amph.bookedSlots.includes("morning"));
+
+  const dining = list.find((o) => o.id === "abali-dining");
+  const dinner = dining.perMeal.find((m) => m.meal === "dinner");
+  assert.equal(dinner.used, 20);
+});

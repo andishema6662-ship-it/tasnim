@@ -12,7 +12,13 @@ import {
   RESOURCE_TYPE_LABELS,
   getResource,
 } from "./data.js";
-import { checkItem, buildInvoice, normalizeItems } from "./engine.js";
+import {
+  checkItem,
+  buildInvoice,
+  normalizeItems,
+  getStats,
+  getOccupancy,
+} from "./engine.js";
 import { getRequests, addRequest, updateRequest } from "./store.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -147,6 +153,17 @@ app.post("/api/requests/:id/reject", (req, res) =>
 app.post("/api/requests/:id/pay", (req, res) =>
   transition(req, res, ["approved"], "paid", { paidAt: new Date().toISOString() })
 );
+
+// ---- Admin / management panel ---------------------------------------------
+app.get("/api/admin/stats", (_req, res) => {
+  res.json(getStats());
+});
+
+app.get("/api/admin/occupancy", (req, res) => {
+  const { date, campId, type } = req.query;
+  if (!date) return res.status(400).json({ error: "پارامتر date الزامی است." });
+  res.json(getOccupancy(date, { campId, type }));
+});
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   app.listen(PORT, () => {
