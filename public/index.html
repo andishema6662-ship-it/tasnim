@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>سامانه مدیریت و رزرو اردوگاه‌ها</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <div class="brand">
+          <span class="brand-mark">⛺</span>
+          <span class="brand-name">سامانه اردوگاه‌ها</span>
+        </div>
+        <nav class="nav">
+          <a href="#camps-intro">اردوگاه‌ها</a>
+          <a href="#course">درخواست دوره</a>
+          <a href="admin.html" class="nav-cta">پنل مدیریت</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="container">
+        <h1>سامانه مدیریت ظرفیت و رزرو اردوگاه‌ها</h1>
+        <p>
+          رزرو یکپارچهٔ اتاق (بر اساس شب)، سالن و کلاس (بر اساس تایم‌اسلات) و وعده‌های
+          غذایی (بر اساس وعده)، همراه با جلوگیری از تداخل، تخفیف و صدور پیش‌فاکتور.
+        </p>
+      </div>
+    </section>
+
+    <section class="container section" id="camps-intro">
+      <h2 class="section-title">اردوگاه‌های ما</h2>
+      <div id="camps-showcase" class="camps-showcase">
+        <p class="loading">در حال بارگذاری…</p>
+      </div>
+    </section>
+
+    <main class="container layout">
+      <div class="main-col">
+        <section class="section">
+          <h2 class="section-title">مراحل رزرو</h2>
+          <div class="steps">
+            <div class="step"><span class="step-num">۱</span><p>ساخت و ثبت درخواست دوره</p></div>
+            <div class="step"><span class="step-num">۲</span><p>بررسی و تایید توسط مدیر اردوگاه</p></div>
+            <div class="step"><span class="step-num">۳</span><p>بررسی و پرداخت در پنل مدیریت</p></div>
+          </div>
+        </section>
+      </div>
+
+      <aside id="course" class="cart">
+        <h2 class="cart-title">ساخت درخواست دوره</h2>
+
+        <div class="field">
+          <label>عنوان دوره</label>
+          <input id="course-title" type="text" placeholder="مثلاً اردوی جهادی بهاره" />
+        </div>
+        <div class="field">
+          <label>مسئول دوره</label>
+          <input id="cust-name" type="text" placeholder="نام و نام خانوادگی" />
+        </div>
+        <div class="field">
+          <label>شماره تماس</label>
+          <input id="cust-phone" type="tel" placeholder="09xxxxxxxxx" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>کد ملی مسئول</label>
+            <input id="cust-nid" type="text" placeholder="اختیاری" />
+          </div>
+          <div class="field">
+            <label>تعداد اعضا</label>
+            <input id="cust-members" type="number" min="1" placeholder="اختیاری" />
+          </div>
+        </div>
+        <div class="field">
+          <label>کد تخفیف</label>
+          <select id="discount-select"><option value="">بدون تخفیف</option></select>
+        </div>
+
+        <h3 class="cart-subtitle">آیتم‌های دوره</h3>
+        <div class="add-buttons">
+          <button type="button" class="btn btn-ghost btn-sm" data-add="stay">+ اقامت (اتاق/سوئیت)</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-add="space">+ سالن یا کلاس</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-add="meal">+ وعدهٔ غذایی</button>
+        </div>
+        <div id="cart-items" class="cart-items">
+          <p class="muted small">هنوز آیتمی اضافه نشده. با دکمه‌های بالا آیتم‌های دوره را اضافه کنید.</p>
+        </div>
+
+        <div id="invoice-box" class="invoice-box hidden"></div>
+        <div id="cart-message" class="form-message hidden"></div>
+
+        <div class="cart-actions">
+          <button id="preview-btn" class="btn btn-ghost" disabled>دریافت پیش‌فاکتور</button>
+          <button id="submit-btn" class="btn btn-primary" disabled>ثبت درخواست دوره</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container"><p>© سامانه مدیریت و رزرو اردوگاه‌ها</p></div>
+    </footer>
+
+    <!-- Add-item picker modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal" role="dialog" aria-modal="true">
+        <button class="modal-close" id="modal-close" aria-label="بستن">×</button>
+        <h3 id="modal-title">افزودن آیتم</h3>
+        <div class="form">
+          <div class="form-row">
+            <label>اردوگاه<select id="pk-camp"></select></label>
+            <label>انتخاب منبع<select id="pk-resource"></select></label>
+          </div>
+          <div id="modal-body"></div>
+          <div id="modal-message" class="form-message hidden"></div>
+          <button id="modal-add" class="btn btn-primary btn-block">افزودن به دوره</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <div id="lightbox" class="lightbox hidden">
+      <button class="lb-close" id="lb-close" aria-label="بستن">×</button>
+      <img id="lb-img" src="" alt="" />
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

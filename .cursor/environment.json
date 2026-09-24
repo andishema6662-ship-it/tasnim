@@ -1,0 +1,17 @@
+{
+  "name": "Camp Reservation Management System",
+  "install": "npm install",
+  "terminals": [
+    {
+      "name": "web-server",
+      "command": "npm start",
+      "description": "Runs the Express reservation server on port 3000 (http://localhost:3000)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}
