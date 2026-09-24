@@ -1,70 +1,76 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" data-bs-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>پنل مدیریت | سامانه اردوگاه‌ها</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin.css" />
   </head>
-  <body class="admin-body">
-    <div class="admin-shell">
-      <aside class="admin-sidebar">
-        <div class="side-brand">
-          <span class="side-mark">🏕️</span>
-          <span class="side-title">مدیریت اردوگاه‌ها</span>
+  <body>
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <i class="bi bi-buildings-fill"></i>
+          <span class="brand-text">مدیریت اردوگاه‌ها</span>
         </div>
-        <nav class="side-nav">
-          <a href="#" class="side-link active" data-tab="dashboard" data-title="داشبورد مدیریت">
-            <span class="ic">📊</span><span>داشبورد</span>
+        <nav class="nav flex-column">
+          <a href="#" class="nav-link side-link active" data-tab="dashboard" data-title="داشبورد مدیریت">
+            <i class="bi bi-speedometer2"></i><span>داشبورد</span>
           </a>
-          <a href="#" class="side-link" data-tab="camps" data-title="مدیریت اردوگاه‌ها">
-            <span class="ic">🏕️</span><span>اردوگاه‌ها</span>
+          <a href="#" class="nav-link side-link" data-tab="camps" data-title="مدیریت اردوگاه‌ها">
+            <i class="bi bi-tents"></i><span>اردوگاه‌ها</span>
           </a>
-          <a href="#" class="side-link" data-tab="requests" data-title="مدیریت درخواست‌ها">
-            <span class="ic">📝</span><span>درخواست‌ها</span>
+          <a href="#" class="nav-link side-link" data-tab="requests" data-title="مدیریت درخواست‌ها">
+            <i class="bi bi-file-earmark-text"></i><span>درخواست‌ها</span>
           </a>
-          <a href="#" class="side-link" data-tab="occupancy" data-title="اشغال ظرفیت">
-            <span class="ic">📅</span><span>اشغال ظرفیت</span>
+          <a href="#" class="nav-link side-link" data-tab="occupancy" data-title="اشغال ظرفیت">
+            <i class="bi bi-calendar2-check"></i><span>اشغال ظرفیت</span>
           </a>
         </nav>
         <div class="side-spacer"></div>
-        <a href="index.html" class="side-link side-exit"><span class="ic">↩</span><span>صفحه رزرو</span></a>
+        <nav class="nav flex-column">
+          <a href="index.html" class="nav-link"><i class="bi bi-box-arrow-right"></i><span>صفحه رزرو</span></a>
+        </nav>
       </aside>
 
-      <div class="admin-content">
+      <div class="main-area">
         <header class="admin-topbar">
           <h1 id="page-title">داشبورد مدیریت</h1>
-          <a href="index.html" class="btn btn-ghost btn-sm">مشاهده صفحهٔ رزرو</a>
+          <a href="index.html" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-eye"></i> مشاهده صفحهٔ رزرو
+          </a>
         </header>
 
-        <div class="admin-content-inner">
-          <!-- Dashboard tab -->
+        <div class="admin-content">
+          <!-- Dashboard -->
           <section id="dashboard" class="tab-panel active">
-            <div id="kpi-grid" class="kpi-grid">
-              <p class="loading">در حال بارگذاری…</p>
+            <div id="kpi-grid" class="row g-3 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-6">
+              <p class="text-secondary">در حال بارگذاری…</p>
             </div>
-            <h3 class="block-title">گزارش مالی</h3>
-            <div id="finance-grid" class="finance-grid"></div>
+            <h2 class="h5 mt-4 mb-3">گزارش مالی</h2>
+            <div id="finance-grid" class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4"></div>
           </section>
 
-          <!-- Camps tab -->
+          <!-- Camps -->
           <section id="camps" class="tab-panel">
-            <div class="section-head">
-              <h3 class="block-title">اردوگاه‌های ثبت‌شده</h3>
-              <button id="add-camp-btn" class="btn btn-primary">+ افزودن اردوگاه</button>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <h2 class="h5 mb-0">اردوگاه‌های ثبت‌شده</h2>
+              <button id="add-camp-btn" class="btn btn-success"><i class="bi bi-plus-lg"></i> افزودن اردوگاه</button>
             </div>
-            <div id="camps-admin-list" class="camps-admin-list">
-              <p class="loading">در حال بارگذاری…</p>
+            <div id="camps-admin-list" class="d-flex flex-column gap-3">
+              <p class="text-secondary">در حال بارگذاری…</p>
             </div>
           </section>
 
-          <!-- Requests tab -->
+          <!-- Requests -->
           <section id="requests" class="tab-panel">
-            <div class="section-head">
-              <h3 class="block-title">درخواست‌ها و پیش‌فاکتورها</h3>
-              <select id="status-filter">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <h2 class="h5 mb-0">درخواست‌ها و پیش‌فاکتورها</h2>
+              <select id="status-filter" class="form-select form-select-sm w-auto">
                 <option value="">همه وضعیت‌ها</option>
                 <option value="pending">در انتظار تایید</option>
                 <option value="approved">تاییدشده</option>
@@ -72,99 +78,105 @@
                 <option value="rejected">رد شده</option>
               </select>
             </div>
-            <div class="card-surface table-wrap">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>عنوان دوره</th>
-                    <th>مسئول</th>
-                    <th>آیتم‌ها</th>
-                    <th>مبلغ قابل پرداخت</th>
-                    <th>وضعیت</th>
-                    <th>عملیات</th>
-                  </tr>
-                </thead>
-                <tbody id="requests-tbody">
-                  <tr><td colspan="6" class="muted">در حال بارگذاری…</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- Occupancy tab -->
-          <section id="occupancy" class="tab-panel">
-            <div class="section-head">
-              <h3 class="block-title">اشغال ظرفیت</h3>
-              <div class="filters">
-                <input type="date" id="occ-date" />
-                <select id="occ-camp"></select>
-                <select id="occ-type"></select>
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>عنوان دوره</th>
+                      <th>مسئول</th>
+                      <th>آیتم‌ها</th>
+                      <th>مبلغ قابل پرداخت</th>
+                      <th>وضعیت</th>
+                      <th>عملیات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="requests-tbody">
+                    <tr><td colspan="6" class="text-secondary">در حال بارگذاری…</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div id="occupancy-list" class="occupancy-list"></div>
+          </section>
+
+          <!-- Occupancy -->
+          <section id="occupancy" class="tab-panel">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <h2 class="h5 mb-0">اشغال ظرفیت</h2>
+              <div class="d-flex gap-2 flex-wrap">
+                <input type="date" id="occ-date" class="form-control form-control-sm w-auto" />
+                <select id="occ-camp" class="form-select form-select-sm w-auto"></select>
+                <select id="occ-type" class="form-select form-select-sm w-auto"></select>
+              </div>
+            </div>
+            <div id="occupancy-list" class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3"></div>
           </section>
         </div>
       </div>
     </div>
 
-    <!-- Camp editor modal -->
-    <div id="camp-modal-overlay" class="modal-overlay hidden">
-      <div class="modal modal-wide" role="dialog" aria-modal="true">
-        <button class="modal-close" id="camp-modal-close" aria-label="بستن">×</button>
-        <h3 id="camp-modal-title">افزودن اردوگاه</h3>
-
-        <div class="form">
-          <div class="field">
-            <label>نام اردوگاه</label>
-            <input type="text" id="cf-name" placeholder="مثلاً مجتمع آموزشی ..." />
+    <!-- Camp editor modal (Bootstrap) -->
+    <div class="modal fade" id="camp-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="camp-modal-title">افزودن اردوگاه</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
           </div>
-          <div class="field">
-            <label>موقعیت</label>
-            <input type="text" id="cf-location" placeholder="استان، شهر" />
-          </div>
-          <div class="field">
-            <label>معرفی اردوگاه</label>
-            <textarea id="cf-description" rows="3" placeholder="توضیح کوتاه دربارهٔ اردوگاه"></textarea>
-          </div>
-
-          <h4 class="form-sub">ظرفیت‌ها</h4>
-          <div class="field-row">
-            <div class="field"><label>ظرفیت پذیرش (نفر)</label><input type="number" id="cf-reception" min="0" value="0" /></div>
-            <div class="field"><label>ظرفیت سالن همایش/اجلاس</label><input type="number" id="cf-conference" min="0" value="0" /></div>
-          </div>
-          <div class="field-row">
-            <div class="field"><label>ظرفیت آمفی‌تئاتر</label><input type="number" id="cf-amphitheater" min="0" value="0" /></div>
-            <div class="field"><label>ظرفیت نمازخانه</label><input type="number" id="cf-prayer" min="0" value="0" /></div>
-          </div>
-          <div class="field">
-            <label>ظرفیت سالن سلف‌سرویس</label><input type="number" id="cf-selfservice" min="0" value="0" />
-          </div>
-
-          <div class="field">
-            <label>کلاس‌ها (تعداد و ظرفیت هر کلاس)</label>
-            <div id="cf-classes"></div>
-            <button type="button" id="cf-add-class" class="btn btn-ghost btn-sm">+ افزودن کلاس</button>
-          </div>
-
-          <div id="cf-images-block" class="field">
-            <label>تصاویر بخش‌ها</label>
-            <div class="img-uploader">
-              <select id="cf-img-section"></select>
-              <input type="text" id="cf-img-caption" placeholder="توضیح تصویر (اختیاری)" />
-              <input type="file" id="cf-img-file" accept="image/*" />
-              <button type="button" id="cf-img-add" class="btn btn-info btn-sm">بارگذاری</button>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">نام اردوگاه</label>
+              <input type="text" id="cf-name" class="form-control" placeholder="مثلاً مجتمع آموزشی ..." />
             </div>
-            <p id="cf-img-hint" class="muted small">برای بارگذاری تصویر، ابتدا اردوگاه را ذخیره کنید.</p>
-            <div id="cf-img-gallery" class="img-gallery"></div>
-          </div>
+            <div class="mb-3">
+              <label class="form-label">موقعیت</label>
+              <input type="text" id="cf-location" class="form-control" placeholder="استان، شهر" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">معرفی اردوگاه</label>
+              <textarea id="cf-description" class="form-control" rows="3" placeholder="توضیح کوتاه دربارهٔ اردوگاه"></textarea>
+            </div>
 
-          <div id="camp-modal-message" class="form-message hidden"></div>
-          <button id="cf-save" class="btn btn-primary btn-block">ذخیره اردوگاه</button>
+            <h6 class="border-top pt-3 mt-3 text-secondary">ظرفیت‌ها</h6>
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label">ظرفیت پذیرش (نفر)</label><input type="number" id="cf-reception" class="form-control" min="0" value="0" /></div>
+              <div class="col-md-6"><label class="form-label">ظرفیت سالن همایش/اجلاس</label><input type="number" id="cf-conference" class="form-control" min="0" value="0" /></div>
+              <div class="col-md-6"><label class="form-label">ظرفیت آمفی‌تئاتر</label><input type="number" id="cf-amphitheater" class="form-control" min="0" value="0" /></div>
+              <div class="col-md-6"><label class="form-label">ظرفیت نمازخانه</label><input type="number" id="cf-prayer" class="form-control" min="0" value="0" /></div>
+              <div class="col-md-6"><label class="form-label">ظرفیت سالن سلف‌سرویس</label><input type="number" id="cf-selfservice" class="form-control" min="0" value="0" /></div>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">کلاس‌ها (تعداد و ظرفیت هر کلاس)</label>
+              <div id="cf-classes" class="d-flex flex-column gap-2"></div>
+              <button type="button" id="cf-add-class" class="btn btn-outline-secondary btn-sm mt-2"><i class="bi bi-plus-lg"></i> افزودن کلاس</button>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">تصاویر بخش‌ها</label>
+              <div class="row g-2 align-items-center">
+                <div class="col-md-3"><select id="cf-img-section" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><input type="text" id="cf-img-caption" class="form-control form-control-sm" placeholder="توضیح تصویر (اختیاری)" /></div>
+                <div class="col-md-3"><input type="file" id="cf-img-file" class="form-control form-control-sm" accept="image/*" /></div>
+                <div class="col-md-2 d-grid"><button type="button" id="cf-img-add" class="btn btn-info btn-sm">بارگذاری</button></div>
+              </div>
+              <p id="cf-img-hint" class="text-secondary small mt-2">برای بارگذاری تصویر، ابتدا اردوگاه را ذخیره کنید.</p>
+              <div id="cf-img-gallery" class="d-flex flex-wrap gap-2 mt-2"></div>
+            </div>
+
+            <div id="camp-modal-message" class="form-message hidden mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">انصراف</button>
+            <button id="cf-save" class="btn btn-success">ذخیره اردوگاه</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="toast" class="toast hidden"></div>
+    <div id="toast" class="app-toast hidden"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="admin.js"></script>
   </body>
 </html>

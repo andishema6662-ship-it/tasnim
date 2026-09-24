@@ -49,10 +49,9 @@ async function init() {
     .map((s) => `<option value="${s.id}">${s.label}</option>`)
     .join("");
   el("#add-camp-btn").addEventListener("click", () => openCampModal(null));
-  el("#camp-modal-close").addEventListener("click", closeCampModal);
-  el("#camp-modal-overlay").addEventListener("click", (e) => {
-    if (e.target.id === "camp-modal-overlay") closeCampModal();
-  });
+  document
+    .getElementById("camp-modal")
+    .addEventListener("hidden.bs.modal", () => (state.editingCampId = null));
   el("#cf-add-class").addEventListener("click", () => addClassRow());
   el("#cf-save").addEventListener("click", saveCamp);
   el("#cf-img-add").addEventListener("click", uploadImage);
@@ -63,6 +62,10 @@ async function init() {
   loadRequests();
   loadOccupancy();
   loadCampProfiles();
+}
+
+function campModal() {
+  return bootstrap.Modal.getOrCreateInstance(document.getElementById("camp-modal"));
 }
 
 // ---- Sidebar tab navigation ------------------------------------------------
@@ -109,23 +112,25 @@ async function loadCampProfiles() {
     const cover = c.images.find((i) => i.section === "cover") || c.images[0];
     const caps = c.capacities || {};
     const chips = CAP_ITEMS.filter((it) => capValue(caps, it[0]) > 0)
-      .map((it) => `<span class="chip">${it[1]}: ${toFa(capValue(caps, it[0]))} ${it[2]}</span>`)
+      .map((it) => `<span class="badge rounded-pill text-bg-dark">${it[1]}: ${toFa(capValue(caps, it[0]))} ${it[2]}</span>`)
       .join("");
     const classesChip = caps.classes?.length
-      ? `<span class="chip">${toFa(caps.classes.length)} کلاس</span>`
+      ? `<span class="badge text-bg-secondary">${toFa(caps.classes.length)} کلاس</span>`
       : "";
     const card = document.createElement("div");
-    card.className = "camp-admin-card";
+    card.className = "card";
     card.innerHTML = `
-      <div class="cac-thumb">${cover ? `<img src="${cover.dataUrl}" alt="">` : "🏕️"}</div>
-      <div class="cac-body">
-        <div class="cac-name">${c.name}</div>
-        <div class="cac-loc">📍 ${c.location || "—"}</div>
-        <div class="cac-caps">${chips}${classesChip}<span class="chip">${toFa(c.images.length)} تصویر</span></div>
-      </div>
-      <div class="cac-actions">
-        <button class="btn btn-info btn-sm" data-edit="${c.id}">ویرایش</button>
-        <button class="btn btn-danger btn-sm" data-del="${c.id}">حذف</button>
+      <div class="card-body d-flex gap-3 align-items-start flex-wrap">
+        <div class="cac-thumb">${cover ? `<img src="${cover.dataUrl}" alt="">` : "🏕️"}</div>
+        <div class="flex-grow-1" style="min-width:220px">
+          <div class="fw-bold fs-5">${c.name}</div>
+          <div class="text-secondary small mb-2"><i class="bi bi-geo-alt"></i> ${c.location || "—"}</div>
+          <div class="d-flex flex-wrap gap-2">${chips}${classesChip}<span class="badge text-bg-secondary"><i class="bi bi-image"></i> ${toFa(c.images.length)} تصویر</span></div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-info btn-sm" data-edit="${c.id}"><i class="bi bi-pencil"></i> ویرایش</button>
+          <button class="btn btn-outline-danger btn-sm" data-del="${c.id}"><i class="bi bi-trash"></i> حذف</button>
+        </div>
       </div>
     `;
     box.appendChild(card);
@@ -141,11 +146,11 @@ async function loadCampProfiles() {
 function addClassRow(name = "", capacity = "") {
   const wrap = el("#cf-classes");
   const row = document.createElement("div");
-  row.className = "cf-class-row";
+  row.className = "input-group input-group-sm cf-class-row";
   row.innerHTML = `
-    <input type="text" class="cf-class-name" placeholder="نام کلاس" value="${name}">
-    <input type="number" class="cf-class-cap" placeholder="ظرفیت" min="0" value="${capacity}">
-    <button type="button" title="حذف">×</button>
+    <input type="text" class="form-control cf-class-name" placeholder="نام کلاس" value="${name}">
+    <input type="number" class="form-control cf-class-cap" placeholder="ظرفیت" min="0" value="${capacity}" style="max-width:110px">
+    <button type="button" class="btn btn-outline-danger" title="حذف"><i class="bi bi-x-lg"></i></button>
   `;
   row.querySelector("button").addEventListener("click", () => row.remove());
   wrap.appendChild(row);
@@ -181,12 +186,11 @@ async function openCampModal(id) {
     addClassRow();
     el("#cf-img-hint").classList.remove("hidden");
   }
-  el("#camp-modal-overlay").classList.remove("hidden");
+  campModal().show();
 }
 
 function closeCampModal() {
-  el("#camp-modal-overlay").classList.add("hidden");
-  state.editingCampId = null;
+  campModal().hide();
 }
 
 function collectPayload() {
@@ -303,8 +307,8 @@ function renderGallery(images) {
     const div = document.createElement("div");
     div.className = "img-thumb";
     div.innerHTML = `
-      <span class="img-sec">${sectionLabel(im.section)}</span>
-      <button class="img-del" data-img="${im.id}" title="حذف">×</button>
+      <span class="img-sec badge text-bg-dark">${sectionLabel(im.section)}</span>
+      <button class="img-del btn btn-danger" data-img="${im.id}" title="حذف"><i class="bi bi-x"></i></button>
       <img src="${im.dataUrl}" alt="">
       <div class="img-cap">${im.caption || ""}</div>
     `;
@@ -337,20 +341,43 @@ async function deleteCamp(id) {
 
 async function loadStats() {
   const s = await (await fetch("/api/admin/stats")).json();
-  el("#kpi-grid").innerHTML = `
-    <div class="kpi-card"><span class="kpi-ic">📋</span><div class="kpi-label">کل درخواست‌ها</div><div class="kpi-value">${toFa(s.requests.total)}</div></div>
-    <div class="kpi-card accent"><span class="kpi-ic">⏳</span><div class="kpi-label">در انتظار تایید</div><div class="kpi-value">${toFa(s.requests.pending)}</div></div>
-    <div class="kpi-card info"><span class="kpi-ic">✅</span><div class="kpi-label">تاییدشده</div><div class="kpi-value">${toFa(s.requests.approved)}</div></div>
-    <div class="kpi-card primary"><span class="kpi-ic">💳</span><div class="kpi-label">پرداخت‌شده</div><div class="kpi-value">${toFa(s.requests.paid)}</div></div>
-    <div class="kpi-card"><span class="kpi-ic">🏢</span><div class="kpi-label">کل منابع</div><div class="kpi-value">${toFa(s.resources.total)}</div></div>
-    <div class="kpi-card"><span class="kpi-ic">🛏️</span><div class="kpi-label">مجموع تخت‌ها</div><div class="kpi-value">${toFa(s.resources.totalBeds)}</div></div>
-  `;
-  el("#finance-grid").innerHTML = `
-    <div class="finance-card paid"><span class="fc-ic">💰</span><div class="fc-label">درآمد وصول‌شده (پرداخت‌شده)</div><div class="fc-value">${toman(s.revenue.paid)}</div></div>
-    <div class="finance-card pipeline"><span class="fc-ic">📈</span><div class="fc-label">در جریان (در انتظار/تاییدشده)</div><div class="fc-value">${toman(s.revenue.pipeline)}</div></div>
-    <div class="finance-card tax"><span class="fc-ic">🧾</span><div class="fc-label">مالیات وصول‌شده</div><div class="fc-value">${toman(s.revenue.taxCollected)}</div></div>
-    <div class="finance-card discount"><span class="fc-ic">🎟️</span><div class="fc-label">مجموع تخفیف‌های اعطاشده</div><div class="fc-value">${toman(s.revenue.discountsGiven)}</div></div>
-  `;
+  const kpi = (icon, label, value, color) => `
+    <div class="col">
+      <div class="card h-100 ${color ? "border-start border-4 border-" + color : ""}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <span class="text-secondary small">${label}</span>
+            <i class="bi ${icon} kpi-ic ${color ? "text-" + color : "text-secondary"}"></i>
+          </div>
+          <div class="kpi-value ${color ? "text-" + color : ""}">${value}</div>
+        </div>
+      </div>
+    </div>`;
+  el("#kpi-grid").innerHTML =
+    kpi("bi-clipboard-data", "کل درخواست‌ها", toFa(s.requests.total)) +
+    kpi("bi-hourglass-split", "در انتظار تایید", toFa(s.requests.pending), "warning") +
+    kpi("bi-check-circle", "تاییدشده", toFa(s.requests.approved), "info") +
+    kpi("bi-credit-card", "پرداخت‌شده", toFa(s.requests.paid), "success") +
+    kpi("bi-building", "کل منابع", toFa(s.resources.total)) +
+    kpi("bi-house-door", "مجموع تخت‌ها", toFa(s.resources.totalBeds));
+
+  const fc = (icon, label, value, color) => `
+    <div class="col">
+      <div class="card h-100 border-start border-4 border-${color}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <span class="text-secondary small">${label}</span>
+            <i class="bi ${icon} text-${color}"></i>
+          </div>
+          <div class="fc-value text-${color} mt-1">${value}</div>
+        </div>
+      </div>
+    </div>`;
+  el("#finance-grid").innerHTML =
+    fc("bi-cash-coin", "درآمد وصول‌شده (پرداخت‌شده)", toman(s.revenue.paid), "success") +
+    fc("bi-graph-up-arrow", "در جریان (در انتظار/تاییدشده)", toman(s.revenue.pipeline), "warning") +
+    fc("bi-receipt", "مالیات وصول‌شده", toman(s.revenue.taxCollected), "info") +
+    fc("bi-tag", "مجموع تخفیف‌های اعطاشده", toman(s.revenue.discountsGiven), "primary");
 }
 
 async function loadRequests() {
@@ -362,26 +389,32 @@ async function loadRequests() {
     tbody.innerHTML = '<tr><td colspan="6" class="muted">درخواستی یافت نشد.</td></tr>';
     return;
   }
+  const BADGE = {
+    pending: "text-bg-warning",
+    approved: "text-bg-info",
+    paid: "text-bg-success",
+    rejected: "text-bg-danger",
+  };
   tbody.innerHTML = "";
   for (const req of filtered.slice().reverse()) {
     let actions = "";
     if (req.status === "pending") {
       actions = `
-        <button class="btn btn-info btn-sm" data-act="approve" data-id="${req.id}">تایید</button>
-        <button class="btn btn-danger btn-sm" data-act="reject" data-id="${req.id}">رد</button>`;
+        <button class="btn btn-info btn-sm" data-act="approve" data-id="${req.id}"><i class="bi bi-check-lg"></i> تایید</button>
+        <button class="btn btn-outline-danger btn-sm" data-act="reject" data-id="${req.id}">رد</button>`;
     } else if (req.status === "approved") {
-      actions = `<button class="btn btn-primary btn-sm" data-act="pay" data-id="${req.id}">ثبت پرداخت</button>`;
+      actions = `<button class="btn btn-success btn-sm" data-act="pay" data-id="${req.id}"><i class="bi bi-credit-card"></i> ثبت پرداخت</button>`;
     } else {
-      actions = '<span class="muted small">—</span>';
+      actions = '<span class="text-secondary small">—</span>';
     }
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${req.courseTitle}<div class="muted small">${req.id}</div></td>
-      <td>${req.customer.name}<div class="muted small">${req.customer.phone}</div></td>
+      <td>${req.courseTitle}<div class="text-secondary small">${req.id}</div></td>
+      <td>${req.customer.name}<div class="text-secondary small">${req.customer.phone}</div></td>
       <td>${toFa(req.items.length)} آیتم</td>
-      <td class="amount">${toman(req.invoice.total)}</td>
-      <td><span class="badge ${req.status}">${STATUS_LABELS[req.status]}</span></td>
-      <td><div class="row-actions">${actions}</div></td>
+      <td class="fw-bold text-warning text-nowrap">${toman(req.invoice.total)}</td>
+      <td><span class="badge ${BADGE[req.status]}">${STATUS_LABELS[req.status]}</span></td>
+      <td><div class="d-flex gap-2">${actions}</div></td>
     `;
     tbody.appendChild(tr);
   }
@@ -429,35 +462,41 @@ async function loadOccupancy() {
 
 function renderOccCard(o) {
   const div = document.createElement("div");
-  div.className = "occ-card";
+  div.className = "col";
   const typeLabel = state.meta.resourceTypeLabels[o.type] ?? o.type;
   let body = "";
   if (o.unit === "night") {
-    const cls = o.occupancyPct >= 90 ? "high" : o.occupancyPct >= 50 ? "mid" : "";
+    const color = o.occupancyPct >= 90 ? "bg-danger" : o.occupancyPct >= 50 ? "bg-warning" : "bg-success";
     body = `
-      <div class="occ-bar"><span class="${cls}" style="width:${o.occupancyPct}%"></span></div>
-      <div class="occ-meta">اشغال ${toFa(o.used)} از ${toFa(o.capacity)} تخت (${toFa(o.occupancyPct)}٪) · باقی‌مانده ${toFa(o.remaining)}</div>`;
+      <div class="progress" role="progressbar" style="height:9px">
+        <div class="progress-bar ${color}" style="width:${o.occupancyPct}%"></div>
+      </div>
+      <div class="text-secondary small mt-2">اشغال ${toFa(o.used)} از ${toFa(o.capacity)} تخت (${toFa(o.occupancyPct)}٪) · باقی‌مانده ${toFa(o.remaining)}</div>`;
   } else if (o.unit === "slot") {
     const chips = state.meta.timeSlots
       .map((s) => {
         const booked = o.bookedSlots.includes(s.id);
-        return `<span class="occ-slot ${booked ? "booked" : "free"}">${s.label}${booked ? " (رزرو)" : " (آزاد)"}</span>`;
+        return `<span class="badge ${booked ? "text-bg-danger" : "text-bg-success"}">${s.label}${booked ? " (رزرو)" : " (آزاد)"}</span>`;
       })
       .join("");
-    body = `<div class="occ-slots">${chips}</div>`;
+    body = `<div class="d-flex flex-wrap gap-2">${chips}</div>`;
   } else {
     const rows = o.perMeal
-      .map((m) => `<div class="occ-meal"><span>${m.label}</span><span>${toFa(m.used)} نفر</span></div>`)
+      .map((m) => `<div class="d-flex justify-content-between text-secondary small py-1"><span>${m.label}</span><span>${toFa(m.used)} نفر</span></div>`)
       .join("");
-    body = `${rows}<div class="occ-meta">مجموع وعده‌ها: ${toFa(o.totalUsed)} نفر · ظرفیت هر وعده ${toFa(o.capacity)}</div>`;
+    body = `${rows}<div class="text-secondary small mt-1">مجموع وعده‌ها: ${toFa(o.totalUsed)} نفر · ظرفیت هر وعده ${toFa(o.capacity)}</div>`;
   }
   div.innerHTML = `
-    <div class="occ-head">
-      <span class="occ-name">${o.name}</span>
-      <span class="res-type">${typeLabel}</span>
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <span class="fw-bold">${o.name}</span>
+          <span class="badge text-bg-secondary">${typeLabel}</span>
+        </div>
+        <div class="text-secondary small mb-2">${o.building}</div>
+        ${body}
+      </div>
     </div>
-    <div class="occ-sub">${o.building}</div>
-    ${body}
   `;
   return div;
 }
