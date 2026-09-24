@@ -78,7 +78,6 @@ async function init() {
     if (e.target.id === "lightbox") closeLightbox();
   });
 
-  loadRequests();
   loadCampShowcase();
 }
 
@@ -416,7 +415,6 @@ async function submitRequest() {
       el("#cust-members").value = "";
       renderCart();
       showToast("درخواست دوره با موفقیت ثبت شد ✅");
-      loadRequests();
     }
   } catch {
     msg.textContent = "خطا در ارتباط با سرور.";
@@ -425,105 +423,6 @@ async function submitRequest() {
     btn.disabled = false;
     btn.textContent = "ثبت درخواست دوره";
   }
-}
-
-const STATUS_LABELS = {
-  pending: "در انتظار بررسی",
-  approved: "تاییدشده — آمادهٔ پرداخت",
-  paid: "پرداخت‌شده",
-  rejected: "رد شده",
-};
-
-// A three-step tracker: submit -> review/approve -> final payment.
-function renderStepper(status) {
-  const reviewed = status === "approved" || status === "paid";
-  const paid = status === "paid";
-  const rejected = status === "rejected";
-
-  const s1 = "done";
-  let s2 = "idle";
-  if (rejected) s2 = "error";
-  else if (reviewed) s2 = "done";
-  else s2 = "current";
-  let s3 = "idle";
-  if (paid) s3 = "done";
-  else if (status === "approved") s3 = "current";
-
-  const step = (cls, num, label) =>
-    `<div class="tstep ${cls}"><span class="tnum">${cls === "done" ? "✓" : cls === "error" ? "×" : num}</span><span class="tlabel">${label}</span></div>`;
-  return `<div class="tracker">
-    ${step(s1, "۱", "ثبت درخواست")}
-    <span class="tline ${reviewed ? "done" : rejected ? "error" : ""}"></span>
-    ${step(s2, "۲", rejected ? "رد شد" : "بررسی و تایید")}
-    <span class="tline ${paid ? "done" : ""}"></span>
-    ${step(s3, "۳", "پرداخت نهایی")}
-  </div>`;
-}
-
-async function loadRequests() {
-  const list = await (await fetch("/api/requests")).json();
-  const box = el("#requests-list");
-  if (!list.length) {
-    box.innerHTML = '<p class="muted">هنوز درخواستی ثبت نشده است.</p>';
-    return;
-  }
-  box.innerHTML = "";
-  for (const req of list.slice().reverse()) {
-    const div = document.createElement("div");
-    div.className = `request-item ${req.status}`;
-    const itemsSummary = req.items
-      .map((it) => {
-        const r = state.resources.find((x) => x.id === it.resourceId);
-        return r ? r.name : it.resourceId;
-      })
-      .join("، ");
-
-    // Payment button: inactive until an admin approves the request.
-    let payBtn = "";
-    if (req.status === "pending") {
-      payBtn = `<button class="btn btn-primary btn-sm" disabled>پرداخت نهایی (در انتظار تایید مدیر)</button>`;
-    } else if (req.status === "approved") {
-      payBtn = `<button class="btn btn-primary btn-sm" data-act="pay" data-id="${req.id}">پرداخت نهایی</button>`;
-    } else if (req.status === "paid") {
-      payBtn = `<button class="btn btn-primary btn-sm" disabled>پرداخت انجام شد ✓</button>`;
-    } else if (req.status === "rejected") {
-      payBtn = `<span class="muted small">این درخواست رد شده است.</span>`;
-    }
-
-    div.innerHTML = `
-      <div class="req-head">
-        <span class="req-title">${req.courseTitle} — ${req.customer.name}</span>
-        <span class="badge ${req.status}">${STATUS_LABELS[req.status]}</span>
-      </div>
-      ${renderStepper(req.status)}
-      <div class="req-detail">
-        ${toFa(req.items.length)} آیتم: ${itemsSummary}<br>
-        کد: ${req.id}${req.customer.memberCount ? " · اعضا: " + toFa(req.customer.memberCount) : ""}
-      </div>
-      <div class="req-detail">
-        جمع: ${toman(req.invoice.subtotal)}
-        ${req.invoice.discount ? " · تخفیف: " + toFa(req.invoice.discount.percent) + "٪" : ""}
-        · مالیات: ${toman(req.invoice.tax)} ·
-        <span class="req-total">قابل پرداخت: ${toman(req.invoice.total)}</span>
-      </div>
-      <div class="req-actions">${payBtn}</div>
-    `;
-    box.appendChild(div);
-  }
-  box.querySelectorAll('[data-act="pay"]').forEach((b) =>
-    b.addEventListener("click", () => payRequest(b.dataset.id))
-  );
-}
-
-async function payRequest(id) {
-  const res = await fetch(`/api/requests/${id}/pay`, { method: "POST" });
-  const data = await res.json();
-  if (!res.ok) {
-    showToast(data.error || "پرداخت ناموفق بود");
-    return;
-  }
-  showToast("پرداخت با موفقیت انجام شد ✅");
-  loadRequests();
 }
 
 function showToast(msg) {

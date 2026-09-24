@@ -350,7 +350,7 @@ async function loadRequests() {
         <button class="btn btn-info btn-sm" data-act="approve" data-id="${req.id}">تایید</button>
         <button class="btn btn-danger btn-sm" data-act="reject" data-id="${req.id}">رد</button>`;
     } else if (req.status === "approved") {
-      actions = '<span class="muted small">در انتظار پرداخت کاربر</span>';
+      actions = `<button class="btn btn-primary btn-sm" data-act="pay" data-id="${req.id}">ثبت پرداخت</button>`;
     } else {
       actions = '<span class="muted small">—</span>';
     }
