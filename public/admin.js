@@ -57,10 +57,30 @@ async function init() {
   el("#cf-save").addEventListener("click", saveCamp);
   el("#cf-img-add").addEventListener("click", uploadImage);
 
+  setupTabs();
+
   loadStats();
   loadRequests();
   loadOccupancy();
   loadCampProfiles();
+}
+
+// ---- Sidebar tab navigation ------------------------------------------------
+function setupTabs() {
+  const links = document.querySelectorAll(".side-link[data-tab]");
+  links.forEach((link) =>
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const tab = link.dataset.tab;
+      links.forEach((l) => l.classList.toggle("active", l === link));
+      document
+        .querySelectorAll(".tab-panel")
+        .forEach((p) => p.classList.toggle("active", p.id === tab));
+      const title = el("#page-title");
+      if (title) title.textContent = link.dataset.title || title.textContent;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    })
+  );
 }
 
 // ---- Camp profiles management ----------------------------------------------
@@ -318,18 +338,18 @@ async function deleteCamp(id) {
 async function loadStats() {
   const s = await (await fetch("/api/admin/stats")).json();
   el("#kpi-grid").innerHTML = `
-    <div class="kpi-card"><div class="kpi-label">کل درخواست‌ها</div><div class="kpi-value">${toFa(s.requests.total)}</div></div>
-    <div class="kpi-card accent"><div class="kpi-label">در انتظار تایید</div><div class="kpi-value">${toFa(s.requests.pending)}</div></div>
-    <div class="kpi-card info"><div class="kpi-label">تاییدشده</div><div class="kpi-value">${toFa(s.requests.approved)}</div></div>
-    <div class="kpi-card primary"><div class="kpi-label">پرداخت‌شده</div><div class="kpi-value">${toFa(s.requests.paid)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">کل منابع</div><div class="kpi-value">${toFa(s.resources.total)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">مجموع تخت‌ها</div><div class="kpi-value">${toFa(s.resources.totalBeds)}</div></div>
+    <div class="kpi-card"><span class="kpi-ic">📋</span><div class="kpi-label">کل درخواست‌ها</div><div class="kpi-value">${toFa(s.requests.total)}</div></div>
+    <div class="kpi-card accent"><span class="kpi-ic">⏳</span><div class="kpi-label">در انتظار تایید</div><div class="kpi-value">${toFa(s.requests.pending)}</div></div>
+    <div class="kpi-card info"><span class="kpi-ic">✅</span><div class="kpi-label">تاییدشده</div><div class="kpi-value">${toFa(s.requests.approved)}</div></div>
+    <div class="kpi-card primary"><span class="kpi-ic">💳</span><div class="kpi-label">پرداخت‌شده</div><div class="kpi-value">${toFa(s.requests.paid)}</div></div>
+    <div class="kpi-card"><span class="kpi-ic">🏢</span><div class="kpi-label">کل منابع</div><div class="kpi-value">${toFa(s.resources.total)}</div></div>
+    <div class="kpi-card"><span class="kpi-ic">🛏️</span><div class="kpi-label">مجموع تخت‌ها</div><div class="kpi-value">${toFa(s.resources.totalBeds)}</div></div>
   `;
   el("#finance-grid").innerHTML = `
-    <div class="finance-card paid"><div class="fc-label">درآمد وصول‌شده (پرداخت‌شده)</div><div class="fc-value">${toman(s.revenue.paid)}</div></div>
-    <div class="finance-card pipeline"><div class="fc-label">در جریان (در انتظار/تاییدشده)</div><div class="fc-value">${toman(s.revenue.pipeline)}</div></div>
-    <div class="finance-card tax"><div class="fc-label">مالیات وصول‌شده</div><div class="fc-value">${toman(s.revenue.taxCollected)}</div></div>
-    <div class="finance-card discount"><div class="fc-label">مجموع تخفیف‌های اعطاشده</div><div class="fc-value">${toman(s.revenue.discountsGiven)}</div></div>
+    <div class="finance-card paid"><span class="fc-ic">💰</span><div class="fc-label">درآمد وصول‌شده (پرداخت‌شده)</div><div class="fc-value">${toman(s.revenue.paid)}</div></div>
+    <div class="finance-card pipeline"><span class="fc-ic">📈</span><div class="fc-label">در جریان (در انتظار/تاییدشده)</div><div class="fc-value">${toman(s.revenue.pipeline)}</div></div>
+    <div class="finance-card tax"><span class="fc-ic">🧾</span><div class="fc-label">مالیات وصول‌شده</div><div class="fc-value">${toman(s.revenue.taxCollected)}</div></div>
+    <div class="finance-card discount"><span class="fc-ic">🎟️</span><div class="fc-label">مجموع تخفیف‌های اعطاشده</div><div class="fc-value">${toman(s.revenue.discountsGiven)}</div></div>
   `;
 }
 

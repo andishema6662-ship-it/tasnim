@@ -4,95 +4,108 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>پنل مدیریت | سامانه اردوگاه‌ها</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <header class="site-header">
-      <div class="container header-inner">
-        <div class="brand">
-          <span class="brand-mark">🛡️</span>
-          <span class="brand-name">پنل مدیریت اردوگاه‌ها</span>
+  <body class="admin-body">
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="side-brand">
+          <span class="side-mark">🏕️</span>
+          <span class="side-title">مدیریت اردوگاه‌ها</span>
         </div>
-        <nav class="nav">
-          <a href="#dashboard">داشبورد</a>
-          <a href="#camps">اردوگاه‌ها</a>
-          <a href="#requests">درخواست‌ها</a>
-          <a href="#finance">گزارش مالی</a>
-          <a href="#occupancy">اشغال ظرفیت</a>
-          <a href="index.html" class="nav-cta">صفحه رزرو</a>
+        <nav class="side-nav">
+          <a href="#" class="side-link active" data-tab="dashboard" data-title="داشبورد مدیریت">
+            <span class="ic">📊</span><span>داشبورد</span>
+          </a>
+          <a href="#" class="side-link" data-tab="camps" data-title="مدیریت اردوگاه‌ها">
+            <span class="ic">🏕️</span><span>اردوگاه‌ها</span>
+          </a>
+          <a href="#" class="side-link" data-tab="requests" data-title="مدیریت درخواست‌ها">
+            <span class="ic">📝</span><span>درخواست‌ها</span>
+          </a>
+          <a href="#" class="side-link" data-tab="occupancy" data-title="اشغال ظرفیت">
+            <span class="ic">📅</span><span>اشغال ظرفیت</span>
+          </a>
         </nav>
+        <div class="side-spacer"></div>
+        <a href="index.html" class="side-link side-exit"><span class="ic">↩</span><span>صفحه رزرو</span></a>
+      </aside>
+
+      <div class="admin-content">
+        <header class="admin-topbar">
+          <h1 id="page-title">داشبورد مدیریت</h1>
+          <a href="index.html" class="btn btn-ghost btn-sm">مشاهده صفحهٔ رزرو</a>
+        </header>
+
+        <div class="admin-content-inner">
+          <!-- Dashboard tab -->
+          <section id="dashboard" class="tab-panel active">
+            <div id="kpi-grid" class="kpi-grid">
+              <p class="loading">در حال بارگذاری…</p>
+            </div>
+            <h3 class="block-title">گزارش مالی</h3>
+            <div id="finance-grid" class="finance-grid"></div>
+          </section>
+
+          <!-- Camps tab -->
+          <section id="camps" class="tab-panel">
+            <div class="section-head">
+              <h3 class="block-title">اردوگاه‌های ثبت‌شده</h3>
+              <button id="add-camp-btn" class="btn btn-primary">+ افزودن اردوگاه</button>
+            </div>
+            <div id="camps-admin-list" class="camps-admin-list">
+              <p class="loading">در حال بارگذاری…</p>
+            </div>
+          </section>
+
+          <!-- Requests tab -->
+          <section id="requests" class="tab-panel">
+            <div class="section-head">
+              <h3 class="block-title">درخواست‌ها و پیش‌فاکتورها</h3>
+              <select id="status-filter">
+                <option value="">همه وضعیت‌ها</option>
+                <option value="pending">در انتظار تایید</option>
+                <option value="approved">تاییدشده</option>
+                <option value="paid">پرداخت‌شده</option>
+                <option value="rejected">رد شده</option>
+              </select>
+            </div>
+            <div class="card-surface table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>عنوان دوره</th>
+                    <th>مسئول</th>
+                    <th>آیتم‌ها</th>
+                    <th>مبلغ قابل پرداخت</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="requests-tbody">
+                  <tr><td colspan="6" class="muted">در حال بارگذاری…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Occupancy tab -->
+          <section id="occupancy" class="tab-panel">
+            <div class="section-head">
+              <h3 class="block-title">اشغال ظرفیت</h3>
+              <div class="filters">
+                <input type="date" id="occ-date" />
+                <select id="occ-camp"></select>
+                <select id="occ-type"></select>
+              </div>
+            </div>
+            <div id="occupancy-list" class="occupancy-list"></div>
+          </section>
+        </div>
       </div>
-    </header>
-
-    <main class="container admin-main">
-      <section id="dashboard" class="section">
-        <h2 class="section-title">داشبورد مدیریت</h2>
-        <div id="kpi-grid" class="kpi-grid">
-          <p class="loading">در حال بارگذاری…</p>
-        </div>
-      </section>
-
-      <section id="camps" class="section">
-        <div class="section-head">
-          <h2 class="section-title">مدیریت اردوگاه‌ها</h2>
-          <button id="add-camp-btn" class="btn btn-primary">+ افزودن اردوگاه</button>
-        </div>
-        <div id="camps-admin-list" class="camps-admin-list">
-          <p class="loading">در حال بارگذاری…</p>
-        </div>
-      </section>
-
-      <section id="finance" class="section">
-        <h2 class="section-title">گزارش مالی</h2>
-        <div id="finance-grid" class="finance-grid"></div>
-      </section>
-
-      <section id="requests" class="section">
-        <div class="section-head">
-          <h2 class="section-title">مدیریت درخواست‌ها</h2>
-          <select id="status-filter">
-            <option value="">همه وضعیت‌ها</option>
-            <option value="pending">در انتظار تایید</option>
-            <option value="approved">تاییدشده</option>
-            <option value="paid">پرداخت‌شده</option>
-            <option value="rejected">رد شده</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>عنوان دوره</th>
-                <th>مسئول</th>
-                <th>آیتم‌ها</th>
-                <th>مبلغ قابل پرداخت</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody id="requests-tbody">
-              <tr><td colspan="6" class="muted">در حال بارگذاری…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="occupancy" class="section">
-        <div class="section-head">
-          <h2 class="section-title">اشغال ظرفیت</h2>
-          <div class="filters">
-            <input type="date" id="occ-date" />
-            <select id="occ-camp"></select>
-            <select id="occ-type"></select>
-          </div>
-        </div>
-        <div id="occupancy-list" class="occupancy-list"></div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="container"><p>© پنل مدیریت سامانه اردوگاه‌ها</p></div>
-    </footer>
+    </div>
 
     <!-- Camp editor modal -->
     <div id="camp-modal-overlay" class="modal-overlay hidden">
