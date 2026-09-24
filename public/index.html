@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>تسنیم | رزرو آنلاین اردوگاه</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <title>سامانه مدیریت و رزرو اردوگاه‌ها</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,101 +11,109 @@
       <div class="container header-inner">
         <div class="brand">
           <span class="brand-mark">⛺</span>
-          <span class="brand-name">تسنیم</span>
+          <span class="brand-name">سامانه اردوگاه‌ها</span>
         </div>
         <nav class="nav">
-          <a href="#camps">اردوگاه‌ها</a>
-          <a href="#how">مراحل رزرو</a>
-          <a href="#reservations">رزروهای من</a>
+          <a href="#resources">منابع</a>
+          <a href="#course">درخواست دوره</a>
+          <a href="#requests">پیش‌فاکتورها</a>
         </nav>
       </div>
     </header>
 
     <section class="hero">
-      <div class="container hero-inner">
-        <h1>ماجراجویی بعدی‌ات را رزرو کن</h1>
+      <div class="container">
+        <h1>سامانه مدیریت ظرفیت و رزرو اردوگاه‌ها</h1>
         <p>
-          از کوهستان دماوند تا کویر مرنجاب؛ اردوگاه دلخواهت را انتخاب کن،
-          تاریخ سفر را مشخص کن و در چند ثانیه رزرو کن.
+          رزرو یکپارچهٔ اتاق (بر اساس شب)، سالن و کلاس (بر اساس تایم‌اسلات) و وعده‌های
+          غذایی (بر اساس وعده)، همراه با جلوگیری از تداخل، تخفیف و صدور پیش‌فاکتور.
         </p>
-        <a class="btn btn-primary btn-lg" href="#camps">مشاهده اردوگاه‌ها</a>
       </div>
     </section>
 
-    <main class="container">
-      <section id="camps" class="section">
-        <h2 class="section-title">اردوگاه‌های موجود</h2>
-        <div id="camps-grid" class="camps-grid">
-          <p class="loading">در حال بارگذاری…</p>
-        </div>
-      </section>
+    <main class="container layout">
+      <div class="main-col">
+        <section id="resources" class="section">
+          <div class="section-head">
+            <h2 class="section-title">منابع اردوگاه</h2>
+            <div class="filters">
+              <select id="camp-filter"></select>
+              <select id="type-filter"></select>
+            </div>
+          </div>
+          <div id="resources-grid" class="resources-grid">
+            <p class="loading">در حال بارگذاری…</p>
+          </div>
+        </section>
 
-      <section id="how" class="section how">
-        <h2 class="section-title">مراحل رزرو</h2>
-        <div class="steps">
-          <div class="step"><span class="step-num">۱</span><p>اردوگاه مورد نظرت را انتخاب کن</p></div>
-          <div class="step"><span class="step-num">۲</span><p>تاریخ و تعداد نفرات را وارد کن</p></div>
-          <div class="step"><span class="step-num">۳</span><p>مشخصاتت را ثبت و رزرو را نهایی کن</p></div>
-        </div>
-      </section>
+        <section id="requests" class="section">
+          <h2 class="section-title">درخواست‌ها و پیش‌فاکتورها</h2>
+          <div id="requests-list" class="requests-list">
+            <p class="muted">هنوز درخواستی ثبت نشده است.</p>
+          </div>
+        </section>
+      </div>
 
-      <section id="reservations" class="section">
-        <h2 class="section-title">رزروهای من</h2>
-        <div id="reservations-list" class="reservations-list">
-          <p class="muted">هنوز رزروی ثبت نشده است.</p>
+      <aside id="course" class="cart">
+        <h2 class="cart-title">دورهٔ در حال ساخت</h2>
+
+        <div class="field">
+          <label>عنوان دوره</label>
+          <input id="course-title" type="text" placeholder="مثلاً اردوی جهادی بهاره" />
         </div>
-      </section>
+        <div class="field-row">
+          <div class="field">
+            <label>مسئول دوره</label>
+            <input id="cust-name" type="text" placeholder="نام و نام خانوادگی" />
+          </div>
+          <div class="field">
+            <label>شماره تماس</label>
+            <input id="cust-phone" type="tel" placeholder="09xxxxxxxxx" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>کد ملی مسئول</label>
+            <input id="cust-nid" type="text" placeholder="اختیاری" />
+          </div>
+          <div class="field">
+            <label>تعداد اعضا</label>
+            <input id="cust-members" type="number" min="1" placeholder="اختیاری" />
+          </div>
+        </div>
+        <div class="field">
+          <label>کد تخفیف</label>
+          <select id="discount-select"><option value="">بدون تخفیف</option></select>
+        </div>
+
+        <h3 class="cart-subtitle">آیتم‌های انتخاب‌شده</h3>
+        <div id="cart-items" class="cart-items">
+          <p class="muted small">هنوز آیتمی اضافه نشده. از فهرست منابع، «افزودن به دوره» را بزنید.</p>
+        </div>
+
+        <div id="invoice-box" class="invoice-box hidden"></div>
+        <div id="cart-message" class="form-message hidden"></div>
+
+        <div class="cart-actions">
+          <button id="preview-btn" class="btn btn-ghost" disabled>دریافت پیش‌فاکتور</button>
+          <button id="submit-btn" class="btn btn-primary" disabled>ثبت درخواست دوره</button>
+        </div>
+      </aside>
     </main>
 
     <footer class="site-footer">
-      <div class="container">
-        <p>© تسنیم — سامانه رزرو آنلاین اردوگاه</p>
-      </div>
+      <div class="container"><p>© سامانه مدیریت و رزرو اردوگاه‌ها</p></div>
     </footer>
 
+    <!-- Add-item modal -->
     <div id="modal-overlay" class="modal-overlay hidden">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal" role="dialog" aria-modal="true">
         <button class="modal-close" id="modal-close" aria-label="بستن">×</button>
-        <h3 id="modal-title">رزرو اردوگاه</h3>
-        <p id="modal-camp-name" class="modal-camp-name"></p>
-
-        <form id="reservation-form" class="form">
-          <input type="hidden" id="camp-id" name="campId" />
-
-          <div class="form-row">
-            <label>
-              تاریخ ورود
-              <input type="date" id="checkIn" name="checkIn" required />
-            </label>
-            <label>
-              تاریخ خروج
-              <input type="date" id="checkOut" name="checkOut" required />
-            </label>
-          </div>
-
-          <div class="form-row">
-            <label>
-              تعداد نفرات
-              <input type="number" id="guests" name="guests" min="1" value="2" required />
-            </label>
-            <label>
-              نام و نام خانوادگی
-              <input type="text" id="guestName" name="guestName" placeholder="مثلاً علی رضایی" required />
-            </label>
-          </div>
-
-          <label>
-            شماره تماس
-            <input type="tel" id="phone" name="phone" placeholder="09xxxxxxxxx" required />
-          </label>
-
-          <div id="price-preview" class="price-preview hidden"></div>
-          <div id="form-message" class="form-message hidden"></div>
-
-          <button type="submit" class="btn btn-primary btn-block" id="submit-btn">
-            ثبت نهایی رزرو
-          </button>
-        </form>
+        <h3 id="modal-title">افزودن به دوره</h3>
+        <p id="modal-sub" class="modal-sub"></p>
+        <div id="modal-body" class="form"></div>
+        <div id="modal-message" class="form-message hidden"></div>
+        <button id="modal-add" class="btn btn-primary btn-block">افزودن به دوره</button>
       </div>
     </div>
 

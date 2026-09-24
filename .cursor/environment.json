@@ -1,5 +1,5 @@
 {
-  "name": "Tasnim Camp Reservation",
+  "name": "Camp Reservation Management System",
   "install": "npm install",
   "terminals": [
     {

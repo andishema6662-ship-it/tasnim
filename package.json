@@ -1,7 +1,7 @@
 {
   "name": "tasnim-camp-reservation",
-  "version": "1.0.0",
-  "description": "سامانه رزرو آنلاین اردوگاه — Online campground reservation system",
+  "version": "2.0.0",
+  "description": "سامانه مدیریت ظرفیت و رزرو اردوگاه‌های آموزشی — Educational camp capacity & reservation system",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
