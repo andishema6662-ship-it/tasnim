@@ -6,7 +6,14 @@ const state = {
   camps: [],
   resources: [],
   cart: [],
-  modalResource: null,
+  pickerTypes: [],
+};
+
+// Which resource types each "add" button offers.
+const PICKER_MODES = {
+  stay: { title: "افزودن اقامت (اتاق / سوئیت)", types: ["room", "suite"] },
+  space: { title: "افزودن سالن یا کلاس", types: ["class", "hall", "amphitheater", "pool"] },
+  meal: { title: "افزودن وعدهٔ غذایی", types: ["dining"] },
 };
 
 function toFa(v) {
@@ -37,17 +44,10 @@ async function init() {
   state.camps = await (await fetch("/api/camps")).json();
   state.resources = await (await fetch("/api/resources")).json();
 
-  const campFilter = el("#camp-filter");
-  campFilter.innerHTML =
+  // Picker camp dropdown
+  el("#pk-camp").innerHTML =
     '<option value="">همه اردوگاه‌ها</option>' +
     state.camps.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
-
-  const typeFilter = el("#type-filter");
-  typeFilter.innerHTML =
-    '<option value="">همه انواع</option>' +
-    Object.entries(state.meta.resourceTypeLabels)
-      .map(([k, v]) => `<option value="${k}">${v}</option>`)
-      .join("");
 
   const discountSelect = el("#discount-select");
   discountSelect.innerHTML =
@@ -56,11 +56,15 @@ async function init() {
       .map((d) => `<option value="${d.code}">${d.title} (${toFa(d.percent)}٪)</option>`)
       .join("");
 
-  campFilter.addEventListener("change", renderResources);
-  typeFilter.addEventListener("change", renderResources);
   discountSelect.addEventListener("change", () => {
     if (state.cart.length) previewInvoice();
   });
+
+  document.querySelectorAll("[data-add]").forEach((b) =>
+    b.addEventListener("click", () => openPicker(b.dataset.add))
+  );
+  el("#pk-camp").addEventListener("change", populatePickerResources);
+  el("#pk-resource").addEventListener("change", renderPickerFields);
   el("#modal-close").addEventListener("click", closeModal);
   el("#modal-overlay").addEventListener("click", (e) => {
     if (e.target.id === "modal-overlay") closeModal();
@@ -74,7 +78,6 @@ async function init() {
     if (e.target.id === "lightbox") closeLightbox();
   });
 
-  renderResources();
   loadRequests();
   loadCampShowcase();
 }
@@ -153,66 +156,52 @@ function closeLightbox() {
   el("#lb-img").src = "";
 }
 
-function filteredResources() {
-  const camp = el("#camp-filter").value;
-  const type = el("#type-filter").value;
+function openPicker(mode) {
+  const cfg = PICKER_MODES[mode];
+  if (!cfg) return;
+  state.pickerTypes = cfg.types;
+  el("#modal-title").textContent = cfg.title;
+  el("#modal-message").className = "form-message hidden";
+  populatePickerResources();
+  el("#modal-overlay").classList.remove("hidden");
+}
+
+function pickerCandidates() {
+  const camp = el("#pk-camp").value;
   return state.resources.filter(
-    (r) => (!camp || r.campId === camp) && (!type || r.type === type)
+    (r) => state.pickerTypes.includes(r.type) && (!camp || r.campId === camp)
   );
 }
 
-function renderResources() {
-  const grid = el("#resources-grid");
-  const list = filteredResources();
+function populatePickerResources() {
+  const sel = el("#pk-resource");
+  const list = pickerCandidates();
   if (!list.length) {
-    grid.innerHTML = '<p class="muted">منبعی با این فیلتر یافت نشد.</p>';
+    sel.innerHTML = '<option value="">منبعی در این اردوگاه نیست</option>';
+    el("#modal-body").innerHTML = '<p class="muted small">منبعی برای این نوع در اردوگاه انتخابی موجود نیست.</p>';
     return;
   }
-  grid.innerHTML = "";
-  for (const r of list.slice(0, 60)) {
-    const typeLabel = state.meta.resourceTypeLabels[r.type] ?? r.type;
-    let priceHtml = "";
-    if (r.bookingUnit === "night") priceHtml = `<span class="res-price">${toman(r.pricePerNight)} <span>/ شب</span></span>`;
-    else if (r.bookingUnit === "slot") priceHtml = `<span class="res-price">${toman(r.pricePerSlot)} <span>/ سانس</span></span>`;
-    else priceHtml = `<span class="res-price">قیمت بر اساس وعده</span>`;
-
-    const card = document.createElement("article");
-    card.className = "res-card";
-    card.innerHTML = `
-      <div class="res-top">
-        <h3 class="res-name">${r.name}</h3>
-        <span class="res-type">${typeLabel}</span>
-      </div>
-      <div class="res-building">🏢 ${r.building}${r.floor && r.floor !== "-" ? " · طبقه " + r.floor : ""}</div>
-      <div class="res-meta">
-        <span>ظرفیت: ${toFa(r.capacity)} ${r.bookingUnit === "night" ? "تخت" : "نفر"}</span>
-      </div>
-      <div class="res-meta">${priceHtml}</div>
-      <button class="btn btn-primary btn-sm add-btn" data-id="${r.id}">افزودن به دوره</button>
-    `;
-    grid.appendChild(card);
-  }
-  const count = list.length;
-  if (count > 60) {
-    const note = document.createElement("p");
-    note.className = "muted small";
-    note.textContent = `نمایش ۶۰ مورد از ${toFa(count)} منبع. برای محدودتر شدن از فیلترها استفاده کنید.`;
-    grid.appendChild(note);
-  }
-  grid.querySelectorAll(".add-btn").forEach((b) =>
-    b.addEventListener("click", () => openModal(b.dataset.id))
-  );
+  sel.innerHTML = list
+    .map((r) => {
+      const typeLabel = state.meta.resourceTypeLabels[r.type] ?? r.type;
+      return `<option value="${r.id}">${r.name} — ${typeLabel} (${r.building})</option>`;
+    })
+    .join("");
+  renderPickerFields();
 }
 
-function openModal(resourceId) {
-  const r = state.resources.find((x) => x.id === resourceId);
-  state.modalResource = r;
-  el("#modal-sub").textContent = `${r.name} — ${r.building}`;
-  el("#modal-message").className = "form-message hidden";
-  const body = el("#modal-body");
+function currentPickerResource() {
+  return state.resources.find((x) => x.id === el("#pk-resource").value) || null;
+}
 
+function renderPickerFields() {
+  const r = currentPickerResource();
+  const body = el("#modal-body");
+  if (!r) {
+    body.innerHTML = "";
+    return;
+  }
   if (r.bookingUnit === "night") {
-    el("#modal-title").textContent = "رزرو اقامت (بر اساس شب)";
     body.innerHTML = `
       <div class="form-row">
         <label>تاریخ ورود<input type="date" id="m-checkin" value="${todayISO(1)}"></label>
@@ -220,9 +209,9 @@ function openModal(resourceId) {
       </div>
       <label>تعداد نفرات (ظرفیت ${toFa(r.capacity)} تخت)
         <input type="number" id="m-guests" min="1" max="${r.capacity}" value="2"></label>
+      <div class="picker-price">قیمت هر شب: ${toman(r.pricePerNight)}</div>
     `;
   } else if (r.bookingUnit === "slot") {
-    el("#modal-title").textContent = "رزرو سالن/کلاس (بر اساس سانس)";
     body.innerHTML = `
       <label>تاریخ استفاده<input type="date" id="m-date" value="${todayISO(1)}"></label>
       <div class="field"><label>سانس‌ها</label>
@@ -235,9 +224,9 @@ function openModal(resourceId) {
             .join("")}
         </div>
       </div>
+      <div class="picker-price">قیمت هر سانس: ${toman(r.pricePerSlot)}</div>
     `;
   } else {
-    el("#modal-title").textContent = "رزرو وعدهٔ غذایی (بر اساس وعده)";
     body.innerHTML = `
       <label>تاریخ<input type="date" id="m-date" value="${todayISO(1)}"></label>
       <label>وعده
@@ -250,12 +239,10 @@ function openModal(resourceId) {
       <label>تعداد نفرات<input type="number" id="m-persons" min="1" value="20"></label>
     `;
   }
-  el("#modal-overlay").classList.remove("hidden");
 }
 
 function closeModal() {
   el("#modal-overlay").classList.add("hidden");
-  state.modalResource = null;
 }
 
 function showModalError(msg) {
@@ -265,8 +252,8 @@ function showModalError(msg) {
 }
 
 async function addToCartFromModal() {
-  const r = state.modalResource;
-  if (!r) return;
+  const r = currentPickerResource();
+  if (!r) return showModalError("یک منبع انتخاب کنید.");
   let item;
 
   if (r.bookingUnit === "night") {
@@ -328,7 +315,7 @@ function cartItemText(item) {
 function renderCart() {
   const box = el("#cart-items");
   if (!state.cart.length) {
-    box.innerHTML = '<p class="muted small">هنوز آیتمی اضافه نشده. از فهرست منابع، «افزودن به دوره» را بزنید.</p>';
+    box.innerHTML = '<p class="muted small">هنوز آیتمی اضافه نشده. با دکمه‌های بالا آیتم‌های دوره را اضافه کنید.</p>';
     el("#invoice-box").className = "invoice-box hidden";
   } else {
     box.innerHTML = "";
@@ -441,11 +428,37 @@ async function submitRequest() {
 }
 
 const STATUS_LABELS = {
-  pending: "در انتظار تایید",
-  approved: "تاییدشده",
+  pending: "در انتظار بررسی",
+  approved: "تاییدشده — آمادهٔ پرداخت",
   paid: "پرداخت‌شده",
   rejected: "رد شده",
 };
+
+// A three-step tracker: submit -> review/approve -> final payment.
+function renderStepper(status) {
+  const reviewed = status === "approved" || status === "paid";
+  const paid = status === "paid";
+  const rejected = status === "rejected";
+
+  const s1 = "done";
+  let s2 = "idle";
+  if (rejected) s2 = "error";
+  else if (reviewed) s2 = "done";
+  else s2 = "current";
+  let s3 = "idle";
+  if (paid) s3 = "done";
+  else if (status === "approved") s3 = "current";
+
+  const step = (cls, num, label) =>
+    `<div class="tstep ${cls}"><span class="tnum">${cls === "done" ? "✓" : cls === "error" ? "×" : num}</span><span class="tlabel">${label}</span></div>`;
+  return `<div class="tracker">
+    ${step(s1, "۱", "ثبت درخواست")}
+    <span class="tline ${reviewed ? "done" : rejected ? "error" : ""}"></span>
+    ${step(s2, "۲", rejected ? "رد شد" : "بررسی و تایید")}
+    <span class="tline ${paid ? "done" : ""}"></span>
+    ${step(s3, "۳", "پرداخت نهایی")}
+  </div>`;
+}
 
 async function loadRequests() {
   const list = await (await fetch("/api/requests")).json();
@@ -464,19 +477,25 @@ async function loadRequests() {
         return r ? r.name : it.resourceId;
       })
       .join("، ");
-    let actions = "";
+
+    // Payment button: inactive until an admin approves the request.
+    let payBtn = "";
     if (req.status === "pending") {
-      actions = `
-        <button class="btn btn-info btn-sm" data-act="approve" data-id="${req.id}">تایید مدیر</button>
-        <button class="btn btn-danger btn-sm" data-act="reject" data-id="${req.id}">رد</button>`;
+      payBtn = `<button class="btn btn-primary btn-sm" disabled>پرداخت نهایی (در انتظار تایید مدیر)</button>`;
     } else if (req.status === "approved") {
-      actions = `<button class="btn btn-primary btn-sm" data-act="pay" data-id="${req.id}">ثبت پرداخت</button>`;
+      payBtn = `<button class="btn btn-primary btn-sm" data-act="pay" data-id="${req.id}">پرداخت نهایی</button>`;
+    } else if (req.status === "paid") {
+      payBtn = `<button class="btn btn-primary btn-sm" disabled>پرداخت انجام شد ✓</button>`;
+    } else if (req.status === "rejected") {
+      payBtn = `<span class="muted small">این درخواست رد شده است.</span>`;
     }
+
     div.innerHTML = `
       <div class="req-head">
         <span class="req-title">${req.courseTitle} — ${req.customer.name}</span>
         <span class="badge ${req.status}">${STATUS_LABELS[req.status]}</span>
       </div>
+      ${renderStepper(req.status)}
       <div class="req-detail">
         ${toFa(req.items.length)} آیتم: ${itemsSummary}<br>
         کد: ${req.id}${req.customer.memberCount ? " · اعضا: " + toFa(req.customer.memberCount) : ""}
@@ -487,23 +506,23 @@ async function loadRequests() {
         · مالیات: ${toman(req.invoice.tax)} ·
         <span class="req-total">قابل پرداخت: ${toman(req.invoice.total)}</span>
       </div>
-      <div class="req-actions">${actions}</div>
+      <div class="req-actions">${payBtn}</div>
     `;
     box.appendChild(div);
   }
-  box.querySelectorAll("[data-act]").forEach((b) =>
-    b.addEventListener("click", () => requestAction(b.dataset.id, b.dataset.act))
+  box.querySelectorAll('[data-act="pay"]').forEach((b) =>
+    b.addEventListener("click", () => payRequest(b.dataset.id))
   );
 }
 
-async function requestAction(id, act) {
-  const res = await fetch(`/api/requests/${id}/${act}`, { method: "POST" });
+async function payRequest(id) {
+  const res = await fetch(`/api/requests/${id}/pay`, { method: "POST" });
   const data = await res.json();
   if (!res.ok) {
-    showToast(data.error || "عملیات ناموفق بود");
+    showToast(data.error || "پرداخت ناموفق بود");
     return;
   }
-  showToast(`وضعیت به «${STATUS_LABELS[data.status]}» تغییر کرد`);
+  showToast("پرداخت با موفقیت انجام شد ✅");
   loadRequests();
 }
 
