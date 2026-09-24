@@ -1,0 +1,19 @@
+{
+  "name": "tasnim-camp-reservation",
+  "version": "1.0.0",
+  "description": "سامانه رزرو آنلاین اردوگاه — Online campground reservation system",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "license": "MIT"
+}
