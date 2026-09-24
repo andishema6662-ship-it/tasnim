@@ -15,6 +15,7 @@
         </div>
         <nav class="nav">
           <a href="#dashboard">داشبورد</a>
+          <a href="#camps">اردوگاه‌ها</a>
           <a href="#requests">درخواست‌ها</a>
           <a href="#finance">گزارش مالی</a>
           <a href="#occupancy">اشغال ظرفیت</a>
@@ -27,6 +28,16 @@
       <section id="dashboard" class="section">
         <h2 class="section-title">داشبورد مدیریت</h2>
         <div id="kpi-grid" class="kpi-grid">
+          <p class="loading">در حال بارگذاری…</p>
+        </div>
+      </section>
+
+      <section id="camps" class="section">
+        <div class="section-head">
+          <h2 class="section-title">مدیریت اردوگاه‌ها</h2>
+          <button id="add-camp-btn" class="btn btn-primary">+ افزودن اردوگاه</button>
+        </div>
+        <div id="camps-admin-list" class="camps-admin-list">
           <p class="loading">در حال بارگذاری…</p>
         </div>
       </section>
@@ -82,6 +93,63 @@
     <footer class="site-footer">
       <div class="container"><p>© پنل مدیریت سامانه اردوگاه‌ها</p></div>
     </footer>
+
+    <!-- Camp editor modal -->
+    <div id="camp-modal-overlay" class="modal-overlay hidden">
+      <div class="modal modal-wide" role="dialog" aria-modal="true">
+        <button class="modal-close" id="camp-modal-close" aria-label="بستن">×</button>
+        <h3 id="camp-modal-title">افزودن اردوگاه</h3>
+
+        <div class="form">
+          <div class="field">
+            <label>نام اردوگاه</label>
+            <input type="text" id="cf-name" placeholder="مثلاً مجتمع آموزشی ..." />
+          </div>
+          <div class="field">
+            <label>موقعیت</label>
+            <input type="text" id="cf-location" placeholder="استان، شهر" />
+          </div>
+          <div class="field">
+            <label>معرفی اردوگاه</label>
+            <textarea id="cf-description" rows="3" placeholder="توضیح کوتاه دربارهٔ اردوگاه"></textarea>
+          </div>
+
+          <h4 class="form-sub">ظرفیت‌ها</h4>
+          <div class="field-row">
+            <div class="field"><label>ظرفیت پذیرش (نفر)</label><input type="number" id="cf-reception" min="0" value="0" /></div>
+            <div class="field"><label>ظرفیت سالن همایش/اجلاس</label><input type="number" id="cf-conference" min="0" value="0" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>ظرفیت آمفی‌تئاتر</label><input type="number" id="cf-amphitheater" min="0" value="0" /></div>
+            <div class="field"><label>ظرفیت نمازخانه</label><input type="number" id="cf-prayer" min="0" value="0" /></div>
+          </div>
+          <div class="field">
+            <label>ظرفیت سالن سلف‌سرویس</label><input type="number" id="cf-selfservice" min="0" value="0" />
+          </div>
+
+          <div class="field">
+            <label>کلاس‌ها (تعداد و ظرفیت هر کلاس)</label>
+            <div id="cf-classes"></div>
+            <button type="button" id="cf-add-class" class="btn btn-ghost btn-sm">+ افزودن کلاس</button>
+          </div>
+
+          <div id="cf-images-block" class="field">
+            <label>تصاویر بخش‌ها</label>
+            <div class="img-uploader">
+              <select id="cf-img-section"></select>
+              <input type="text" id="cf-img-caption" placeholder="توضیح تصویر (اختیاری)" />
+              <input type="file" id="cf-img-file" accept="image/*" />
+              <button type="button" id="cf-img-add" class="btn btn-info btn-sm">بارگذاری</button>
+            </div>
+            <p id="cf-img-hint" class="muted small">برای بارگذاری تصویر، ابتدا اردوگاه را ذخیره کنید.</p>
+            <div id="cf-img-gallery" class="img-gallery"></div>
+          </div>
+
+          <div id="camp-modal-message" class="form-message hidden"></div>
+          <button id="cf-save" class="btn btn-primary btn-block">ذخیره اردوگاه</button>
+        </div>
+      </div>
+    </div>
 
     <div id="toast" class="toast hidden"></div>
     <script src="admin.js"></script>

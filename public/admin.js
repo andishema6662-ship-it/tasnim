@@ -1,7 +1,7 @@
 const faNum = new Intl.NumberFormat("fa-IR");
 const el = (s) => document.querySelector(s);
 
-const state = { meta: null, resources: [] };
+const state = { meta: null, resources: [], imageSections: [], editingCampId: null };
 
 const STATUS_LABELS = {
   pending: "در انتظار تایید",
@@ -43,9 +43,276 @@ async function init() {
   el("#occ-camp").addEventListener("change", loadOccupancy);
   el("#occ-type").addEventListener("change", loadOccupancy);
 
+  // Camp management wiring
+  state.imageSections = (await (await fetch("/api/camp-profiles/meta")).json()).imageSections;
+  el("#cf-img-section").innerHTML = state.imageSections
+    .map((s) => `<option value="${s.id}">${s.label}</option>`)
+    .join("");
+  el("#add-camp-btn").addEventListener("click", () => openCampModal(null));
+  el("#camp-modal-close").addEventListener("click", closeCampModal);
+  el("#camp-modal-overlay").addEventListener("click", (e) => {
+    if (e.target.id === "camp-modal-overlay") closeCampModal();
+  });
+  el("#cf-add-class").addEventListener("click", () => addClassRow());
+  el("#cf-save").addEventListener("click", saveCamp);
+  el("#cf-img-add").addEventListener("click", uploadImage);
+
   loadStats();
   loadRequests();
   loadOccupancy();
+  loadCampProfiles();
+}
+
+// ---- Camp profiles management ----------------------------------------------
+const CAP_ITEMS = [
+  ["reception", "ظرفیت پذیرش", "نفر"],
+  ["conferenceHall", "سالن همایش", "نفر"],
+  ["amphitheater", "آمفی‌تئاتر", "نفر"],
+  ["prayerRoom", "نمازخانه", "نفر"],
+  ["selfService", "سلف‌سرویس", "نفر"],
+];
+
+function capValue(caps, key) {
+  if (key === "reception") return caps.reception || 0;
+  return caps[key]?.capacity || 0;
+}
+
+async function loadCampProfiles() {
+  const camps = await (await fetch("/api/camp-profiles")).json();
+  const box = el("#camps-admin-list");
+  if (!camps.length) {
+    box.innerHTML = '<p class="muted">هنوز اردوگاهی تعریف نشده است.</p>';
+    return;
+  }
+  box.innerHTML = "";
+  for (const c of camps) {
+    const cover = c.images.find((i) => i.section === "cover") || c.images[0];
+    const caps = c.capacities || {};
+    const chips = CAP_ITEMS.filter((it) => capValue(caps, it[0]) > 0)
+      .map((it) => `<span class="chip">${it[1]}: ${toFa(capValue(caps, it[0]))} ${it[2]}</span>`)
+      .join("");
+    const classesChip = caps.classes?.length
+      ? `<span class="chip">${toFa(caps.classes.length)} کلاس</span>`
+      : "";
+    const card = document.createElement("div");
+    card.className = "camp-admin-card";
+    card.innerHTML = `
+      <div class="cac-thumb">${cover ? `<img src="${cover.dataUrl}" alt="">` : "🏕️"}</div>
+      <div class="cac-body">
+        <div class="cac-name">${c.name}</div>
+        <div class="cac-loc">📍 ${c.location || "—"}</div>
+        <div class="cac-caps">${chips}${classesChip}<span class="chip">${toFa(c.images.length)} تصویر</span></div>
+      </div>
+      <div class="cac-actions">
+        <button class="btn btn-info btn-sm" data-edit="${c.id}">ویرایش</button>
+        <button class="btn btn-danger btn-sm" data-del="${c.id}">حذف</button>
+      </div>
+    `;
+    box.appendChild(card);
+  }
+  box.querySelectorAll("[data-edit]").forEach((b) =>
+    b.addEventListener("click", () => openCampModal(b.dataset.edit))
+  );
+  box.querySelectorAll("[data-del]").forEach((b) =>
+    b.addEventListener("click", () => deleteCamp(b.dataset.del))
+  );
+}
+
+function addClassRow(name = "", capacity = "") {
+  const wrap = el("#cf-classes");
+  const row = document.createElement("div");
+  row.className = "cf-class-row";
+  row.innerHTML = `
+    <input type="text" class="cf-class-name" placeholder="نام کلاس" value="${name}">
+    <input type="number" class="cf-class-cap" placeholder="ظرفیت" min="0" value="${capacity}">
+    <button type="button" title="حذف">×</button>
+  `;
+  row.querySelector("button").addEventListener("click", () => row.remove());
+  wrap.appendChild(row);
+}
+
+async function openCampModal(id) {
+  state.editingCampId = id;
+  el("#camp-modal-message").className = "form-message hidden";
+  el("#cf-classes").innerHTML = "";
+  el("#cf-img-gallery").innerHTML = "";
+  ["name", "location", "description"].forEach((f) => (el(`#cf-${f}`).value = ""));
+  ["reception", "conference", "amphitheater", "prayer", "selfservice"].forEach(
+    (f) => (el(`#cf-${f}`).value = 0)
+  );
+
+  if (id) {
+    el("#camp-modal-title").textContent = "ویرایش اردوگاه";
+    const c = await (await fetch(`/api/camp-profiles/${id}`)).json();
+    el("#cf-name").value = c.name;
+    el("#cf-location").value = c.location || "";
+    el("#cf-description").value = c.description || "";
+    const caps = c.capacities || {};
+    el("#cf-reception").value = caps.reception || 0;
+    el("#cf-conference").value = caps.conferenceHall?.capacity || 0;
+    el("#cf-amphitheater").value = caps.amphitheater?.capacity || 0;
+    el("#cf-prayer").value = caps.prayerRoom?.capacity || 0;
+    el("#cf-selfservice").value = caps.selfService?.capacity || 0;
+    (caps.classes || []).forEach((cl) => addClassRow(cl.name, cl.capacity));
+    el("#cf-img-hint").classList.add("hidden");
+    renderGallery(c.images);
+  } else {
+    el("#camp-modal-title").textContent = "افزودن اردوگاه";
+    addClassRow();
+    el("#cf-img-hint").classList.remove("hidden");
+  }
+  el("#camp-modal-overlay").classList.remove("hidden");
+}
+
+function closeCampModal() {
+  el("#camp-modal-overlay").classList.add("hidden");
+  state.editingCampId = null;
+}
+
+function collectPayload() {
+  const classes = [...document.querySelectorAll(".cf-class-row")]
+    .map((r) => ({
+      name: r.querySelector(".cf-class-name").value.trim(),
+      capacity: Number(r.querySelector(".cf-class-cap").value) || 0,
+    }))
+    .filter((c) => c.name || c.capacity > 0);
+  return {
+    name: el("#cf-name").value.trim(),
+    location: el("#cf-location").value.trim(),
+    description: el("#cf-description").value.trim(),
+    capacities: {
+      reception: Number(el("#cf-reception").value) || 0,
+      classes,
+      conferenceHall: { capacity: Number(el("#cf-conference").value) || 0 },
+      amphitheater: { capacity: Number(el("#cf-amphitheater").value) || 0 },
+      prayerRoom: { capacity: Number(el("#cf-prayer").value) || 0 },
+      selfService: { capacity: Number(el("#cf-selfservice").value) || 0 },
+    },
+  };
+}
+
+async function saveCamp() {
+  const msg = el("#camp-modal-message");
+  const payload = collectPayload();
+  if (!payload.name) {
+    msg.textContent = "نام اردوگاه الزامی است.";
+    msg.className = "form-message error";
+    return;
+  }
+  const id = state.editingCampId;
+  const res = await fetch(id ? `/api/camp-profiles/${id}` : "/api/camp-profiles", {
+    method: id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "ذخیره ناموفق بود.";
+    msg.className = "form-message error";
+    return;
+  }
+  showToast(id ? "اردوگاه ویرایش شد" : "اردوگاه اضافه شد");
+  if (!id) {
+    // switch to edit mode so images can be uploaded
+    state.editingCampId = data.id;
+    el("#camp-modal-title").textContent = "ویرایش اردوگاه";
+    el("#cf-img-hint").classList.add("hidden");
+    renderGallery(data.images || []);
+  }
+  loadCampProfiles();
+  loadStats();
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImage() {
+  const msg = el("#camp-modal-message");
+  const id = state.editingCampId;
+  if (!id) {
+    msg.textContent = "ابتدا اردوگاه را ذخیره کنید، سپس تصویر بارگذاری کنید.";
+    msg.className = "form-message error";
+    return;
+  }
+  const fileInput = el("#cf-img-file");
+  const file = fileInput.files[0];
+  if (!file) {
+    msg.textContent = "یک فایل تصویر انتخاب کنید.";
+    msg.className = "form-message error";
+    return;
+  }
+  const dataUrl = await fileToDataUrl(file);
+  const res = await fetch(`/api/camp-profiles/${id}/images`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      section: el("#cf-img-section").value,
+      caption: el("#cf-img-caption").value.trim(),
+      dataUrl,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    msg.textContent = data.error || "بارگذاری تصویر ناموفق بود.";
+    msg.className = "form-message error";
+    return;
+  }
+  fileInput.value = "";
+  el("#cf-img-caption").value = "";
+  msg.className = "form-message hidden";
+  const camp = await (await fetch(`/api/camp-profiles/${id}`)).json();
+  renderGallery(camp.images);
+  loadCampProfiles();
+  showToast("تصویر بارگذاری شد");
+}
+
+function sectionLabel(id) {
+  return state.imageSections.find((s) => s.id === id)?.label ?? id;
+}
+
+function renderGallery(images) {
+  const box = el("#cf-img-gallery");
+  box.innerHTML = "";
+  for (const im of images) {
+    const div = document.createElement("div");
+    div.className = "img-thumb";
+    div.innerHTML = `
+      <span class="img-sec">${sectionLabel(im.section)}</span>
+      <button class="img-del" data-img="${im.id}" title="حذف">×</button>
+      <img src="${im.dataUrl}" alt="">
+      <div class="img-cap">${im.caption || ""}</div>
+    `;
+    box.appendChild(div);
+  }
+  box.querySelectorAll("[data-img]").forEach((b) =>
+    b.addEventListener("click", () => deleteImage(b.dataset.img))
+  );
+}
+
+async function deleteImage(imageId) {
+  const id = state.editingCampId;
+  const res = await fetch(`/api/camp-profiles/${id}/images/${imageId}`, { method: "DELETE" });
+  if (res.ok || res.status === 204) {
+    const camp = await (await fetch(`/api/camp-profiles/${id}`)).json();
+    renderGallery(camp.images);
+    loadCampProfiles();
+    showToast("تصویر حذف شد");
+  }
+}
+
+async function deleteCamp(id) {
+  const res = await fetch(`/api/camp-profiles/${id}`, { method: "DELETE" });
+  if (res.ok || res.status === 204) {
+    showToast("اردوگاه حذف شد");
+    loadCampProfiles();
+    loadStats();
+  }
 }
 
 async function loadStats() {

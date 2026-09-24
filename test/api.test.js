@@ -6,9 +6,14 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const STORE = join(__dirname, "..", "data", "store.json");
+const CAMPS = join(__dirname, "..", "data", "camps.json");
 
 // Start from a clean store so capacity/conflict assertions are deterministic.
 if (existsSync(STORE)) rmSync(STORE);
+if (existsSync(CAMPS)) rmSync(CAMPS);
+
+const PNG_1PX =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
 const app = (await import("../src/server.js")).default;
 
@@ -27,11 +32,21 @@ before(async () => {
 after(() => {
   server.close();
   if (existsSync(STORE)) rmSync(STORE);
+  if (existsSync(CAMPS)) rmSync(CAMPS);
 });
 
 async function post(path, body) {
   const res = await fetch(`${base}${path}`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return { status: res.status, body: await res.json() };
+}
+
+async function put(path, body) {
+  const res = await fetch(`${base}${path}`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -170,4 +185,72 @@ test("admin occupancy reflects bookings on a date", async () => {
   const dining = list.find((o) => o.id === "abali-dining");
   const dinner = dining.perMeal.find((m) => m.meal === "dinner");
   assert.equal(dinner.used, 20);
+});
+
+test("camp profiles are seeded", async () => {
+  const camps = await (await fetch(`${base}/api/camp-profiles`)).json();
+  assert.ok(camps.length >= 2, `expected seeded camps, got ${camps.length}`);
+  const abali = camps.find((c) => c.id === "sayyed-abali");
+  assert.ok(abali.capacities.reception > 0);
+  assert.ok(Array.isArray(abali.capacities.classes));
+});
+
+test("create, edit, and image-upload lifecycle for a camp profile", async () => {
+  // create
+  const created = await post("/api/camp-profiles", {
+    name: "اردوگاه آزمایشی شهید",
+    location: "استان تست",
+    description: "توضیح آزمایشی",
+    capacities: {
+      reception: 120,
+      classes: [
+        { name: "کلاس الف", capacity: 25 },
+        { name: "کلاس ب", capacity: 30 },
+      ],
+      conferenceHall: { capacity: 80 },
+      amphitheater: { capacity: 200 },
+      prayerRoom: { capacity: 60 },
+      selfService: { capacity: 150 },
+    },
+  });
+  assert.equal(created.status, 201);
+  const id = created.body.id;
+  assert.equal(created.body.capacities.reception, 120);
+  assert.equal(created.body.capacities.classes.length, 2);
+  assert.equal(created.body.capacities.amphitheater.capacity, 200);
+
+  // edit
+  const edited = await put(`/api/camp-profiles/${id}`, {
+    capacities: { reception: 200, classes: [{ name: "کلاس ج", capacity: 40 }] },
+  });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.capacities.reception, 200);
+  assert.equal(edited.body.capacities.classes.length, 1);
+
+  // upload image (valid data URL)
+  const img = await post(`/api/camp-profiles/${id}/images`, {
+    section: "amphitheater",
+    caption: "نمای آمفی‌تئاتر",
+    dataUrl: PNG_1PX,
+  });
+  assert.equal(img.status, 201);
+  assert.equal(img.body.section, "amphitheater");
+
+  // invalid image is rejected
+  const bad = await post(`/api/camp-profiles/${id}/images`, { dataUrl: "not-an-image" });
+  assert.equal(bad.status, 400);
+
+  // image appears on the camp
+  const withImg = await (await fetch(`${base}/api/camp-profiles/${id}`)).json();
+  assert.equal(withImg.images.length, 1);
+
+  // delete image
+  const delImg = await fetch(`${base}/api/camp-profiles/${id}/images/${img.body.id}`, { method: "DELETE" });
+  assert.equal(delImg.status, 204);
+
+  // delete camp
+  const delCamp = await fetch(`${base}/api/camp-profiles/${id}`, { method: "DELETE" });
+  assert.equal(delCamp.status, 204);
+  const after404 = await fetch(`${base}/api/camp-profiles/${id}`);
+  assert.equal(after404.status, 404);
 });

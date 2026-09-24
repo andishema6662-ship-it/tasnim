@@ -69,8 +69,88 @@ async function init() {
   el("#preview-btn").addEventListener("click", previewInvoice);
   el("#submit-btn").addEventListener("click", submitRequest);
 
+  el("#lb-close").addEventListener("click", closeLightbox);
+  el("#lightbox").addEventListener("click", (e) => {
+    if (e.target.id === "lightbox") closeLightbox();
+  });
+
   renderResources();
   loadRequests();
+  loadCampShowcase();
+}
+
+const CAP_LABELS = [
+  ["reception", "ظرفیت پذیرش"],
+  ["conferenceHall", "سالن همایش"],
+  ["amphitheater", "آمفی‌تئاتر"],
+  ["prayerRoom", "نمازخانه"],
+  ["selfService", "سلف‌سرویس"],
+];
+
+function capVal(caps, key) {
+  if (key === "reception") return caps.reception || 0;
+  return caps[key]?.capacity || 0;
+}
+
+async function loadCampShowcase() {
+  const box = el("#camps-showcase");
+  if (!box) return;
+  const camps = await (await fetch("/api/camp-profiles")).json();
+  if (!camps.length) {
+    box.innerHTML = '<p class="muted">هنوز اردوگاهی معرفی نشده است.</p>';
+    return;
+  }
+  box.innerHTML = "";
+  for (const c of camps) {
+    const caps = c.capacities || {};
+    const cover = c.images.find((i) => i.section === "cover") || c.images[0];
+    const gallery = c.images.filter((i) => i !== cover).slice(0, 6);
+    const capCards = CAP_LABELS.filter(([k]) => capVal(caps, k) > 0)
+      .map(
+        ([k, lbl]) =>
+          `<div class="cap-item"><div class="cap-val">${toFa(capVal(caps, k))}</div><div class="cap-lbl">${lbl}</div></div>`
+      )
+      .join("");
+    const classesLine = caps.classes?.length
+      ? `<div class="showcase-classes">🎓 ${toFa(caps.classes.length)} کلاس آموزشی${
+          caps.classes.length
+            ? " (" + caps.classes.map((cl) => `${cl.name}: ${toFa(cl.capacity)}`).join("، ") + ")"
+            : ""
+        }</div>`
+      : "";
+    const galleryHtml = gallery.length
+      ? `<div class="showcase-gallery">${gallery
+          .map((im) => `<img src="${im.dataUrl}" alt="${im.caption || ""}" data-full="${im.dataUrl}">`)
+          .join("")}</div>`
+      : "";
+
+    const card = document.createElement("article");
+    card.className = "showcase-card";
+    card.innerHTML = `
+      <div class="showcase-cover">${cover ? `<img src="${cover.dataUrl}" alt="${c.name}">` : "🏕️"}</div>
+      <div class="showcase-body">
+        <h3 class="showcase-name">${c.name}</h3>
+        <div class="showcase-loc">📍 ${c.location || "—"}</div>
+        <p class="showcase-desc">${c.description || ""}</p>
+        <div class="cap-grid">${capCards}</div>
+        ${classesLine}
+        ${galleryHtml}
+      </div>
+    `;
+    box.appendChild(card);
+  }
+  box.querySelectorAll("[data-full]").forEach((img) =>
+    img.addEventListener("click", () => openLightbox(img.dataset.full))
+  );
+}
+
+function openLightbox(src) {
+  el("#lb-img").src = src;
+  el("#lightbox").classList.remove("hidden");
+}
+function closeLightbox() {
+  el("#lightbox").classList.add("hidden");
+  el("#lb-img").src = "";
 }
 
 function filteredResources() {

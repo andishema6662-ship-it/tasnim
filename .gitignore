@@ -1,6 +1,7 @@
 node_modules/
 data/reservations.json
 data/store.json
+data/camps.json
 npm-debug.log*
 *.log
 .DS_Store

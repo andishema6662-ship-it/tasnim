@@ -20,13 +20,35 @@ import {
   getOccupancy,
 } from "./engine.js";
 import { getRequests, addRequest, updateRequest } from "./store.js";
+import {
+  getCampProfiles,
+  getCampProfile,
+  createCampProfile,
+  updateCampProfile,
+  deleteCampProfile,
+  addCampImage,
+  deleteCampImage,
+  IMAGE_SECTIONS,
+} from "./campsStore.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+// Larger limit so base64 image uploads for camp profiles fit in the JSON body.
+app.use(express.json({ limit: "25mb" }));
 app.use(express.static(join(__dirname, "..", "public")));
+
+const IMAGE_SECTION_LABELS = {
+  cover: "تصویر شاخص",
+  reception: "فضای پذیرش/اقامت",
+  class: "کلاس آموزشی",
+  conference: "سالن همایش/اجلاس",
+  amphitheater: "آمفی‌تئاتر",
+  prayer: "نمازخانه",
+  selfService: "سالن سلف‌سرویس",
+  other: "سایر",
+};
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
@@ -163,6 +185,61 @@ app.get("/api/admin/occupancy", (req, res) => {
   const { date, campId, type } = req.query;
   if (!date) return res.status(400).json({ error: "پارامتر date الزامی است." });
   res.json(getOccupancy(date, { campId, type }));
+});
+
+// ---- Camp profiles (تعریف/ویرایش اردوگاه‌ها + تصاویر و ظرفیت‌ها) -----------
+app.get("/api/camp-profiles/meta", (_req, res) => {
+  res.json({
+    imageSections: IMAGE_SECTIONS.map((id) => ({ id, label: IMAGE_SECTION_LABELS[id] })),
+  });
+});
+
+app.get("/api/camp-profiles", (_req, res) => {
+  res.json(getCampProfiles());
+});
+
+app.get("/api/camp-profiles/:id", (req, res) => {
+  const camp = getCampProfile(req.params.id);
+  if (!camp) return res.status(404).json({ error: "اردوگاه یافت نشد." });
+  res.json(camp);
+});
+
+app.post("/api/camp-profiles", (req, res) => {
+  const { name, location, description, capacities } = req.body ?? {};
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "نام اردوگاه الزامی است." });
+  }
+  const camp = createCampProfile({ name, location, description, capacities });
+  res.status(201).json(camp);
+});
+
+app.put("/api/camp-profiles/:id", (req, res) => {
+  const updated = updateCampProfile(req.params.id, req.body ?? {});
+  if (!updated) return res.status(404).json({ error: "اردوگاه یافت نشد." });
+  res.json(updated);
+});
+
+app.delete("/api/camp-profiles/:id", (req, res) => {
+  const ok = deleteCampProfile(req.params.id);
+  if (!ok) return res.status(404).json({ error: "اردوگاه یافت نشد." });
+  res.status(204).end();
+});
+
+app.post("/api/camp-profiles/:id/images", (req, res) => {
+  const { section, caption, dataUrl } = req.body ?? {};
+  try {
+    const image = addCampImage(req.params.id, { section, caption, dataUrl });
+    if (!image) return res.status(404).json({ error: "اردوگاه یافت نشد." });
+    res.status(201).json(image);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete("/api/camp-profiles/:id/images/:imageId", (req, res) => {
+  const ok = deleteCampImage(req.params.id, req.params.imageId);
+  if (!ok) return res.status(404).json({ error: "تصویر یافت نشد." });
+  res.status(204).end();
 });
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
