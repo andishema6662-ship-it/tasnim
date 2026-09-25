@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { suggestDraft } from "@/lib/assist";
-import { faDate, faNum, htmlToPlainText, wordCountFromHtml } from "@/lib/format";
+import { faDate, faNum, htmlToPlainText, wordCount, wordCountFromHtml } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { Story } from "@/lib/types";
@@ -112,9 +112,11 @@ export function AiScreen() {
       <Field label="تیتر خبر">
         <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="تیتر خبر" aria-label="تیتر خبر" />
       </Field>
+      <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCount(form.title))}</p>
       <Field label="لید / خلاصه">
         <TextArea value={form.lead} onChange={(event) => setForm({ ...form, lead: event.target.value })} />
       </Field>
+      <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCount(form.lead))}</p>
       <div className="space-y-1">
         <span className="text-sm font-medium">متن خبر</span>
         <StoryBodyEditor value={form.body} onChange={(body) => setForm({ ...form, body })} aria-label="متن خبر" />
