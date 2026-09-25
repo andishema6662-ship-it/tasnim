@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { suggestDraft } from "@/lib/assist";
-import { faDate, faNum } from "@/lib/format";
+import { faDate, faNum, wordCount } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { Story } from "@/lib/types";
@@ -108,15 +108,16 @@ export function AiScreen() {
           نشاندن پیش‌نویس محلی
         </Button>
       </div>
-      <Field label="عنوان">
-        <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+      <Field label="تیتر خبر">
+        <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="تیتر خبر" aria-label="تیتر خبر" />
       </Field>
       <Field label="لید / خلاصه">
         <TextArea value={form.lead} onChange={(event) => setForm({ ...form, lead: event.target.value })} />
       </Field>
       <Field label="متن">
-        <TextArea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} className="min-h-48" />
+        <TextArea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} className="min-h-48" aria-label="متن خبر" />
       </Field>
+      <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCount(form.body))}</p>
       <AssistBar title={form.title} lead={form.lead} body={form.body} desk={desk} onApply={(patch) => setForm((current) => ({ ...current, ...patch }))} />
       <Button onClick={save}>ذخیره در کارتابل</Button>
     </ModulePage>

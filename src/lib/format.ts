@@ -35,6 +35,12 @@ export function todayLabel(): string {
   }).format(new Date());
 }
 
+export function wordCount(text: string): number {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
 export function norm(value: string): string {
   return value
     .replace(/ي/g, "ی")

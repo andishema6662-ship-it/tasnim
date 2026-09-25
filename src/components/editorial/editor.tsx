@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PRESETS } from "@/lib/cover";
+import { faNum, wordCount } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
@@ -82,7 +83,7 @@ export function Editor({ id }: { id: string }) {
   function persist(to?: Status) {
     const title = form.title.trim();
     if (!title) {
-      setError("عنوان خبر را بنویسید.");
+      setError("تیتر خبر را بنویسید.");
       return;
     }
     if (!canEditCategory(data, form.categoryId)) {
@@ -147,13 +148,17 @@ export function Editor({ id }: { id: string }) {
 
       <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="space-y-4">
-          <input
-            value={form.title}
-            disabled={!editable}
-            onChange={(event) => patch({ title: event.target.value })}
-            placeholder="عنوان خبر"
-            className="w-full bg-transparent text-3xl font-bold leading-snug outline-none placeholder:text-muted/50"
-          />
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-muted">تیتر خبر</span>
+            <input
+              value={form.title}
+              disabled={!editable}
+              onChange={(event) => patch({ title: event.target.value })}
+              placeholder="تیتر خبر"
+              aria-label="تیتر خبر"
+              className="w-full bg-transparent text-3xl font-bold leading-snug outline-none placeholder:text-muted/50"
+            />
+          </label>
           <TextArea
             value={form.lead}
             disabled={!editable}
@@ -170,6 +175,7 @@ export function Editor({ id }: { id: string }) {
             className="min-h-80 text-base leading-8"
             aria-label="متن خبر"
           />
+          <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCount(form.body))}</p>
           {editable ? <AssistBar title={form.title} lead={form.lead} body={form.body} desk={desk} onApply={patch} /> : null}
         </div>
 
