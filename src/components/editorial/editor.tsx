@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PRESETS } from "@/lib/cover";
 import { faNum, htmlToPlainText, wordCountFromHtml } from "@/lib/format";
 import { uid } from "@/lib/id";
@@ -43,6 +43,7 @@ export function Editor({ id }: { id: string }) {
   const [tag, setTag] = useState("");
   const [error, setError] = useState("");
   const [flash, setFlash] = useState("");
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const role = currentRole(data);
   const editable = canEditStory(data, form.status);
   const transitions = transitionsFrom(data, form.status);
@@ -72,6 +73,35 @@ export function Editor({ id }: { id: string }) {
 
   function patch(partial: Partial<Story>) {
     setForm((current) => ({ ...current, ...partial }));
+  }
+
+  function isUploadedCover(cover: string): boolean {
+    return /^data:image\//i.test(cover) || /^https?:/i.test(cover);
+  }
+
+  function pickCoverFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !editable) return;
+    if (!file.type.startsWith("image/")) {
+      setFlash("فقط فایل تصویر قابل قبول است.");
+      return;
+    }
+    if (file.size > 2_500_000) {
+      setFlash("حجم تصویر زیاد است. فایل کوچک‌تر از ۲٫۵ مگابایت انتخاب کنید.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") patch({ cover: reader.result });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeCover() {
+    if (!editable) return;
+    patch({ cover: "sand" });
+    setFlash("عکس شاخص برداشته شد.");
   }
 
   function addTag() {
@@ -233,8 +263,19 @@ export function Editor({ id }: { id: string }) {
             </div>
           </Field>
           <div>
-            <p className="text-sm font-medium">تصویر شاخص</p>
-            <CoverThumb cover={form.cover} className="mt-2 h-28 w-full rounded-md" />
+            <p className="text-sm font-medium">عکس شاخص</p>
+            <CoverThumb cover={form.cover} className="mt-2 h-36 w-full rounded-md border border-line" />
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" disabled={!editable} onChange={pickCoverFile} />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button tone="ghost" disabled={!editable} onClick={() => coverInputRef.current?.click()}>
+                {isUploadedCover(form.cover) ? "عوض کردن عکس" : "انتخاب از رایانه"}
+              </Button>
+              {isUploadedCover(form.cover) ? (
+                <Button tone="quiet" disabled={!editable} onClick={removeCover}>
+                  برداشتن عکس
+                </Button>
+              ) : null}
+            </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {PRESETS.map((preset) => (
                 <button
