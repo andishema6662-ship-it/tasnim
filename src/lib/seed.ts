@@ -446,6 +446,7 @@ export function createSeed(): NewsroomData {
         ],
       },
     ],
+    ads: [],
     banners: [
       { id: "bn-1", title: "هفته فیلم", text: "اکران رایگان سانس صبح در خانه هنرمندان", href: "/editorial/cartable/s-film", placement: "بالای صفحه", active: true },
       { id: "bn-2", title: "عضویت مجموعه کرج", text: "ثبت‌نام محله‌ای از شنبه", href: "/editorial/cartable/s-karaj", placement: "ستون", active: false },
@@ -563,6 +564,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!next.roles.some((role) => role.id === next.currentRoleId)) next.currentRoleId = "reporter";
   if (raw.settings) next.settings = normalizeSettings({ ...base.settings, ...raw.settings });
   else next.settings = normalizeSettings(next.settings);
+  if (!Array.isArray(next.ads)) next.ads = [];
   return next;
 }
 

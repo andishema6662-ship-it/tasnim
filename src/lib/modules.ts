@@ -63,6 +63,7 @@ export const modules: ModuleInfo[] = [
   { group: "structure", slug: "services", title: "سرویس‌های خبری", description: "سرویس‌هایی مثل فوری، گزارش و چندرسانه‌ای." },
   { group: "structure", slug: "pages", title: "صفحه‌ساز", description: "چیدن صفحه با بلوک تیتر، متن و خبر منتخب." },
   { group: "structure", slug: "tables", title: "جدول‌ساز", description: "جدول خبری با ستون و ردیف قابل ویرایش." },
+  { group: "structure", slug: "ads", title: "مدیریت تبلیغات", description: "تبلیغ با تصویر، جایگاه، پیوند و وضعیت فعال." },
   { group: "structure", slug: "banners", title: "بنرها و اعلانات", description: "اعلان بالای صفحه، ستون یا میان‌متن." },
   { group: "structure", slug: "ticker", title: "پیام متحرک", description: "متن‌های نوار خبر فوری و پیش‌نمایش حرکت." },
   { group: "structure", slug: "calendar", title: "تقویم رویداد", description: "رویدادهای تحریریه و پوشش خبری." },

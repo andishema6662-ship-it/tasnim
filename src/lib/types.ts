@@ -209,6 +209,15 @@ export interface NewsTable {
   rows: string[][];
 }
 
+export interface Ad {
+  id: string;
+  title: string;
+  placement: string;
+  image: string;
+  href: string;
+  active: boolean;
+}
+
 export interface Banner {
   id: string;
   title: string;
@@ -366,6 +375,7 @@ export interface NewsroomData {
   pages: NewsPage[];
   tables: NewsTable[];
   banners: Banner[];
+  ads: Ad[];
   tickers: TickerItem[];
   events: CalEvent[];
   tickets: Ticket[];

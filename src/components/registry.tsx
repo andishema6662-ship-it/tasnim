@@ -8,7 +8,7 @@ import { CartableScreen } from "./editorial/cartable";
 import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audience/audience-screens";
 import { AlbumsScreen, EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
-import { BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
+import { AdsScreen, BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
 import { Page } from "./ui";
 
 const screens: Record<string, () => ReactElement> = {
@@ -52,6 +52,7 @@ const screens: Record<string, () => ReactElement> = {
   "structure/services": ServicesScreen,
   "structure/pages": PagesScreen,
   "structure/tables": TablesScreen,
+  "structure/ads": AdsScreen,
   "structure/banners": BannersScreen,
   "structure/ticker": TickerScreen,
   "structure/calendar": CalendarScreen,

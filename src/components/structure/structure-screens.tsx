@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { dayKey, faDay, faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
-import type { Block } from "@/lib/types";
+import type { Ad, Block } from "@/lib/types";
 import { canPerm } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
@@ -365,6 +365,157 @@ export function TablesScreen() {
       ) : (
         <Empty>جدولی نیست.</Empty>
       )}
+    </ModulePage>
+  );
+}
+
+const AD_PLACEMENTS = ["بالای صفحه", "کنار خبر", "پایین صفحه"];
+
+export function AdsScreen() {
+  const { data, update } = useNewsroom();
+  const [flash, setFlash] = useState("");
+  const [editing, setEditing] = useState<Ad | null>(null);
+  const [form, setForm] = useState({ title: "", placement: AD_PLACEMENTS[0], image: "", href: "", active: true });
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function pickImage(event: React.ChangeEvent<HTMLInputElement>, target: "form" | "edit") {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file?.type.startsWith("image/")) {
+      setFlash("فقط فایل تصویر قابل قبول است.");
+      return;
+    }
+    if (file.size > 2_500_000) {
+      setFlash("حجم تصویر زیاد است. فایل کوچک‌تر از ۲٫۵ مگابایت انتخاب کنید.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      if (target === "form") setForm((current) => ({ ...current, image: reader.result as string }));
+      else if (editing) setEditing({ ...editing, image: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <ModulePage slug="ads">
+      <Flash>{flash}</Flash>
+      <form
+        className="max-w-xl space-y-3 rounded-lg border border-line bg-sheet p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!form.title.trim()) {
+            setFlash("عنوان تبلیغ را بنویسید.");
+            return;
+          }
+          update((current) => ({
+            ...current,
+            ads: [{ id: uid("ad"), title: form.title.trim(), placement: form.placement, image: form.image, href: form.href.trim(), active: form.active }, ...current.ads],
+          }));
+          setForm({ title: "", placement: AD_PLACEMENTS[0], image: "", href: "", active: true });
+          setFlash("تبلیغ اضافه شد.");
+        }}
+      >
+        <h2 className="font-bold">تبلیغ تازه</h2>
+        <Field label="عنوان">
+          <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+        </Field>
+        <Field label="جایگاه">
+          <Select value={form.placement} onChange={(event) => setForm({ ...form, placement: event.target.value })}>
+            {AD_PLACEMENTS.map((place) => (
+              <option key={place}>{place}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="پیوند">
+          <Input value={form.href} onChange={(event) => setForm({ ...form, href: event.target.value })} placeholder="https://" dir="ltr" />
+        </Field>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">تصویر تبلیغ</p>
+          {form.image ? <img src={form.image} alt="" className="h-24 w-full max-w-xs rounded-md border border-line object-contain" /> : null}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(event) => pickImage(event, "form")} />
+          <Button tone="ghost" type="button" onClick={() => fileRef.current?.click()}>انتخاب تصویر</Button>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} />
+          فعال
+        </label>
+        <Button type="submit">افزودن تبلیغ</Button>
+      </form>
+
+      <div className="mt-6 space-y-3">
+        {data.ads.length === 0 ? <Empty>تبلیغی ثبت نشده است.</Empty> : null}
+        {data.ads.map((ad) => {
+          const isEditing = editing?.id === ad.id;
+          const row = isEditing ? editing : ad;
+          return (
+            <article key={ad.id} className="rounded-lg border border-line bg-sheet p-4">
+              {isEditing ? (
+                <div className="space-y-3">
+                  <Field label="عنوان">
+                    <Input value={row.title} onChange={(event) => setEditing({ ...row, title: event.target.value })} />
+                  </Field>
+                  <Field label="جایگاه">
+                    <Select value={row.placement} onChange={(event) => setEditing({ ...row, placement: event.target.value })}>
+                      {AD_PLACEMENTS.map((place) => (
+                        <option key={place}>{place}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="پیوند">
+                    <Input value={row.href} onChange={(event) => setEditing({ ...row, href: event.target.value })} dir="ltr" />
+                  </Field>
+                  {row.image ? <img src={row.image} alt="" className="h-24 max-w-xs rounded-md border border-line object-contain" /> : null}
+                  <input type="file" accept="image/*" className="hidden" id={`ad-file-${ad.id}`} onChange={(event) => pickImage(event, "edit")} />
+                  <Button tone="ghost" type="button" onClick={() => document.getElementById(`ad-file-${ad.id}`)?.click()}>عوض کردن تصویر</Button>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={row.active} onChange={(event) => setEditing({ ...row, active: event.target.checked })} />
+                    فعال
+                  </label>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        if (!editing?.title.trim()) return;
+                        update((current) => ({
+                          ...current,
+                          ads: current.ads.map((item) => (item.id === editing.id ? { ...editing, title: editing.title.trim() } : item)),
+                        }));
+                        setEditing(null);
+                        setFlash("تبلیغ ویرایش شد.");
+                      }}
+                    >
+                      ذخیره
+                    </Button>
+                    <Button tone="ghost" onClick={() => setEditing(null)}>انصراف</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-4">
+                  {ad.image ? <img src={ad.image} alt="" className="h-20 w-32 rounded-md border border-line object-cover" /> : null}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted">{ad.placement} · {ad.active ? "فعال" : "غیرفعال"}</p>
+                    <h2 className="font-bold">{ad.title}</h2>
+                    {ad.href ? <p className="text-xs text-muted" dir="ltr">{ad.href}</p> : null}
+                    <div className="mt-2 flex gap-2">
+                      <Button tone="ghost" onClick={() => setEditing({ ...ad })}>ویرایش</Button>
+                      <Button
+                        tone="quiet"
+                        onClick={() => {
+                          update((current) => ({ ...current, ads: current.ads.filter((item) => item.id !== ad.id) }));
+                          setFlash("تبلیغ حذف شد.");
+                        }}
+                      >
+                        حذف
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
     </ModulePage>
   );
 }

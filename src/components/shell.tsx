@@ -82,6 +82,11 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  const isPublicSite = path === "/site" || path.startsWith("/site/");
+  if (isPublicSite) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-paper text-ink lg:flex">
       <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-l border-line bg-sheet lg:flex">
@@ -126,6 +131,10 @@ export function Shell({ children }: { children: ReactNode }) {
                 </ul>
               </div>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+            <Link href="/site" className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/90 hover:bg-white/10">
+              خروجی سایت
+            </Link>
             <div className="flex flex-wrap gap-1 rounded-full bg-white/10 p-1" role="group" aria-label="نقش فعلی">
               {data.roles.map((item) => (
                 <button
@@ -138,6 +147,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   {item.name}
                 </button>
               ))}
+            </div>
             </div>
           </div>
           <div className="h-1 bg-rule" />
