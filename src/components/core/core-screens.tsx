@@ -7,7 +7,7 @@ import { uid } from "@/lib/id";
 import { mergeSeed } from "@/lib/seed";
 import { STORAGE_KEY } from "@/lib/storage";
 import { useNewsroom } from "@/lib/store";
-import type { NewsroomData, Permissions, RoleBase } from "@/lib/types";
+import type { MenuItem, NewsroomData, Permissions, RoleBase, User } from "@/lib/types";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
@@ -38,11 +38,73 @@ export function SystemScreen() {
   );
 }
 
+function publisherUsers(users: User[]): User[] {
+  return users.filter((user) => user.roleId === "publisher");
+}
+
+function blocksLastPublisher(users: User[], userId: string, nextRoleId?: string): boolean {
+  const target = users.find((user) => user.id === userId);
+  if (!target || target.roleId !== "publisher") return false;
+  if (publisherUsers(users).length > 1) return false;
+  if (nextRoleId === "publisher") return false;
+  return true;
+}
+
 export function UsersScreen() {
   const { data, update } = useNewsroom();
   const allowed = canPerm(data, "manageUsers");
   const [form, setForm] = useState({ name: "", username: "", roleId: "reporter" });
+  const [editing, setEditing] = useState<User | null>(null);
   const [flash, setFlash] = useState("");
+
+  function roleName(roleId: string): string {
+    return data.roles.find((role) => role.id === roleId)?.name ?? roleId;
+  }
+
+  function saveEdit() {
+    if (!editing || !allowed) return;
+    const name = editing.name.trim();
+    const username = editing.username.trim();
+    if (!name || !username) {
+      setFlash("نام و نام کاربری لازم است.");
+      return;
+    }
+    if (data.users.some((user) => user.id !== editing.id && user.username === username)) {
+      setFlash("این نام کاربری وجود دارد.");
+      return;
+    }
+    if (blocksLastPublisher(data.users, editing.id, editing.roleId)) {
+      setFlash("حداقل یک مدیر مسئول باید بماند.");
+      return;
+    }
+    update((current) =>
+      pushActivity(
+        {
+          ...current,
+          users: current.users.map((item) => (item.id === editing.id ? { ...editing, name, username } : item)),
+        },
+        `کاربر ${name} ویرایش شد`,
+      ),
+    );
+    setEditing(null);
+    setFlash("تغییرات کاربر ذخیره شد.");
+  }
+
+  function removeUser(user: User) {
+    if (!allowed) return;
+    if (blocksLastPublisher(data.users, user.id)) {
+      setFlash("حداقل یک مدیر مسئول باید بماند.");
+      return;
+    }
+    update((current) =>
+      pushActivity(
+        { ...current, users: current.users.filter((item) => item.id !== user.id) },
+        `کاربر ${user.name} حذف شد`,
+      ),
+    );
+    if (editing?.id === user.id) setEditing(null);
+    setFlash(`کاربر ${user.name} حذف شد.`);
+  }
 
   return (
     <ModulePage slug="users">
@@ -98,46 +160,82 @@ export function UsersScreen() {
               <th className="px-3 py-2 text-right font-medium">کاربری</th>
               <th className="px-3 py-2 text-right font-medium">نقش</th>
               <th className="px-3 py-2 text-right font-medium">وضعیت</th>
+              <th className="px-3 py-2 text-right font-medium">عملیات</th>
             </tr>
           </thead>
           <tbody>
-            {data.users.map((user) => (
-              <tr key={user.id} className="border-b border-line last:border-0">
-                <td className="px-3 py-2">{user.name}</td>
-                <td className="px-3 py-2" dir="ltr">{user.username}</td>
-                <td className="px-3 py-2">
-                  <Select
-                    disabled={!allowed}
-                    value={user.roleId}
-                    aria-label="نقش کاربر"
-                    onChange={(event) => {
-                      const roleId = event.target.value;
-                      update((current) => ({ ...current, users: current.users.map((item) => (item.id === user.id ? { ...item, roleId } : item)) }));
-                    }}
-                  >
-                    {data.roles.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </Select>
-                </td>
-                <td className="px-3 py-2">
-                  <Button
-                    tone="ghost"
-                    disabled={!allowed}
-                    onClick={() =>
-                      update((current) => ({
-                        ...current,
-                        users: current.users.map((item) => (item.id === user.id ? { ...item, active: !item.active } : item)),
-                      }))
-                    }
-                  >
-                    {user.active ? "فعال" : "غیرفعال"}
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {data.users.map((user) => {
+              const isEditing = editing?.id === user.id;
+              const row = isEditing ? editing : user;
+              return (
+                <tr key={user.id} className="border-b border-line last:border-0">
+                  <td className="px-3 py-2">
+                    {isEditing ? (
+                      <Input value={row.name} aria-label="نام" onChange={(event) => setEditing({ ...row, name: event.target.value })} />
+                    ) : (
+                      user.name
+                    )}
+                  </td>
+                  <td className="px-3 py-2" dir="ltr">
+                    {isEditing ? (
+                      <Input value={row.username} aria-label="نام کاربری" onChange={(event) => setEditing({ ...row, username: event.target.value })} dir="ltr" />
+                    ) : (
+                      user.username
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEditing ? (
+                      <Select value={row.roleId} aria-label="نقش کاربر" onChange={(event) => setEditing({ ...row, roleId: event.target.value })}>
+                        {data.roles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      roleName(user.roleId)
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEditing ? (
+                      <Select
+                        value={row.active ? "active" : "inactive"}
+                        aria-label="وضعیت کاربر"
+                        onChange={(event) => setEditing({ ...row, active: event.target.value === "active" })}
+                      >
+                        <option value="active">فعال</option>
+                        <option value="inactive">غیرفعال</option>
+                      </Select>
+                    ) : (
+                      <span className="text-muted">{user.active ? "فعال" : "غیرفعال"}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button tone="primary" disabled={!allowed} onClick={saveEdit}>
+                            ذخیره
+                          </Button>
+                          <Button tone="ghost" onClick={() => setEditing(null)}>
+                            انصراف
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button tone="ghost" disabled={!allowed} onClick={() => setEditing({ ...user })}>
+                            ویرایش
+                          </Button>
+                          <Button tone="quiet" disabled={!allowed} onClick={() => removeUser(user)}>
+                            حذف
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -594,6 +692,9 @@ export function FormsScreen() {
 export function MenusScreen() {
   const { data, update } = useNewsroom();
   const [form, setForm] = useState({ label: "", href: "/" });
+  const [editing, setEditing] = useState<MenuItem | null>(null);
+  const [flash, setFlash] = useState("");
+
   function move(index: number, dir: -1 | 1) {
     update((current) => {
       const menus = current.menus.slice();
@@ -604,21 +705,76 @@ export function MenusScreen() {
       return { ...current, menus };
     });
   }
+
+  function saveMenuEdit() {
+    if (!editing) return;
+    const label = editing.label.trim();
+    const href = editing.href.trim() || "/";
+    if (!label) {
+      setFlash("برچسب منو را بنویسید.");
+      return;
+    }
+    update((current) =>
+      pushActivity(
+        { ...current, menus: current.menus.map((item) => (item.id === editing.id ? { ...editing, label, href } : item)) },
+        `منو «${label}» ویرایش شد`,
+      ),
+    );
+    setEditing(null);
+    setFlash("تغییرات منو ذخیره شد.");
+  }
+
   return (
     <ModulePage slug="menus">
+      <Flash>{flash}</Flash>
       <ol className="space-y-2">
-        {data.menus.map((item, index) => (
-          <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sheet px-3 py-2">
-            <span className="text-sm">
-              {item.label} <span className="text-muted" dir="ltr">{item.href}</span>
-            </span>
-            <span className="flex gap-2">
-              <Button tone="ghost" onClick={() => move(index, -1)}>بالا</Button>
-              <Button tone="ghost" onClick={() => move(index, 1)}>پایین</Button>
-              <Button tone="quiet" onClick={() => update((current) => ({ ...current, menus: current.menus.filter((menu) => menu.id !== item.id) }))}>حذف</Button>
-            </span>
-          </li>
-        ))}
+        {data.menus.map((item, index) => {
+          const isEditing = editing?.id === item.id;
+          const row = isEditing ? editing : item;
+          return (
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sheet px-3 py-2">
+              {isEditing ? (
+                <div className="flex flex-1 flex-wrap gap-2">
+                  <Input value={row.label} aria-label="برچسب منو" onChange={(event) => setEditing({ ...row, label: event.target.value })} placeholder="برچسب" className="max-w-xs" />
+                  <Input value={row.href} aria-label="نشانی منو" onChange={(event) => setEditing({ ...row, href: event.target.value })} placeholder="/path" dir="ltr" className="max-w-xs" />
+                </div>
+              ) : (
+                <span className="text-sm">
+                  {item.label} <span className="text-muted" dir="ltr">{item.href}</span>
+                </span>
+              )}
+              <span className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <Button tone="primary" onClick={saveMenuEdit}>ذخیره</Button>
+                    <Button tone="ghost" onClick={() => setEditing(null)}>انصراف</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button tone="ghost" onClick={() => move(index, -1)}>بالا</Button>
+                    <Button tone="ghost" onClick={() => move(index, 1)}>پایین</Button>
+                    <Button tone="ghost" onClick={() => setEditing({ ...item })}>ویرایش</Button>
+                    <Button
+                      tone="quiet"
+                      onClick={() => {
+                        update((current) =>
+                          pushActivity(
+                            { ...current, menus: current.menus.filter((menu) => menu.id !== item.id) },
+                            `منو «${item.label}» حذف شد`,
+                          ),
+                        );
+                        if (editing?.id === item.id) setEditing(null);
+                        setFlash(`منو «${item.label}» حذف شد.`);
+                      }}
+                    >
+                      حذف
+                    </Button>
+                  </>
+                )}
+              </span>
+            </li>
+          );
+        })}
       </ol>
       <form
         className="flex flex-wrap gap-2"
