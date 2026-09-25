@@ -35,6 +35,26 @@ export function todayLabel(): string {
   }).format(new Date());
 }
 
+export interface CalendarDateLine {
+  label: string;
+  text: string;
+}
+
+const calendarDayOptions: Intl.DateTimeFormatOptions = {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+};
+
+export function todayTriCalendar(date = new Date()): CalendarDateLine[] {
+  return [
+    { label: "میلادی", text: new Intl.DateTimeFormat("fa-IR-u-ca-gregory", calendarDayOptions).format(date) },
+    { label: "شمسی", text: new Intl.DateTimeFormat("fa-IR-u-ca-persian", calendarDayOptions).format(date) },
+    { label: "قمری", text: new Intl.DateTimeFormat("fa-IR-u-ca-islamic", calendarDayOptions).format(date) },
+  ];
+}
+
 export function wordCount(text: string): number {
   const trimmed = text.trim();
   if (!trimmed) return 0;

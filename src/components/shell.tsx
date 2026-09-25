@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { norm, todayLabel } from "@/lib/format";
+import { norm, todayTriCalendar } from "@/lib/format";
 import { groups, hrefFor, modules } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
 import { currentRole } from "@/lib/workflow";
@@ -64,7 +64,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const open = menuPath === path;
   const role = currentRole(data);
-  const date = useMemo(() => todayLabel(), []);
+  const dates = useMemo(() => todayTriCalendar(), []);
 
   function setOpen(next: boolean) {
     setMenuPath(next ? path : null);
@@ -107,9 +107,15 @@ export function Shell({ children }: { children: ReactNode }) {
               <button type="button" className="rounded-md border border-white/20 px-3 py-1.5 text-sm lg:hidden" onClick={() => setOpen(true)}>
                 بخش‌ها
               </button>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold lg:hidden">{data.settings.newsroomName}</p>
-                <p className="text-xs text-white/70">{date}</p>
+                <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-5 text-white/85 sm:text-xs" aria-label="تاریخ امروز">
+                  {dates.map((item) => (
+                    <li key={item.label} className="whitespace-normal">
+                      <span className="font-semibold text-white/55">{item.label}:</span> {item.text}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
             <div className="flex flex-wrap gap-1 rounded-full bg-white/10 p-1" role="group" aria-label="نقش فعلی">
