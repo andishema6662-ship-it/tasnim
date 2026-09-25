@@ -57,6 +57,7 @@ export function AssistBar({
     if (suggestion.kind === "tags") onApply({ tags: suggestion.tags });
     if (suggestion.kind === "image") onApply({ imagePrompt: suggestion.prompt, cover: suggestion.cover });
     if (suggestion.kind === "audio") onApply({ audioScript: suggestion.script });
+    setSuggestion(null);
     setHint("پیشنهاد دستیار در فرم نشست. تا وقتی ذخیره نکنید به کارتابل نمی‌رود.");
   }
 

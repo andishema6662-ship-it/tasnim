@@ -92,6 +92,8 @@ export function applyStatus(story: Story, to: Status): Story {
 
 export function blankStory(data: NewsroomData): Story {
   const ts = new Date().toISOString();
+  const categoryId =
+    data.categories.find((category) => canEditCategory(data, category.id))?.id ?? data.categories[0]?.id ?? "";
   return {
     id: "",
     title: "",
@@ -100,7 +102,7 @@ export function blankStory(data: NewsroomData): Story {
     cover: "sand",
     imagePrompt: "",
     audioScript: "",
-    categoryId: data.categories[0]?.id ?? "",
+    categoryId,
     serviceId: data.services[0]?.id ?? "",
     tags: [],
     status: "draft",
