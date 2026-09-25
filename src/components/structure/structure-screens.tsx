@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { dayKey, faDay, faNum } from "@/lib/format";
+import { dayKey, faDay, faNum, norm } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { Block } from "@/lib/types";
@@ -153,6 +153,110 @@ export function ServicesScreen() {
           </article>
         );
       })}
+    </ModulePage>
+  );
+}
+
+export function TagsScreen() {
+  const { data, update, allowed } = useStructure();
+  const [query, setQuery] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [flash, setFlash] = useState("");
+
+  const tags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const story of data.stories) {
+      for (const tag of story.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fa"));
+  }, [data.stories]);
+
+  const q = norm(query);
+  const visible = q ? tags.filter((tag) => norm(tag.name).includes(q)) : tags;
+
+  function rename(from: string, rawTo: string) {
+    const to = rawTo.trim();
+    if (!to || to === from) return;
+    const merging = tags.some((tag) => tag.name === to);
+    update((current) => ({
+      ...current,
+      stories: current.stories.map((story) => {
+        if (!story.tags.includes(from)) return story;
+        const next: string[] = [];
+        for (const tag of story.tags) {
+          const value = tag === from ? to : tag;
+          if (!next.includes(value)) next.push(value);
+        }
+        return { ...story, tags: next };
+      }),
+    }));
+    setDrafts((current) => {
+      const next = { ...current };
+      delete next[from];
+      return next;
+    });
+    setFlash(merging ? `برچسب «${from}» با «${to}» ادغام شد.` : `برچسب «${from}» به «${to}» تغییر نام یافت.`);
+  }
+
+  function remove(tag: string) {
+    update((current) => ({
+      ...current,
+      stories: current.stories.map((story) =>
+        story.tags.includes(tag) ? { ...story, tags: story.tags.filter((item) => item !== tag) } : story,
+      ),
+    }));
+    setFlash(`برچسب «${tag}» از همه خبرها حذف شد.`);
+  }
+
+  return (
+    <ModulePage slug="tags">
+      {!allowed ? <Notice>تغییر نام و حذف برچسب با سردبیر یا مدیر مسئول است. برچسب‌ها در ویرایشگر خبر ساخته می‌شوند.</Notice> : null}
+      <Flash>{flash}</Flash>
+      <Input
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="جستجوی برچسب"
+        aria-label="جستجوی برچسب"
+        className="max-w-xs"
+      />
+      <p className="text-sm text-muted">{faNum(tags.length)} برچسب روی {faNum(data.stories.length)} خبر</p>
+      {visible.length === 0 ? <Empty>برچسبی پیدا نشد. برچسب‌ها هنگام نوشتن خبر در ویرایشگر افزوده می‌شوند.</Empty> : null}
+      <div className="space-y-2">
+        {visible.map((tag) => {
+          const draft = drafts[tag.name] ?? tag.name;
+          const dirty = draft.trim() !== "" && draft.trim() !== tag.name;
+          return (
+            <article
+              key={tag.name}
+              className="grid gap-2 rounded-lg border border-line bg-sheet p-3 md:grid-cols-[1fr_auto_auto] md:items-center"
+            >
+              <Input
+                value={draft}
+                disabled={!allowed}
+                aria-label={`نام برچسب ${tag.name}`}
+                onChange={(event) => setDrafts((current) => ({ ...current, [tag.name]: event.target.value }))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    rename(tag.name, draft);
+                  }
+                }}
+              />
+              <span className="text-sm text-muted md:px-2">{faNum(tag.count)} خبر</span>
+              <div className="flex items-center gap-2">
+                <Button tone="ghost" disabled={!allowed || !dirty} onClick={() => rename(tag.name, draft)}>
+                  ذخیره نام
+                </Button>
+                <Button tone="quiet" disabled={!allowed} onClick={() => remove(tag.name)}>
+                  حذف
+                </Button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </ModulePage>
   );
 }

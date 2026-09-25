@@ -61,6 +61,7 @@ export const modules: ModuleInfo[] = [
   { group: "reports", slug: "traffic", title: "آمار بازدید سایت", description: "فعالیت ثبت‌شده در همین پنل. آمار سایت عمومی وصل نیست." },
   { group: "structure", slug: "categories", title: "دسته‌بندی خبر", description: "میزها و دسته‌هایی که خبر به آن‌ها می‌چسبد." },
   { group: "structure", slug: "services", title: "سرویس‌های خبری", description: "سرویس‌هایی مثل فوری، گزارش و چندرسانه‌ای." },
+  { group: "structure", slug: "tags", title: "مدیریت برچسب‌ها", description: "برچسب‌های خبرها با شمار استفاده؛ تغییر نام، ادغام و حذف روی همه خبرها." },
   { group: "structure", slug: "pages", title: "صفحه‌ساز", description: "چیدن صفحه با بلوک تیتر، متن و خبر منتخب." },
   { group: "structure", slug: "tables", title: "جدول‌ساز", description: "جدول خبری با ستون و ردیف قابل ویرایش." },
   { group: "structure", slug: "banners", title: "بنرها و اعلانات", description: "اعلان بالای صفحه، ستون یا میان‌متن." },
