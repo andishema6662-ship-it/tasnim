@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PRESETS } from "@/lib/cover";
+import { faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
@@ -31,6 +32,11 @@ const forward: Partial<Record<Status, Status>> = {
   ready: "published",
   published: "archived",
 };
+
+function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
 
 export function Editor({ id }: { id: string }) {
   const { data, update, commitStory } = useNewsroom();
@@ -147,21 +153,27 @@ export function Editor({ id }: { id: string }) {
 
       <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="space-y-4">
-          <input
-            value={form.title}
-            disabled={!editable}
-            onChange={(event) => patch({ title: event.target.value })}
-            placeholder="عنوان خبر"
-            className="w-full bg-transparent text-3xl font-bold leading-snug outline-none placeholder:text-muted/50"
-          />
-          <TextArea
-            value={form.lead}
-            disabled={!editable}
-            onChange={(event) => patch({ lead: event.target.value })}
-            placeholder="لید"
-            className="min-h-24 text-base"
-            aria-label="لید"
-          />
+          <div>
+            <input
+              value={form.title}
+              disabled={!editable}
+              onChange={(event) => patch({ title: event.target.value })}
+              placeholder="عنوان خبر"
+              className="w-full bg-transparent text-3xl font-bold leading-snug outline-none placeholder:text-muted/50"
+            />
+            <p className="mt-1 text-xs text-muted">{faNum(countWords(form.title))} کلمه</p>
+          </div>
+          <div>
+            <TextArea
+              value={form.lead}
+              disabled={!editable}
+              onChange={(event) => patch({ lead: event.target.value })}
+              placeholder="لید"
+              className="min-h-24 text-base"
+              aria-label="لید"
+            />
+            <p className="mt-1 text-xs text-muted">{faNum(countWords(form.lead))} کلمه</p>
+          </div>
           <TextArea
             value={form.body}
             disabled={!editable}
