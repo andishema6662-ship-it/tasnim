@@ -65,6 +65,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const open = menuPath === path;
   const role = currentRole(data);
   const dates = useMemo(() => todayTriCalendar(), []);
+  const panelTitle = data.settings.mediaName.trim() || data.settings.newsroomName;
+  const panelSubtitle = data.settings.mediaDisplayTitle.trim() || data.settings.tagline;
+  const panelMark = data.settings.brandMark;
 
   function setOpen(next: boolean) {
     setMenuPath(next ? path : null);
@@ -83,8 +86,13 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-paper text-ink lg:flex">
       <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-l border-line bg-sheet lg:flex">
         <div className="border-b border-line px-4 py-4">
-          <p className="text-[11px] text-muted">{data.settings.tagline}</p>
-          <p className="text-xl font-bold">{data.settings.newsroomName}</p>
+          <div className="flex items-start gap-3">
+            {panelMark ? <img src={panelMark} alt="" className="mt-0.5 h-10 w-10 shrink-0 rounded object-contain" /> : null}
+            <div className="min-w-0">
+              <p className="text-[11px] text-muted">{panelSubtitle}</p>
+              <p className="text-xl font-bold leading-8">{panelTitle}</p>
+            </div>
+          </div>
         </div>
         <div className="px-3 py-3">
           <input
@@ -108,7 +116,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 بخش‌ها
               </button>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold lg:hidden">{data.settings.newsroomName}</p>
+                <p className="text-sm font-bold lg:hidden">{panelTitle}</p>
                 <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-5 text-white/85 sm:text-xs" aria-label="تاریخ امروز">
                   {dates.map((item) => (
                     <li key={item.label} className="whitespace-normal">
@@ -143,7 +151,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <button type="button" className="absolute inset-0 bg-ink/40" aria-label="بستن منو" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 right-0 flex w-[min(100%,20rem)] flex-col bg-sheet shadow-xl">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <p className="font-bold">{data.settings.newsroomName}</p>
+              <p className="font-bold">{panelTitle}</p>
               <button type="button" className="text-sm text-muted" onClick={() => setOpen(false)}>
                 بستن
               </button>

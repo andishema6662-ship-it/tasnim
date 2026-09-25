@@ -37,6 +37,9 @@ export interface Settings {
   newsroomName: string;
   tagline: string;
   pageSize: number;
+  mediaName: string;
+  mediaDisplayTitle: string;
+  brandMark: string;
 }
 
 export interface Story {

@@ -32,6 +32,9 @@ export function createSeed(): NewsroomData {
       newsroomName: "اتاق خبر",
       tagline: "میز یکپارچه تولید و انتشار",
       pageSize: 20,
+      mediaName: "",
+      mediaDisplayTitle: "",
+      brandMark: "",
     },
     roles: [
       {
@@ -558,5 +561,6 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     if (value !== undefined) next[key] = value as never;
   });
   if (!next.roles.some((role) => role.id === next.currentRoleId)) next.currentRoleId = "reporter";
+  if (raw.settings) next.settings = { ...base.settings, ...raw.settings };
   return next;
 }

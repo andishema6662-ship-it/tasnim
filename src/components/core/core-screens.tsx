@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { pushActivity } from "@/lib/activity";
 import { bytesLabel, faDate, faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { mergeSeed } from "@/lib/seed";
 import { STORAGE_KEY } from "@/lib/storage";
 import { useNewsroom } from "@/lib/store";
-import type { MenuItem, NewsroomData, Permissions, RoleBase, User } from "@/lib/types";
+import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User } from "@/lib/types";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
@@ -601,38 +601,70 @@ export function LinksScreen() {
 
 export function LogosScreen() {
   const { data, update } = useNewsroom();
-  const [form, setForm] = useState({ name: "", usage: "", color: "#8e1e2d" });
+  const [flash, setFlash] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const settings = data.settings;
+
+  function patchSettings(partial: Partial<Settings>) {
+    update((current) => ({
+      ...current,
+      settings: { ...current.settings, ...partial },
+    }));
+  }
+
+  function pickMark(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setFlash("فقط فایل تصویر قابل قبول است.");
+      return;
+    }
+    if (file.size > 2_500_000) {
+      setFlash("حجم تصویر زیاد است. فایل کوچک‌تر از ۲٫۵ مگابایت انتخاب کنید.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        patchSettings({ brandMark: reader.result });
+        setFlash("آرم ذخیره شد.");
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <ModulePage slug="logos">
-      <div className="grid gap-3 sm:grid-cols-3">
-        {data.logos.map((logo) => (
-          <article key={logo.id} className="rounded-lg border border-line bg-sheet p-4">
-            <div className="h-16 rounded-md border border-line" style={{ background: logo.color }} />
-            <h2 className="mt-2 font-semibold">{logo.name}</h2>
-            <p className="text-xs text-muted">{logo.usage}</p>
-          </article>
-        ))}
+      <Notice>نام رسانه و عنوان نمایش، وقتی پر باشند در سرصفحه و منوی کناری جای نام اتاق خبر و شعار می‌نشینند.</Notice>
+      <Flash>{flash}</Flash>
+      <div className="max-w-xl space-y-4 rounded-lg border border-line bg-sheet p-4">
+        <Field label="نام رسانه">
+          <Input value={settings.mediaName} onChange={(event) => patchSettings({ mediaName: event.target.value })} placeholder="نام رسانه" />
+        </Field>
+        <Field label="عنوان نمایش داده شده">
+          <Input value={settings.mediaDisplayTitle} onChange={(event) => patchSettings({ mediaDisplayTitle: event.target.value })} placeholder="عنوان نمایش داده شده" />
+        </Field>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">آرم و نشان</p>
+          {settings.brandMark ? (
+            <img src={settings.brandMark} alt="" className="h-24 w-24 rounded-md border border-line bg-paper object-contain" />
+          ) : (
+            <div className="flex h-24 w-24 items-center justify-center rounded-md border border-dashed border-line text-xs text-muted">بدون آرم</div>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickMark} />
+          <div className="flex flex-wrap gap-2">
+            <Button tone="ghost" onClick={() => fileRef.current?.click()}>
+              {settings.brandMark ? "عوض کردن آرم" : "انتخاب از رایانه"}
+            </Button>
+            {settings.brandMark ? (
+              <Button tone="quiet" onClick={() => patchSettings({ brandMark: "" })}>
+                برداشتن آرم
+              </Button>
+            ) : null}
+          </div>
+        </div>
       </div>
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!form.name.trim()) return;
-          update((current) => ({ ...current, logos: [...current.logos, { id: uid("lg"), ...form, name: form.name.trim() }] }));
-          setForm({ name: "", usage: "", color: "#8e1e2d" });
-        }}
-      >
-        <Field label="نام">
-          <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
-        </Field>
-        <Field label="کاربرد">
-          <Input value={form.usage} onChange={(event) => setForm({ ...form, usage: event.target.value })} />
-        </Field>
-        <Field label="رنگ">
-          <Input type="color" value={form.color} onChange={(event) => setForm({ ...form, color: event.target.value })} className="h-10 w-16" />
-        </Field>
-        <Button type="submit">افزودن نشانه</Button>
-      </form>
     </ModulePage>
   );
 }
