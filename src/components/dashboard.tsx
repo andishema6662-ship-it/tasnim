@@ -7,6 +7,8 @@ import { useNewsroom } from "@/lib/store";
 import { categoryName, currentRole, STATUSES, statusLabel } from "@/lib/workflow";
 import { StatusBadge } from "./ui";
 
+const chartColors = ["#8e1e2d", "#1e3a5f", "#d97706", "#7c3aed", "#0891b2", "#059669", "#db2777", "#4d7c0f"];
+
 const shortcuts = [
   { href: "/editorial/cartable", label: "کارتابل" },
   { href: "/editorial/cartable?view=queue", label: "صف سردبیری" },
@@ -26,6 +28,23 @@ export function Dashboard() {
     { label: "نظر در انتظار", value: data.comments.filter((item) => item.status === "pending").length, href: "/audience/comments" },
   ];
 
+  const reporterCount = data.users.filter((user) => {
+    if (!user.active) return false;
+    const userRole = data.roles.find((role) => role.id === user.roleId);
+    return userRole?.base === "reporter";
+  }).length;
+
+  const pipelineStatuses = STATUSES;
+  const chartItems = [
+    { label: "تعداد خبرنگاران", value: reporterCount },
+    { label: "تعداد اخبار کارشده", value: data.stories.length },
+    ...pipelineStatuses.map((status) => ({
+      label: statusLabel(data, status),
+      value: data.stories.filter((story) => story.status === status).length,
+    })),
+  ];
+  const chartMax = Math.max(...chartItems.map((item) => item.value), 1);
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <header>
@@ -35,6 +54,31 @@ export function Dashboard() {
           نقش فعلی {role.name} است. خبرنگار پیش‌نویس را می‌فرستد، سردبیر بازبینی می‌کند و مدیر مسئول منتشر می‌کند.
         </p>
       </header>
+
+      <section className="rounded-lg border border-line bg-sheet p-4" aria-label="نمودار آمار تحریریه">
+        <h2 className="font-bold">نمودار آمار</h2>
+        <p className="mt-1 text-xs text-muted">بر پایه داده همین مرورگر؛ با تغییر کارتابل به‌روز می‌شود.</p>
+        <div className="mt-4 overflow-x-auto pb-1">
+          <div className="flex min-w-[36rem] items-end justify-between gap-2 sm:min-w-0 sm:gap-3">
+            {chartItems.map((item, index) => {
+              const height = `${Math.round(Math.max(12, (item.value / chartMax) * 100))}%`;
+              return (
+                <div key={item.label} className="flex min-w-[4.25rem] flex-1 flex-col items-center gap-1.5">
+                  <span className="text-xs font-bold tabular-nums">{faNum(item.value)}</span>
+                  <div className="flex h-36 w-full items-end justify-center sm:h-40">
+                    <div
+                      className="w-full max-w-[2.75rem] rounded-t-md shadow-sm transition-[height] sm:max-w-[3.25rem]"
+                      style={{ height, backgroundColor: chartColors[index % chartColors.length] }}
+                      title={`${item.label}: ${faNum(item.value)}`}
+                    />
+                  </div>
+                  <span className="max-w-[5.5rem] text-center text-[10px] leading-4 text-muted sm:text-xs">{item.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {STATUSES.map((status) => {
