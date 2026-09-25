@@ -264,7 +264,7 @@ export function SubmissionsScreen() {
 
   function send() {
     if (!form.title.trim()) {
-      setFlash("عنوان ارسال را بنویسید.");
+      setFlash("تیتر خبر را بنویسید.");
       return;
     }
     update((current) => ({
@@ -327,8 +327,13 @@ export function SubmissionsScreen() {
         }}
       >
         <h2 className="font-bold">ارسال خبر</h2>
-        <Field label="عنوان">
-          <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+        <Field label="تیتر خبر">
+          <Input
+            value={form.title}
+            onChange={(event) => setForm({ ...form, title: event.target.value })}
+            placeholder="تیتر خبر"
+            aria-label="تیتر خبر"
+          />
         </Field>
         <Field label="لید">
           <TextArea value={form.lead} onChange={(event) => setForm({ ...form, lead: event.target.value })} />
