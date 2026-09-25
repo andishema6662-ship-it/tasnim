@@ -65,9 +65,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const open = menuPath === path;
   const role = currentRole(data);
   const dates = useMemo(() => todayTriCalendar(), []);
-  const panelTitle = data.settings.mediaName.trim() || data.settings.newsroomName;
-  const panelSubtitle = data.settings.mediaDisplayTitle.trim() || data.settings.tagline;
-  const panelMark = data.settings.brandMark;
+  const panelTitle = (data.settings.mediaName ?? "").trim() || data.settings.newsroomName;
+  const panelSubtitle = (data.settings.mediaDisplayTitle ?? "").trim() || data.settings.tagline;
+  const panelMark = data.settings.brandMark ?? "";
 
   function setOpen(next: boolean) {
     setMenuPath(next ? path : null);

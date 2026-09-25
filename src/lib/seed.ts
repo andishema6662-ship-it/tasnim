@@ -1,4 +1,4 @@
-import type { NewsroomData, Story } from "./types";
+import type { NewsroomData, Settings, Story } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
 
@@ -561,6 +561,18 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     if (value !== undefined) next[key] = value as never;
   });
   if (!next.roles.some((role) => role.id === next.currentRoleId)) next.currentRoleId = "reporter";
-  if (raw.settings) next.settings = { ...base.settings, ...raw.settings };
+  if (raw.settings) next.settings = normalizeSettings({ ...base.settings, ...raw.settings });
+  else next.settings = normalizeSettings(next.settings);
   return next;
+}
+
+export function normalizeSettings(settings: Partial<Settings> & Pick<Settings, "newsroomName" | "tagline" | "pageSize">): Settings {
+  return {
+    newsroomName: settings.newsroomName?.trim() || "اتاق خبر",
+    tagline: settings.tagline ?? "",
+    pageSize: settings.pageSize ?? 20,
+    mediaName: settings.mediaName ?? "",
+    mediaDisplayTitle: settings.mediaDisplayTitle ?? "",
+    brandMark: settings.brandMark ?? "",
+  };
 }

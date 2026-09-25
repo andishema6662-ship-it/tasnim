@@ -640,10 +640,10 @@ export function LogosScreen() {
       <Flash>{flash}</Flash>
       <div className="max-w-xl space-y-4 rounded-lg border border-line bg-sheet p-4">
         <Field label="نام رسانه">
-          <Input value={settings.mediaName} onChange={(event) => patchSettings({ mediaName: event.target.value })} placeholder="نام رسانه" />
+          <Input value={settings.mediaName ?? ""} onChange={(event) => patchSettings({ mediaName: event.target.value })} placeholder="نام رسانه" />
         </Field>
         <Field label="عنوان نمایش داده شده">
-          <Input value={settings.mediaDisplayTitle} onChange={(event) => patchSettings({ mediaDisplayTitle: event.target.value })} placeholder="عنوان نمایش داده شده" />
+          <Input value={settings.mediaDisplayTitle ?? ""} onChange={(event) => patchSettings({ mediaDisplayTitle: event.target.value })} placeholder="عنوان نمایش داده شده" />
         </Field>
         <div className="space-y-2">
           <p className="text-sm font-medium">آرم و نشان</p>
