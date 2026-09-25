@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PRESETS } from "@/lib/cover";
-import { faNum, wordCount } from "@/lib/format";
+import { faNum, htmlToPlainText, wordCountFromHtml } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/workflow";
 import { CoverThumb } from "../cover-thumb";
 import { AssistBar } from "./assist-bar";
+import { StoryBodyEditor } from "./body-editor";
 import { Button, Field, Flash, Input, Notice, Select, StatusBadge, TextArea } from "../ui";
 
 const forward: Partial<Record<Status, Status>> = {
@@ -167,16 +168,11 @@ export function Editor({ id }: { id: string }) {
             className="min-h-24 text-base"
             aria-label="لید"
           />
-          <TextArea
-            value={form.body}
-            disabled={!editable}
-            onChange={(event) => patch({ body: event.target.value })}
-            placeholder="متن خبر"
-            className="min-h-80 text-base leading-8"
-            aria-label="متن خبر"
-          />
-          <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCount(form.body))}</p>
-          {editable ? <AssistBar title={form.title} lead={form.lead} body={form.body} desk={desk} onApply={patch} /> : null}
+          <StoryBodyEditor value={form.body} disabled={!editable} onChange={(body) => patch({ body })} aria-label="متن خبر" />
+          <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCountFromHtml(form.body))}</p>
+          {editable ? (
+            <AssistBar title={form.title} lead={form.lead} body={htmlToPlainText(form.body)} desk={desk} onApply={patch} />
+          ) : null}
         </div>
 
         <aside className="space-y-4 rounded-lg border border-line bg-sheet p-4">

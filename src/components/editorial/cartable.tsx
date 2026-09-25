@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { faDate, faNum, norm } from "@/lib/format";
+import { faDate, faNum, htmlToPlainText, norm } from "@/lib/format";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
 import { applyStatus, canPublishCategory, categoryName, currentRole, STATUSES, statusLabel, transitionsFrom } from "@/lib/workflow";
@@ -30,7 +30,7 @@ export function CartableScreen() {
     if (categoryId !== "all" && story.categoryId !== categoryId) return false;
     if (author !== "all" && story.author !== author) return false;
     if (!query.trim()) return true;
-    const hay = norm(`${story.title} ${story.lead} ${story.body} ${story.tags.join(" ")}`);
+    const hay = norm(`${story.title} ${story.lead} ${htmlToPlainText(story.body)} ${story.tags.join(" ")}`);
     return hay.includes(norm(query));
   });
   const visible = showAll ? filtered : filtered.slice(0, Math.max(1, data.settings.pageSize));

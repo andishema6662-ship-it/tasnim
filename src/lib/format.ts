@@ -41,6 +41,38 @@ export function wordCount(text: string): number {
   return trimmed.split(/\s+/).length;
 }
 
+export function htmlToPlainText(html: string): string {
+  if (!html) return "";
+  if (!html.includes("<")) return html;
+  if (typeof document !== "undefined") {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return (doc.body.textContent ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  }
+  return html
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function wordCountFromHtml(html: string): number {
+  return wordCount(htmlToPlainText(html));
+}
+
+export function plainTextToHtml(text: string): string {
+  if (!text) return "<p><br></p>";
+  if (text.includes("<")) return text;
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped
+    .split(/\n{2,}/)
+    .map((block) => `<p>${block.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
 export function norm(value: string): string {
   return value
     .replace(/ي/g, "ی")
