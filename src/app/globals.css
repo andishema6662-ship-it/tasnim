@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f3efe6;
+  --color-sheet: #fcfbf7;
+  --color-ink: #1c1916;
+  --color-muted: #6f685f;
+  --color-line: #e3dacb;
+  --color-rule: #8e1e2d;
+  --color-mast: #141210;
+  --color-sand: #ebe4d6;
+  --color-pine: #1d4a42;
+  --font-sans: var(--font-vazir), sans-serif;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+}
+
+::selection {
+  background: #e7c9ce;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-rule);
+  outline-offset: 2px;
+}
+
+@keyframes ticker-move {
+  from {
+    transform: translateX(40%);
+  }
+  to {
+    transform: translateX(-70%);
+  }
+}
+
+.ticker-track {
+  display: inline-block;
+  min-width: 100%;
+  animation: ticker-move 22s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
