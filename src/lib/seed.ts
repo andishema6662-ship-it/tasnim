@@ -1,6 +1,7 @@
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
+import { normalizeAlbum } from "./albums";
 import { createSeedMediaLibrary } from "./media-seed";
-import type { NewsroomData, Settings, Story } from "./types";
+import type { Album, NewsroomData, Settings, Story } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
 
@@ -369,25 +370,39 @@ export function createSeed(): NewsroomData {
     ],
     mediaLibrary: createSeedMediaLibrary(),
     albums: [
-      {
+      normalizeAlbum({
         id: "alb-film",
-        title: "هفته فیلم کوتاه",
+        title: "هفته فیلم کوتاه — گزارش تصویری",
         description: "سالن، پوستر و گفت‌وگوی حاشیه‌ای شب افتتاح.",
+        photographer: "پویا کرمی",
+        placement: "home_featured",
+        serviceId: "srv-multi",
+        status: "published",
+        createdAt: iso("2026-09-21T10:00:00Z"),
+        updatedAt: iso("2026-09-21T15:00:00Z"),
+        publishedAt: iso("2026-09-21T15:00:00Z"),
         photos: [
           { id: "ph-1", caption: "سالن اصلی پیش از سانس اول", src: "ink" },
           { id: "ph-2", caption: "پوستر ورودی", src: "dawn" },
           { id: "ph-3", caption: "میز گفت‌وگو", src: "sand" },
         ],
-      },
-      {
+      }),
+      normalizeAlbum({
         id: "alb-karaj",
         title: "بازگشایی مجموعه کرج",
-        description: "سالن نوسازی‌شده و استخر تمرین.",
+        description: "سالن نوسازی‌شده و استخر تمرین در روز بازگشایی.",
+        photographer: "پویا کرمی",
+        placement: "dedicated",
+        serviceId: "srv-report",
+        status: "published",
+        createdAt: iso("2026-09-21T11:00:00Z"),
+        updatedAt: iso("2026-09-21T12:00:00Z"),
+        publishedAt: iso("2026-09-21T12:00:00Z"),
         photos: [
           { id: "ph-4", caption: "سالن چندمنظوره", src: "pine" },
           { id: "ph-5", caption: "ورودی مجموعه", src: "sea" },
         ],
-      },
+      }),
     ],
     videos: [
       {
@@ -625,6 +640,8 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!Array.isArray(next.ads)) next.ads = [];
   if (!Array.isArray(next.pitches)) next.pitches = base.pitches;
   if (!Array.isArray(next.mediaLibrary) || next.mediaLibrary.length === 0) next.mediaLibrary = base.mediaLibrary;
+  next.albums = (next.albums ?? []).map((album) => normalizeAlbum(album as Album));
+  if (next.albums.length === 0) next.albums = base.albums;
   next.roleModuleAccess = mergeRoleModuleAccess(base.roleModuleAccess, raw.roleModuleAccess, next.roles);
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };

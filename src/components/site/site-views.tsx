@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CoverThumb } from "@/components/cover-thumb";
 import { faDate } from "@/lib/format";
 import { useNewsroom } from "@/lib/store";
+import { ALBUM_PLACEMENT_LABEL, featuredPhotoAlbums, publishedAlbums } from "@/lib/albums";
 import { isCoverImage, publishedStories, storyBodyHtml } from "@/lib/site";
 
 function SiteChrome({ children }: { children: ReactNode }) {
@@ -30,7 +31,7 @@ function SiteChrome({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
-      <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">خروجی عمومی · فقط اخبار منتشرشده</footer>
+      <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">خروجی عمومی · اخبار و گزارش‌های تصویری منتشرشده</footer>
     </div>
   );
 }
@@ -38,9 +39,47 @@ function SiteChrome({ children }: { children: ReactNode }) {
 export function SiteHomeView() {
   const { data } = useNewsroom();
   const stories = publishedStories(data);
+  const albums = publishedAlbums(data);
+  const featured = featuredPhotoAlbums(data);
 
   return (
     <SiteChrome>
+      {featured.length ? (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold">گزارش تصویری ویژه</h2>
+          <ul className="mt-4 space-y-4">
+            {featured.map((album) => (
+              <li key={album.id} className="rounded-lg border border-line bg-sheet p-4">
+                <Link href={`/site/album/${album.id}`} className="group block">
+                  <div className="flex gap-3 overflow-x-auto pb-1">
+                    {album.photos.slice(0, 4).map((photo) => (
+                      <CoverThumb key={photo.id} cover={photo.src} className="h-24 w-32 shrink-0 rounded-md" />
+                    ))}
+                  </div>
+                  <h3 className="mt-3 text-lg font-bold group-hover:text-rule">{album.title}</h3>
+                  <p className="text-sm text-muted">عکاس: {album.photographer} · {ALBUM_PLACEMENT_LABEL[album.placement]}</p>
+                  <p className="mt-1 line-clamp-2 text-sm leading-7">{album.description}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {albums.filter((album) => album.placement === "dedicated").length ? (
+        <section className="mb-10">
+          <h2 className="text-lg font-bold">گزارش‌های تصویری</h2>
+          <ul className="mt-3 divide-y divide-line rounded-lg border border-line bg-sheet">
+            {albums
+              .filter((album) => album.placement === "dedicated")
+              .map((album) => (
+                <li key={album.id} className="px-4 py-3">
+                  <Link href={`/site/album/${album.id}`} className="font-semibold hover:text-rule">{album.title}</Link>
+                  <p className="text-xs text-muted">{album.photographer}</p>
+                </li>
+              ))}
+          </ul>
+        </section>
+      ) : null}
       <h1 className="text-2xl font-bold">آخرین اخبار</h1>
       <p className="mt-1 text-sm text-muted">فهرست خبرهای منتشرشده از همین مرورگر.</p>
       {stories.length === 0 ? <p className="mt-8 text-muted">فعلاً خبر منتشرشده‌ای نیست.</p> : null}
@@ -56,6 +95,39 @@ export function SiteHomeView() {
           </li>
         ))}
       </ul>
+    </SiteChrome>
+  );
+}
+
+export function SiteAlbumView({ id }: { id: string }) {
+  const { data } = useNewsroom();
+  const album = data.albums.find((item) => item.id === id && item.status === "published");
+
+  if (!album) {
+    return (
+      <SiteChrome>
+        <h1 className="text-xl font-bold">این گزارش تصویری در خروجی نیست</h1>
+        <Link href="/site" className="mt-4 inline-block text-sm text-rule">بازگشت</Link>
+      </SiteChrome>
+    );
+  }
+
+  return (
+    <SiteChrome>
+      <Link href="/site" className="text-sm text-rule">← خروجی سایت</Link>
+      <article className="mt-4">
+        <h1 className="text-3xl font-bold leading-snug">{album.title}</h1>
+        <p className="mt-2 text-sm text-muted">عکاس: {album.photographer} · {faDate(album.publishedAt ?? album.updatedAt)}</p>
+        <p className="mt-4 text-base leading-8">{album.description}</p>
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+          {album.photos.map((photo) => (
+            <li key={photo.id} className="overflow-hidden rounded-lg border border-line bg-sheet">
+              <CoverThumb cover={photo.src} className="h-48 w-full" />
+              {photo.caption ? <p className="px-3 py-2 text-sm">{photo.caption}</p> : null}
+            </li>
+          ))}
+        </ul>
+      </article>
     </SiteChrome>
   );
 }

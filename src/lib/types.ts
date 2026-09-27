@@ -137,11 +137,21 @@ export interface Photo {
   src: string;
 }
 
+export type AlbumPlacement = "home_featured" | "service" | "dedicated" | "slider";
+export type AlbumStatus = "draft" | "published";
+
 export interface Album {
   id: string;
   title: string;
   description: string;
+  photographer: string;
   photos: Photo[];
+  placement: AlbumPlacement;
+  serviceId: string;
+  status: AlbumStatus;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
 }
 
 export interface MediaItem {

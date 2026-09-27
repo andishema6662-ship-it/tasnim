@@ -6,99 +6,12 @@ import { faDate } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { pushActivity } from "@/lib/activity";
 import { useNewsroom } from "@/lib/store";
-import type { Album, Feed, Mail, Story } from "@/lib/types";
+import type { Feed, Mail, Story } from "@/lib/types";
 import { blankStory, placeStory } from "@/lib/workflow";
 import { CoverThumb } from "../cover-thumb";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
-export function AlbumsScreen() {
-  const { data, update } = useNewsroom();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [open, setOpen] = useState(data.albums[0]?.id ?? "");
-  const [caption, setCaption] = useState("");
-  const [src, setSrc] = useState<string>(PRESETS[0].id);
-  const [flash, setFlash] = useState("");
-
-  function addAlbum() {
-    if (!title.trim()) return;
-    const album: Album = { id: uid("alb"), title: title.trim(), description: description.trim(), photos: [] };
-    update((current) => ({ ...current, albums: [album, ...current.albums] }));
-    setOpen(album.id);
-    setTitle("");
-    setDescription("");
-    setFlash("آلبوم ساخته شد.");
-  }
-
-  return (
-    <ModulePage slug="albums">
-      <Flash>{flash}</Flash>
-      <form
-        className="grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          addAlbum();
-        }}
-      >
-        <Field label="نام آلبوم">
-          <Input value={title} onChange={(event) => setTitle(event.target.value)} />
-        </Field>
-        <Field label="توضیح">
-          <Input value={description} onChange={(event) => setDescription(event.target.value)} />
-        </Field>
-        <Button type="submit">ساخت آلبوم</Button>
-      </form>
-      {data.albums.length === 0 ? <Empty>آلبومی نیست.</Empty> : null}
-      {data.albums.map((album) => (
-        <article key={album.id} className="rounded-lg border border-line bg-sheet p-4">
-          <button type="button" className="text-right" onClick={() => setOpen(open === album.id ? "" : album.id)}>
-            <h2 className="font-bold">{album.title}</h2>
-            <p className="text-sm text-muted">{album.description}</p>
-          </button>
-          {open === album.id ? (
-            <div className="mt-3 space-y-3">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {album.photos.map((photo) => (
-                  <figure key={photo.id} className="overflow-hidden rounded-md border border-line">
-                    <CoverThumb cover={photo.src} className="h-24 w-full" />
-                    <figcaption className="px-2 py-1 text-xs">{photo.caption}</figcaption>
-                  </figure>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Input value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="شرح تصویر" className="max-w-xs" />
-                <Select value={PRESETS.some((item) => item.id === src) ? src : "url"} onChange={(event) => setSrc(event.target.value === "url" ? "https://" : event.target.value)}>
-                  {PRESETS.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label}
-                    </option>
-                  ))}
-                  <option value="url">نشانی تصویر</option>
-                </Select>
-                {!PRESETS.some((item) => item.id === src) ? <Input value={src} onChange={(event) => setSrc(event.target.value)} placeholder="https://" className="max-w-xs" /> : null}
-                <Button
-                  onClick={() => {
-                    if (!caption.trim()) return;
-                    update((current) => ({
-                      ...current,
-                      albums: current.albums.map((item) =>
-                        item.id === album.id ? { ...item, photos: [...item.photos, { id: uid("ph"), caption: caption.trim(), src }] } : item,
-                      ),
-                    }));
-                    setCaption("");
-                    setFlash("تصویر به آلبوم اضافه شد.");
-                  }}
-                >
-                  افزودن تصویر
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </article>
-      ))}
-    </ModulePage>
-  );
-}
+export { AlbumsScreen } from "./albums-screen";
 
 export function VideosScreen() {
   const { data, update } = useNewsroom();

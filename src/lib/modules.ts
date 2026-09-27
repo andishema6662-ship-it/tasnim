@@ -46,7 +46,7 @@ export const modules: ModuleInfo[] = [
   { group: "editorial", slug: "order", title: "ترتیب اخبار", description: "چیدمان اخبار منتشرشده؛ ردیف اول تیتر یک است." },
   { group: "editorial", slug: "suggestions", title: "اخبار پیشنهادی", description: "پیشنهاد خبر منتشرشده برای سرویس دیگر." },
   { group: "media", slug: "library", title: "کتابخانه رسانه", description: "بارگذاری، برش، کپی پیوند و گالری پرونده‌های چندرسانه‌ای." },
-  { group: "media", slug: "albums", title: "آلبوم تصاویر", description: "ساخت آلبوم و افزودن تصویر با نشانی یا طرح آماده." },
+  { group: "media", slug: "albums", title: "آلبوم تصاویر", description: "گزارش تصویری با تیتر، عکاس، بارگذاری چندتایی و محل انتشار." },
   { group: "media", slug: "videos", title: "محتوای ویدئویی", description: "ثبت مشخصات ویدئو. فایل روی سرور بارگذاری نمی‌شود." },
   { group: "media", slug: "rss", title: "فیدخوان", description: "منابع خوراک، نمونه محلی، و انتقال یک مورد به پیش‌نویس." },
   { group: "media", slug: "newsletter", title: "خبرنامه و مخاطبان", description: "مخاطبان و شماره‌های خبرنامه در صف محلی." },
