@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { norm, todayTriCalendar } from "@/lib/format";
-import { groups, hrefFor, modules } from "@/lib/modules";
+import { type GroupId, groups, hrefFor, modules } from "@/lib/modules";
+import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
 import { useNewsroom } from "@/lib/store";
 import { currentRole } from "@/lib/workflow";
 import { cn } from "./ui";
@@ -12,14 +13,53 @@ import { cn } from "./ui";
 function NavList({ query, onNavigate }: { query: string; onNavigate?: () => void }) {
   const path = usePathname();
   const q = norm(query);
+  const searching = q.length > 0;
+  const activeGroup = activeNavGroup(path);
+  const [toggled, setToggled] = useState<Partial<Record<GroupId, boolean>>>(() => {
+    const stored = loadNavSections();
+    const next: Partial<Record<GroupId, boolean>> = {};
+    groups.forEach((group) => {
+      next[group.id] = stored[group.id] ?? false;
+    });
+    return next;
+  });
+
+  const openSections = useMemo(() => {
+    const next = { ...toggled };
+    if (activeGroup) next[activeGroup] = true;
+    return next;
+  }, [toggled, activeGroup]);
+
+  useEffect(() => {
+    if (!activeGroup) return;
+    const stored = loadNavSections();
+    if (stored[activeGroup]) return;
+    saveNavSections({ ...stored, [activeGroup]: true });
+  }, [activeGroup]);
+
   const visible = modules.filter((item) => {
     if (!q) return true;
     const group = groups.find((entry) => entry.id === item.group);
     return norm(item.title).includes(q) || norm(group?.title ?? "").includes(q);
   });
 
+  function toggleSection(groupId: GroupId) {
+    setToggled((current) => {
+      const next = { ...current, [groupId]: !openSections[groupId] };
+      const toStore = { ...next };
+      if (activeGroup) toStore[activeGroup] = true;
+      saveNavSections(toStore);
+      return next;
+    });
+  }
+
+  function sectionOpen(groupId: GroupId) {
+    if (searching) return true;
+    return Boolean(openSections[groupId]);
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <Link
         href="/"
         onClick={onNavigate}
@@ -30,26 +70,38 @@ function NavList({ query, onNavigate }: { query: string; onNavigate?: () => void
       {groups.map((group) => {
         const items = visible.filter((item) => item.group === group.id);
         if (!items.length) return null;
+        const expanded = sectionOpen(group.id);
         return (
-          <section key={group.id}>
-            <h2 className="px-3 text-xs font-semibold text-rule">{group.title}</h2>
-            <ul className="mt-1">
-              {items.map((item) => {
-                const href = hrefFor(item.group, item.slug);
-                const active = path === href || path.startsWith(`${href}/`);
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      onClick={onNavigate}
-                      className={cn("block rounded-md px-3 py-1.5 text-sm leading-6", active ? "bg-sand font-semibold" : "hover:bg-sand/70")}
-                    >
-                      {item.title}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+          <section key={group.id} className="rounded-md border border-transparent">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-right text-xs font-semibold text-rule hover:bg-sand/70"
+              onClick={() => toggleSection(group.id)}
+              aria-expanded={expanded}
+              aria-controls={`nav-section-${group.id}`}
+            >
+              <span className="leading-6">{group.title}</span>
+              <span className="shrink-0 text-base leading-none text-muted" aria-hidden="true">{expanded ? "−" : "+"}</span>
+            </button>
+            {expanded ? (
+              <ul id={`nav-section-${group.id}`} className="mt-0.5 space-y-0.5 pb-1">
+                {items.map((item) => {
+                  const href = hrefFor(item.group, item.slug);
+                  const active = path === href || path.startsWith(`${href}/`);
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        onClick={onNavigate}
+                        className={cn("block rounded-md px-3 py-1.5 text-sm leading-6", active ? "bg-sand font-semibold" : "hover:bg-sand/70")}
+                      >
+                        {item.title}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
           </section>
         );
       })}
