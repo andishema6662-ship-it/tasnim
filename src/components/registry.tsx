@@ -10,6 +10,11 @@ import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audie
 import { AlbumsScreen, EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
 import { AdsScreen, BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
+import { canAccessModuleKey, moduleKeyFromPath } from "@/lib/module-access";
+import { moduleKeyFromParts } from "@/lib/modules";
+import { useNewsroom } from "@/lib/store";
+import { usePathname } from "next/navigation";
+import { UnauthorizedPanel } from "./unauthorized-panel";
 import { Page } from "./ui";
 
 const screens: Record<string, () => ReactElement> = {
@@ -62,8 +67,14 @@ const screens: Record<string, () => ReactElement> = {
 
 export function ModuleScreen() {
   const params = useParams<{ group: string; slug: string }>();
+  const path = usePathname();
+  const { data } = useNewsroom();
   const group = Array.isArray(params.group) ? params.group[0] : params.group;
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const key = group && slug ? moduleKeyFromParts(group, slug) : moduleKeyFromPath(path);
+  if (key && !canAccessModuleKey(data, key)) {
+    return <UnauthorizedPanel />;
+  }
   const Screen = screens[`${group}/${slug}`];
   if (!Screen) {
     return <Page title="این بخش پیدا نشد" description="از منوی بخش‌ها یکی را انتخاب کنید." />;

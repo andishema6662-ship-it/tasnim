@@ -4,14 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { norm, todayTriCalendar } from "@/lib/format";
-import { type GroupId, groups, hrefFor, modules } from "@/lib/modules";
+import { canAccessPath, DASHBOARD_MODULE_KEY, effectiveModuleKeys } from "@/lib/module-access";
+import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules";
 import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
 import { useNewsroom } from "@/lib/store";
 import { currentRole } from "@/lib/workflow";
+import { UnauthorizedPanel } from "./unauthorized-panel";
 import { cn } from "./ui";
 
 function NavList({ query, onNavigate }: { query: string; onNavigate?: () => void }) {
+  const { data } = useNewsroom();
   const path = usePathname();
+  const allowedKeys = useMemo(() => new Set(effectiveModuleKeys(data)), [data]);
   const q = norm(query);
   const searching = q.length > 0;
   const activeGroup = activeNavGroup(path);
@@ -38,6 +42,7 @@ function NavList({ query, onNavigate }: { query: string; onNavigate?: () => void
   }, [activeGroup]);
 
   const visible = modules.filter((item) => {
+    if (!allowedKeys.has(moduleKey(item))) return false;
     if (!q) return true;
     const group = groups.find((entry) => entry.id === item.group);
     return norm(item.title).includes(q) || norm(group?.title ?? "").includes(q);
@@ -60,13 +65,15 @@ function NavList({ query, onNavigate }: { query: string; onNavigate?: () => void
 
   return (
     <div className="space-y-3">
-      <Link
-        href="/"
-        onClick={onNavigate}
-        className={cn("block rounded-md px-3 py-2 text-sm", path === "/" ? "bg-sand font-semibold" : "hover:bg-sand/70")}
-      >
-        پیشخوان
-      </Link>
+      {allowedKeys.has(DASHBOARD_MODULE_KEY) ? (
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className={cn("block rounded-md px-3 py-2 text-sm", path === "/" ? "bg-sand font-semibold" : "hover:bg-sand/70")}
+        >
+          پیشخوان
+        </Link>
+      ) : null}
       {groups.map((group) => {
         const items = visible.filter((item) => item.group === group.id);
         if (!items.length) return null;
@@ -204,7 +211,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
           <div className="h-1 bg-rule" />
         </header>
-        <main className="px-4 py-6 pb-16 lg:px-8">{children}</main>
+        <main className="px-4 py-6 pb-16 lg:px-8">{canAccessPath(data, path) ? children : <UnauthorizedPanel />}</main>
         <p className="px-4 pb-6 text-xs text-muted lg:px-8">داده‌ها در حافظه همین مرورگر می‌ماند و با تازه‌سازی از بین نمی‌رود.</p>
       </div>
 

@@ -8,8 +8,10 @@ import { mergeSeed } from "@/lib/seed";
 import { STORAGE_KEY } from "@/lib/storage";
 import { useNewsroom } from "@/lib/store";
 import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User } from "@/lib/types";
+import { canManageModuleAccess } from "@/lib/module-access";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
+import { ModuleAccessMatrix, ModuleAccessRolePicker } from "./module-access-matrix";
 
 export function SystemScreen() {
   const { data } = useNewsroom();
@@ -55,6 +57,8 @@ export function UsersScreen() {
   const allowed = canPerm(data, "manageUsers");
   const [form, setForm] = useState({ name: "", username: "", roleId: "reporter" });
   const [editing, setEditing] = useState<User | null>(null);
+  const [editingCustomMenu, setEditingCustomMenu] = useState(false);
+  const [editingMenuKeys, setEditingMenuKeys] = useState<string[]>([]);
   const [flash, setFlash] = useState("");
 
   function roleName(roleId: string): string {
@@ -77,16 +81,21 @@ export function UsersScreen() {
       setFlash("حداقل یک مدیر مسئول باید بماند.");
       return;
     }
-    update((current) =>
-      pushActivity(
+    update((current) => {
+      const userModuleAccess = { ...current.userModuleAccess };
+      if (editingCustomMenu) userModuleAccess[editing.id] = [...editingMenuKeys];
+      else delete userModuleAccess[editing.id];
+      return pushActivity(
         {
           ...current,
+          userModuleAccess,
           users: current.users.map((item) => (item.id === editing.id ? { ...editing, name, username } : item)),
         },
         `کاربر ${name} ویرایش شد`,
-      ),
-    );
+      );
+    });
     setEditing(null);
+    setEditingCustomMenu(false);
     setFlash("تغییرات کاربر ذخیره شد.");
   }
 
@@ -96,12 +105,14 @@ export function UsersScreen() {
       setFlash("حداقل یک مدیر مسئول باید بماند.");
       return;
     }
-    update((current) =>
-      pushActivity(
-        { ...current, users: current.users.filter((item) => item.id !== user.id) },
+    update((current) => {
+      const userModuleAccess = { ...current.userModuleAccess };
+      delete userModuleAccess[user.id];
+      return pushActivity(
+        { ...current, userModuleAccess, users: current.users.filter((item) => item.id !== user.id) },
         `کاربر ${user.name} حذف شد`,
-      ),
-    );
+      );
+    });
     if (editing?.id === user.id) setEditing(null);
     setFlash(`کاربر ${user.name} حذف شد.`);
   }
@@ -223,7 +234,20 @@ export function UsersScreen() {
                         </>
                       ) : (
                         <>
-                          <Button tone="ghost" disabled={!allowed} onClick={() => setEditing({ ...user })}>
+                          <Button
+                            tone="ghost"
+                            disabled={!allowed}
+                            onClick={() => {
+                              setEditing({ ...user });
+                              const custom = Object.prototype.hasOwnProperty.call(data.userModuleAccess, user.id);
+                              setEditingCustomMenu(custom);
+                              setEditingMenuKeys(
+                                custom
+                                  ? data.userModuleAccess[user.id] ?? []
+                                  : data.roleModuleAccess[user.roleId] ?? [],
+                              );
+                            }}
+                          >
                             ویرایش
                           </Button>
                           <Button tone="quiet" disabled={!allowed} onClick={() => removeUser(user)}>
@@ -239,6 +263,35 @@ export function UsersScreen() {
           </tbody>
         </table>
       </div>
+      {editing && allowed ? (
+        <div className="space-y-3 rounded-lg border border-line bg-sheet p-4">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={editingCustomMenu}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setEditingCustomMenu(checked);
+                if (checked && !editingMenuKeys.length) {
+                  setEditingMenuKeys(data.roleModuleAccess[editing.roleId] ?? []);
+                }
+              }}
+            />
+            دسترسی منو مخصوص این کاربر (جایگزین نقش)
+          </label>
+          {editingCustomMenu ? (
+            <ModuleAccessMatrix
+              roleId={editing.id}
+              roleName={editing.name}
+              roleBase={data.roles.find((role) => role.id === editing.roleId)?.base ?? "reporter"}
+              selectedKeys={editingMenuKeys}
+              onChange={setEditingMenuKeys}
+            />
+          ) : (
+            <p className="text-sm text-muted">در حالت عادی، منوی همین کاربر از نقش «{roleName(editing.roleId)}» پیروی می‌کند.</p>
+          )}
+        </div>
+      ) : null}
     </ModulePage>
   );
 }
@@ -246,9 +299,33 @@ export function UsersScreen() {
 export function AccessScreen() {
   const { data, update } = useNewsroom();
   const allowed = canPerm(data, "manageUsers") || canPerm(data, "manageStructure");
+  const manageMenus = canManageModuleAccess(data);
+  const [menuRoleId, setMenuRoleId] = useState(data.roles[0]?.id ?? "reporter");
+  const menuRole = data.roles.find((role) => role.id === menuRoleId) ?? data.roles[0];
+  const menuKeys = data.roleModuleAccess[menuRoleId] ?? [];
   return (
     <ModulePage slug="access">
       <Notice>این جدول کنار سطح نقش، ویرایش و انتشار هر دسته را محدود می‌کند. خبرنگار نمونه روی سیاست حق ویرایش ندارد.</Notice>
+      <div className="space-y-3">
+        <ModuleAccessRolePicker roleId={menuRoleId} roles={data.roles} onRoleId={setMenuRoleId} />
+        {menuRole ? (
+          <ModuleAccessMatrix
+            roleId={menuRole.id}
+            roleName={menuRole.name}
+            roleBase={menuRole.base}
+            selectedKeys={menuKeys}
+            disabled={!manageMenus}
+            onChange={(keys) => {
+              update((current) => ({
+                ...current,
+                roleModuleAccess: { ...current.roleModuleAccess, [menuRoleId]: keys },
+              }));
+            }}
+          />
+        ) : null}
+        {!manageMenus ? <Notice>تنظیم دسترسی منو فقط با مدیر مسئول ممکن است.</Notice> : null}
+      </div>
+      <h2 className="text-lg font-bold">دسترسی دسته‌های خبر</h2>
       <div className="overflow-x-auto rounded-lg border border-line bg-sheet">
         <table className="w-full min-w-[40rem] text-sm">
           <thead className="border-b border-line text-xs text-muted">
@@ -911,6 +988,10 @@ export function RolesScreen() {
           update((current) => ({
             ...current,
             roles: [...current.roles, { id, name: form.name.trim(), base: form.base, permissions: { ...baseRole.permissions } }],
+            roleModuleAccess: {
+              ...current.roleModuleAccess,
+              [id]: [...(current.roleModuleAccess[form.base] ?? [])],
+            },
             access: [
               ...current.access,
               ...current.categories.map((category) => {

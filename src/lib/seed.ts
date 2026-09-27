@@ -1,3 +1,4 @@
+import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
 import type { NewsroomData, Settings, Story } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
@@ -56,6 +57,12 @@ export function createSeed(): NewsroomData {
         permissions: { write: true, review: false, publish: false, archive: false, manageUsers: false, manageStructure: false },
       },
     ],
+    roleModuleAccess: createDefaultRoleModuleAccess([
+      { id: "publisher", base: "publisher" },
+      { id: "chief", base: "chief" },
+      { id: "reporter", base: "reporter" },
+    ]),
+    userModuleAccess: {},
     users: [
       { id: "u-leila", name: "لیلا نوری", username: "leila", roleId: "publisher", active: true },
       { id: "u-kamran", name: "کامران شفیعی", username: "kamran", roleId: "chief", active: true },
@@ -615,6 +622,9 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   else next.settings = normalizeSettings(next.settings);
   if (!Array.isArray(next.ads)) next.ads = [];
   if (!Array.isArray(next.pitches)) next.pitches = base.pitches;
+  next.roleModuleAccess = mergeRoleModuleAccess(base.roleModuleAccess, raw.roleModuleAccess, next.roles);
+  if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
+  else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };
   return next;
 }
 

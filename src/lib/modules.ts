@@ -25,7 +25,7 @@ export const groups: GroupInfo[] = [
 export const modules: ModuleInfo[] = [
   { group: "core", slug: "system", title: "اطلاعات سیستم", description: "وضعیت همین نسخه و داده ذخیره‌شده در مرورگر." },
   { group: "core", slug: "users", title: "مدیریت کاربران", description: "تعریف کاربران تحریریه و نسبت دادنشان به نقش." },
-  { group: "core", slug: "access", title: "کنترل دسترسی محتوا", description: "ویرایش و انتشار هر دسته برای هر نقش." },
+  { group: "core", slug: "access", title: "کنترل دسترسی محتوا", description: "دسترسی منو و بخش‌ها برای هر نقش، و ویرایش و انتشار هر دسته." },
   { group: "core", slug: "settings", title: "تنظیمات سیستم", description: "نام اتاق خبر و اندازه فهرست‌ها." },
   { group: "core", slug: "monitoring", title: "مانیتورینگ سرور", description: "سنجه‌های محیط محلی مرورگر، نه یک سرور سازمانی." },
   { group: "core", slug: "backup", title: "مدیریت بک‌آپ", description: "خروجی، ورودی و بازگردانی داده محلی." },
@@ -76,4 +76,16 @@ export function moduleBySlug(slug: string): ModuleInfo | undefined {
 
 export function hrefFor(group: string, slug: string): string {
   return `/${group}/${slug}`;
+}
+
+export function moduleKey(module: ModuleInfo): string {
+  return `${module.group}/${module.slug}`;
+}
+
+export function moduleKeyFromParts(group: string, slug: string): string {
+  return `${group}/${slug}`;
+}
+
+export function allModuleKeys(): string[] {
+  return modules.map((item) => moduleKey(item));
 }

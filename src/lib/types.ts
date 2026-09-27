@@ -376,6 +376,10 @@ export interface NewsroomData {
   settings: Settings;
   roles: RoleDef[];
   users: User[];
+  /** نقش → فهرست کلیدهای مجاز (dashboard + group/slug) */
+  roleModuleAccess: Record<string, string[]>;
+  /** کاربر → فهرست سفارشی؛ اگر کلید وجود داشته باشد به‌جای نقش اعمال می‌شود */
+  userModuleAccess: Record<string, string[]>;
   access: AccessRule[];
   stories: Story[];
   homeOrder: string[];
