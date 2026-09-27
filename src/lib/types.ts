@@ -144,6 +144,18 @@ export interface Album {
   photos: Photo[];
 }
 
+export interface MediaItem {
+  id: string;
+  title: string;
+  fileName: string;
+  src: string;
+  width: number;
+  height: number;
+  mimeType: string;
+  createdAt: string;
+  alt?: string;
+}
+
 export interface VideoItem {
   id: string;
   title: string;
@@ -391,6 +403,7 @@ export interface NewsroomData {
   categories: Category[];
   services: Service[];
   albums: Album[];
+  mediaLibrary: MediaItem[];
   videos: VideoItem[];
   feeds: Feed[];
   subscribers: Subscriber[];

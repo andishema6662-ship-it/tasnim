@@ -22,6 +22,7 @@ import {
   statusLabel,
   transitionsFrom,
 } from "@/lib/workflow";
+import { MediaLibraryModal } from "../media/media-library-modal";
 import { CoverThumb } from "../cover-thumb";
 import { AssistBar } from "./assist-bar";
 import { StoryBodyEditor } from "./body-editor";
@@ -63,6 +64,7 @@ export function Editor({ id }: { id: string }) {
   const [tag, setTag] = useState("");
   const [error, setError] = useState("");
   const [flash, setFlash] = useState("");
+  const [mediaOpen, setMediaOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const role = currentRole(data);
   const editable = canEditStory(data, form.status);
@@ -308,8 +310,11 @@ export function Editor({ id }: { id: string }) {
             <CoverThumb cover={form.cover} className="mt-2 h-36 w-full rounded-md border border-line" />
             <input ref={coverInputRef} type="file" accept="image/*" className="hidden" disabled={!editable} onChange={pickCoverFile} />
             <div className="mt-2 flex flex-wrap gap-2">
+              <Button tone="ghost" disabled={!editable} onClick={() => setMediaOpen(true)}>
+                {isUploadedCover(form.cover) ? "تغییر عکس شاخص" : "انتخاب عکس شاخص"}
+              </Button>
               <Button tone="ghost" disabled={!editable} onClick={() => coverInputRef.current?.click()}>
-                {isUploadedCover(form.cover) ? "عوض کردن عکس" : "انتخاب از رایانه"}
+                انتخاب سریع از رایانه
               </Button>
               {isUploadedCover(form.cover) ? (
                 <Button tone="quiet" disabled={!editable} onClick={removeCover}>
@@ -384,6 +389,15 @@ export function Editor({ id }: { id: string }) {
           </Button>
         ))}
       </div>
+      <MediaLibraryModal
+        open={mediaOpen}
+        onClose={() => setMediaOpen(false)}
+        onPick={(src) => {
+          patch({ cover: src });
+          setMediaOpen(false);
+          setFlash("عکس شاخص از کتابخانه رسانه تنظیم شد.");
+        }}
+      />
     </div>
   );
 }

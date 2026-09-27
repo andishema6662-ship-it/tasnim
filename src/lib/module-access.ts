@@ -15,6 +15,7 @@ function reporterPreset(): string[] {
     "editorial/cartable",
     "editorial/pitches",
     "editorial/submissions",
+    "media/library",
     "media/albums",
     "media/videos",
     "media/rss",

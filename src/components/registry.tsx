@@ -7,6 +7,7 @@ import { AiScreen, OrderScreen, ProcessScreen, SubmissionsScreen, SuggestionsScr
 import { CartableScreen } from "./editorial/cartable";
 import { PitchesScreen } from "./editorial/pitches-screen";
 import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audience/audience-screens";
+import { MediaLibraryScreen } from "./media/media-library-screen";
 import { AlbumsScreen, EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
 import { AdsScreen, BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
@@ -40,6 +41,7 @@ const screens: Record<string, () => ReactElement> = {
   "editorial/submissions": SubmissionsScreen,
   "editorial/order": OrderScreen,
   "editorial/suggestions": SuggestionsScreen,
+  "media/library": MediaLibraryScreen,
   "media/albums": AlbumsScreen,
   "media/videos": VideosScreen,
   "media/rss": RssScreen,

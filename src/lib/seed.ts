@@ -1,4 +1,5 @@
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
+import { createSeedMediaLibrary } from "./media-seed";
 import type { NewsroomData, Settings, Story } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
@@ -366,6 +367,7 @@ export function createSeed(): NewsroomData {
         createdAt: iso("2026-09-21T11:00:00Z"),
       },
     ],
+    mediaLibrary: createSeedMediaLibrary(),
     albums: [
       {
         id: "alb-film",
@@ -622,6 +624,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   else next.settings = normalizeSettings(next.settings);
   if (!Array.isArray(next.ads)) next.ads = [];
   if (!Array.isArray(next.pitches)) next.pitches = base.pitches;
+  if (!Array.isArray(next.mediaLibrary) || next.mediaLibrary.length === 0) next.mediaLibrary = base.mediaLibrary;
   next.roleModuleAccess = mergeRoleModuleAccess(base.roleModuleAccess, raw.roleModuleAccess, next.roles);
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };
