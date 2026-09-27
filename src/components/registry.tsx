@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { AccessScreen, BackupScreen, CommsScreen, FormsScreen, LinksScreen, LogosScreen, MenusScreen, MonitoringScreen, PortalScreen, RolesScreen, SettingsScreen, SubsitesScreen, SystemScreen, TicketsScreen, UsersScreen } from "./core/core-screens";
 import { AiScreen, OrderScreen, ProcessScreen, SubmissionsScreen, SuggestionsScreen } from "./editorial/other-screens";
 import { CartableScreen } from "./editorial/cartable";
+import { PitchesScreen } from "./editorial/pitches-screen";
 import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audience/audience-screens";
 import { AlbumsScreen, EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
@@ -29,6 +30,7 @@ const screens: Record<string, () => ReactElement> = {
   "core/portal": PortalScreen,
   "editorial/ai": AiScreen,
   "editorial/cartable": CartableScreen,
+  "editorial/pitches": PitchesScreen,
   "editorial/process": ProcessScreen,
   "editorial/submissions": SubmissionsScreen,
   "editorial/order": OrderScreen,

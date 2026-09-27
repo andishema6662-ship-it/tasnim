@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { PRESETS } from "@/lib/cover";
 import { faNum, htmlToPlainText, wordCountFromHtml } from "@/lib/format";
 import { uid } from "@/lib/id";
+import { pitchVisibleToUser } from "@/lib/pitches";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
 import {
@@ -37,9 +38,28 @@ const forward: Partial<Record<Status, Status>> = {
 export function Editor({ id }: { id: string }) {
   const { data, update, commitStory } = useNewsroom();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pitchFromUrl = searchParams.get("pitch");
   const isNew = id === "new";
   const existing = data.stories.find((story) => story.id === id);
-  const [form, setForm] = useState<Story>(() => existing ?? blankStory(data));
+  const [form, setForm] = useState<Story>(() => {
+    if (existing) return existing;
+    if (isNew && pitchFromUrl) {
+      const pitch = data.pitches.find((item) => item.id === pitchFromUrl);
+      if (pitch && pitchVisibleToUser(data, pitch)) {
+        const base = blankStory(data);
+        return {
+          ...base,
+          pitchId: pitch.id,
+          title: pitch.title,
+          categoryId: pitch.categoryId,
+          lead: pitch.description.slice(0, 240),
+          tags: pitch.topic ? [pitch.topic] : base.tags,
+        };
+      }
+    }
+    return blankStory(data);
+  });
   const [tag, setTag] = useState("");
   const [error, setError] = useState("");
   const [flash, setFlash] = useState("");
@@ -150,6 +170,8 @@ export function Editor({ id }: { id: string }) {
   }
 
   const desk = categoryName(data, form.categoryId);
+  const linkedPitch = form.pitchId ? data.pitches.find((item) => item.id === form.pitchId) : undefined;
+  const pitchOptions = data.pitches.filter((pitch) => pitchVisibleToUser(data, pitch) || pitch.id === form.pitchId);
 
   return (
     <div className="mx-auto w-full max-w-5xl pb-24">
@@ -235,6 +257,25 @@ export function Editor({ id }: { id: string }) {
                 </option>
               ))}
             </Select>
+          </Field>
+          <Field label="سوژه خبری">
+            <Select
+              value={form.pitchId ?? ""}
+              disabled={!editable}
+              onChange={(event) => patch({ pitchId: event.target.value || undefined })}
+            >
+              <option value="">بدون سوژه</option>
+              {pitchOptions.map((pitch) => (
+                <option key={pitch.id} value={pitch.id}>
+                  {pitch.title}
+                </option>
+              ))}
+            </Select>
+            {linkedPitch ? (
+              <Link href="/editorial/pitches" className="mt-1 block text-xs text-rule">
+                مشاهده سوژه: {linkedPitch.title}
+              </Link>
+            ) : null}
           </Field>
           <Field label="برچسب‌ها">
             <div className="flex gap-2">

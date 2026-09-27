@@ -42,6 +42,26 @@ export interface Settings {
   brandMark: string;
 }
 
+export type PitchStatus = "active" | "completed" | "cancelled";
+export type PitchPriority = "low" | "normal" | "high";
+export type PitchAudience = "all_reporters" | "specific";
+
+export interface NewsPitch {
+  id: string;
+  title: string;
+  topic: string;
+  categoryId: string;
+  description: string;
+  audience: PitchAudience;
+  assigneeUserId?: string;
+  deadline?: string;
+  priority: PitchPriority;
+  status: PitchStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -59,6 +79,7 @@ export interface Story {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  pitchId?: string;
 }
 
 export interface Step {
@@ -361,6 +382,7 @@ export interface NewsroomData {
   steps: Step[];
   transitions: Transition[];
   submissions: Submission[];
+  pitches: NewsPitch[];
   suggestions: Suggestion[];
   categories: Category[];
   services: Service[];

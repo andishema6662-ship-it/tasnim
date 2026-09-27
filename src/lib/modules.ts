@@ -40,6 +40,7 @@ export const modules: ModuleInfo[] = [
   { group: "core", slug: "portal", title: "اتصال به پورتال", description: "نگهداری مشخصات اتصال. از این پنل تماسی با پورتال برقرار نمی‌شود." },
   { group: "editorial", slug: "ai", title: "تحریریه هوشمند", description: "دستیار محلی برای پیش‌نویس، عنوان، خلاصه، برچسب، تصویر و صوت." },
   { group: "editorial", slug: "cartable", title: "کارتابل و سردبیری", description: "فهرست خبر، ویرایش و صف تأیید تا انتشار." },
+  { group: "editorial", slug: "pitches", title: "سوژه‌های خبری", description: "تعریف سوژه برای خبرنگاران، پیگیری مهلت و گزارش اخبار متصل." },
   { group: "editorial", slug: "process", title: "فرایندساز خبر", description: "گام‌ها و گذارهای گردش کار و نقش مسئول هر گذار." },
   { group: "editorial", slug: "submissions", title: "مدیریت ارسال خبر", description: "ارسال خبر به دبیر و پذیرش یا رد آن در کارتابل." },
   { group: "editorial", slug: "order", title: "ترتیب اخبار", description: "چیدمان اخبار منتشرشده؛ ردیف اول تیتر یک است." },

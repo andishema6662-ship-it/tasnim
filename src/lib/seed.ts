@@ -109,6 +109,7 @@ export function createSeed(): NewsroomData {
         views: 4,
         createdAt: iso("2026-09-25T06:10:00Z"),
         updatedAt: iso("2026-09-25T06:40:00Z"),
+        pitchId: "pitch-yazd",
       }),
       story({
         id: "s-ink",
@@ -160,6 +161,7 @@ export function createSeed(): NewsroomData {
         views: 11,
         createdAt: iso("2026-09-24T08:00:00Z"),
         updatedAt: iso("2026-09-24T12:30:00Z"),
+        pitchId: "pitch-tajrish",
       }),
       story({
         id: "s-sat",
@@ -230,6 +232,7 @@ export function createSeed(): NewsroomData {
         createdAt: iso("2026-09-19T11:00:00Z"),
         updatedAt: iso("2026-09-21T15:00:00Z"),
         publishedAt: iso("2026-09-21T15:00:00Z"),
+        pitchId: "pitch-film-week",
       }),
       story({
         id: "s-bus",
@@ -267,6 +270,52 @@ export function createSeed(): NewsroomData {
         updatedAt: iso("2026-09-01T08:00:00Z"),
         publishedAt: iso("2026-05-12T12:00:00Z"),
       }),
+    ],
+    pitches: [
+      {
+        id: "pitch-yazd",
+        title: "پوشش توسعه نیروگاه‌های خورشیدی در یزد",
+        topic: "انرژی تجدیدپذیر و ظرفیت‌سازی استانی",
+        categoryId: "cat-economy",
+        description:
+          "با مدیرعامل برق منطقه‌ای تماس بگیرید. عدد ظرفیت فقط در صورت تأیید رسمی در تیتر بیاید. یک گزارش میدانی از سایت مهریز و یک مصاحبه کوتاه با پیمانکار کافی است.",
+        audience: "all_reporters",
+        deadline: iso("2026-10-05T12:00:00Z"),
+        priority: "high",
+        status: "active",
+        createdBy: "کامران شفیعی",
+        createdAt: iso("2026-09-24T08:00:00Z"),
+        updatedAt: iso("2026-09-25T06:15:00Z"),
+      },
+      {
+        id: "pitch-tajrish",
+        title: "بهسازی پیاده‌رو بازار تجریش",
+        topic: "شهر و عبور عابران در بازارهای تاریخی",
+        categoryId: "cat-society",
+        description: "عکاس پویا کرمی هماهنگ است. تأکید بر زمان‌بندی شبانه و نظر کسبه. از شایعه تعطیلی بازار دوری کنید.",
+        audience: "specific",
+        assigneeUserId: "u-sara",
+        deadline: iso("2026-09-30T12:00:00Z"),
+        priority: "normal",
+        status: "active",
+        createdBy: "کامران شفیعی",
+        createdAt: iso("2026-09-23T10:00:00Z"),
+        updatedAt: iso("2026-09-24T08:30:00Z"),
+      },
+      {
+        id: "pitch-film-week",
+        title: "هفته فیلم کوتاه — اکران و گفت‌وگو",
+        topic: "فرهنگ و رویدادهای سینمایی",
+        categoryId: "cat-culture",
+        description: "پوشش افتتاحیه و یک گزارش از نشست سه‌شنبه. خبر منتشرشده s-film را می‌توان برای سرویس فوری هم پیشنهاد داد.",
+        audience: "specific",
+        assigneeUserId: "u-ali",
+        priority: "low",
+        status: "completed",
+        createdBy: "لیلا نوری",
+        createdAt: iso("2026-09-18T09:00:00Z"),
+        updatedAt: iso("2026-09-22T11:00:00Z"),
+      },
     ],
     submissions: [
       {
@@ -565,6 +614,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (raw.settings) next.settings = normalizeSettings({ ...base.settings, ...raw.settings });
   else next.settings = normalizeSettings(next.settings);
   if (!Array.isArray(next.ads)) next.ads = [];
+  if (!Array.isArray(next.pitches)) next.pitches = base.pitches;
   return next;
 }
 

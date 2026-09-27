@@ -1,10 +1,12 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Editor } from "@/components/editorial/editor";
 
 export default function StoryPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  return <Editor key={id} id={id} />;
+  const pitch = searchParams.get("pitch") ?? "";
+  return <Editor key={`${id}:${pitch}`} id={id} />;
 }
