@@ -519,7 +519,32 @@ export function createSeed(): NewsroomData {
         ],
       },
     ],
-    ads: [],
+    ads: [
+      {
+        id: "ad-leaderboard",
+        title: "بنر بالای سایت",
+        placement: "بالای صفحه",
+        image:
+          "data:image/svg+xml;charset=utf-8," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="728" height="90" viewBox="0 0 728 90"><rect fill="#ebe4d6" width="100%" height="100%"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#6f685f" font-family="Tahoma" font-size="20">تبلیغ 728×90</text></svg>',
+          ),
+        href: "#",
+        active: true,
+      },
+      {
+        id: "ad-mid",
+        title: "بنر میان صفحه",
+        placement: "میان‌متن",
+        image:
+          "data:image/svg+xml;charset=utf-8," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="728" height="90" viewBox="0 0 728 90"><rect fill="#f3efe6" width="100%" height="100%"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8e1e2d" font-family="Tahoma" font-size="18">جایگاه تبلیغاتی خبرگزاری</text></svg>',
+          ),
+        href: "#",
+        active: true,
+      },
+    ],
     banners: [
       { id: "bn-1", title: "هفته فیلم", text: "اکران رایگان سانس صبح در خانه هنرمندان", href: "/editorial/cartable/s-film", placement: "بالای صفحه", active: true },
       { id: "bn-2", title: "عضویت مجموعه کرج", text: "ثبت‌نام محله‌ای از شنبه", href: "/editorial/cartable/s-karaj", placement: "ستون", active: false },
@@ -637,7 +662,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!next.roles.some((role) => role.id === next.currentRoleId)) next.currentRoleId = "reporter";
   if (raw.settings) next.settings = normalizeSettings({ ...base.settings, ...raw.settings });
   else next.settings = normalizeSettings(next.settings);
-  if (!Array.isArray(next.ads)) next.ads = [];
+  if (!Array.isArray(next.ads) || next.ads.length === 0) next.ads = base.ads;
   if (!Array.isArray(next.pitches)) next.pitches = base.pitches;
   if (!Array.isArray(next.mediaLibrary) || next.mediaLibrary.length === 0) next.mediaLibrary = base.mediaLibrary;
   next.albums = (next.albums ?? []).map((album) => normalizeAlbum(album as Album));
