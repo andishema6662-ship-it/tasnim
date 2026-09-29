@@ -4,3 +4,5 @@ out
 .DS_Store
 *.log
 tsconfig.tsbuildinfo
+test-results
+playwright-report
