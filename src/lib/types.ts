@@ -543,6 +543,35 @@ export interface EventMapProject {
   embedCode: string;
 }
 
+export interface OfficialContact {
+  id: string;
+  fullName: string;
+  organization: string;
+  position: string;
+  mobile: string;
+  officePhone: string;
+  email: string;
+  editorialNotes: string;
+  tags: string[];
+}
+
+export interface ReporterAgendaItem {
+  id: string;
+  title: string;
+  reporterUserId: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+  meetingLink: string;
+  coordinatorPhone: string;
+  officialContactId?: string;
+  requirements: string;
+  done: boolean;
+  linkedStoryId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OriginHit {
   outlet: string;
   publishedAt: string;
@@ -606,5 +635,7 @@ export interface NewsroomData {
   adminTemplates: AdminLetterTemplate[];
   specialDossiers: SpecialDossier[];
   eventMaps: EventMapProject[];
+  officialContacts: OfficialContact[];
+  reporterAgenda: ReporterAgendaItem[];
   sessionStartedAt: string;
 }

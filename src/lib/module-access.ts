@@ -25,6 +25,8 @@ function reporterPreset(): string[] {
     "audience/forum",
     "core/tickets",
     "core/comms",
+    "core/official-contacts",
+    "editorial/agenda",
   ];
 }
 

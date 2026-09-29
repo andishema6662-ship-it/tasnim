@@ -5,6 +5,7 @@ import { faDate, faNum } from "@/lib/format";
 import { hrefFor } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
 import { categoryName, currentRole, STATUSES, statusLabel } from "@/lib/workflow";
+import { DashboardAgendaWidget } from "./editorial/contacts-agenda-screens";
 import { StatusBadge } from "./ui";
 
 const chartColors = ["#8e1e2d", "#1e3a5f", "#d97706", "#7c3aed", "#0891b2", "#059669", "#db2777", "#4d7c0f"];
@@ -54,6 +55,8 @@ export function Dashboard() {
           نقش فعلی {role.name} است. خبرنگار پیش‌نویس را می‌فرستد، سردبیر بازبینی می‌کند و مدیر مسئول منتشر می‌کند.
         </p>
       </header>
+
+      <DashboardAgendaWidget />
 
       <section className="rounded-lg border border-line bg-sheet p-4" aria-label="نمودار آمار تحریریه">
         <h2 className="font-bold">نمودار آمار</h2>

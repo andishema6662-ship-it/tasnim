@@ -2,9 +2,54 @@ import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-a
 import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
 import { createSeedMediaLibrary } from "./media-seed";
-import type { Album, NewsroomData, Settings, Story } from "./types";
+import type { Album, NewsroomData, ReporterAgendaItem, Settings, Story } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
+
+function seedReporterAgenda(): ReporterAgendaItem[] {
+  const now = new Date();
+  const tomorrow10 = new Date(now);
+  tomorrow10.setDate(tomorrow10.getDate() + 1);
+  tomorrow10.setHours(10, 0, 0, 0);
+  const tomorrowEnd = new Date(tomorrow10);
+  tomorrowEnd.setHours(11, 0, 0, 0);
+  const today15 = new Date(now);
+  today15.setHours(15, 30, 0, 0);
+  const todayEnd = new Date(today15);
+  todayEnd.setHours(16, 30, 0, 0);
+  const ts = now.toISOString();
+  return [
+    {
+      id: "ag-edu",
+      title: "مصاحبه با مدیرکل آموزش و پرورش",
+      reporterUserId: "u-sara",
+      startAt: tomorrow10.toISOString(),
+      endAt: tomorrowEnd.toISOString(),
+      location: "سالن کنفرانس وزارت",
+      meetingLink: "",
+      coordinatorPhone: "۰۹۱۲۱۱۱۲۲۲۲",
+      officialContactId: "oc-edu",
+      requirements: "ضبط صوت، پرسش‌های آماده درباره بازگشایی مدارس",
+      done: false,
+      createdAt: ts,
+      updatedAt: ts,
+    },
+    {
+      id: "ag-field",
+      title: "گزارش میدانی بازار میوه و تره‌بار",
+      reporterUserId: "u-ali",
+      startAt: today15.toISOString(),
+      endAt: todayEnd.toISOString(),
+      location: "میدان تجریش",
+      meetingLink: "",
+      coordinatorPhone: "۰۲۱-۷۷۷۷۸۸۸۸",
+      requirements: "عکاس همراه",
+      done: false,
+      createdAt: ts,
+      updatedAt: ts,
+    },
+  ];
+}
 
 function story(partial: Story): Story {
   return partial;
@@ -717,6 +762,31 @@ export function createSeed(): NewsroomData {
         embedCode: '<div data-event-map="map-1" class="event-map-widget"></div>',
       },
     ],
+    officialContacts: [
+      {
+        id: "oc-edu",
+        fullName: "دکتر مریم احمدی",
+        organization: "وزارت آموزش و پرورش",
+        position: "مدیرکل روابط عمومی",
+        mobile: "۰۹۱۲۱۱۱۲۲۲۲",
+        officePhone: "۰۲۱-۸۸۹۹۰۰۱۱",
+        email: "pr@medu.gov.local",
+        editorialNotes: "ترجیح می‌دهد پرسش‌ها از قبل ایمیل شود؛ مصاحبه‌های عصر به‌موقع‌تر است.",
+        tags: ["آموزش", "مصاحبه"],
+      },
+      {
+        id: "oc-muni",
+        fullName: "مهدی کریمی",
+        organization: "شهرداری تهران",
+        position: "معاون ارتباطات",
+        mobile: "۰۹۱۹۳۳۳۴۴۴۴",
+        officePhone: "۰۲۱-۱۲۳۴۵۶۷۸",
+        email: "media@tehran.ir",
+        editorialNotes: "برای نشست‌های خبری حداقل ۲۴ ساعت قبل هماهنگ کنید.",
+        tags: ["شهری", "نشست خبری"],
+      },
+    ],
+    reporterAgenda: seedReporterAgenda(),
     activity: [
       { id: "act-1", at: iso("2026-09-25T06:40:00Z"), text: "پیش‌نویس خورشیدی یزد به‌روز شد" },
       { id: "act-2", at: iso("2026-09-25T04:10:00Z"), text: "خبر ماهواره به بازبینی رفت" },
@@ -758,6 +828,8 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!Array.isArray(next.adminTemplates) || next.adminTemplates.length === 0) next.adminTemplates = base.adminTemplates;
   if (!Array.isArray(next.specialDossiers)) next.specialDossiers = base.specialDossiers;
   if (!Array.isArray(next.eventMaps)) next.eventMaps = base.eventMaps;
+  if (!Array.isArray(next.officialContacts) || next.officialContacts.length === 0) next.officialContacts = base.officialContacts;
+  if (!Array.isArray(next.reporterAgenda) || next.reporterAgenda.length === 0) next.reporterAgenda = base.reporterAgenda;
   next.users = next.users.map((user) => ({
     ...user,
     reporterGrade: user.reporterGrade ?? (user.roleId === "reporter" ? "junior" : undefined),
@@ -771,6 +843,8 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     "core/admin-affairs",
     "structure/dossiers",
     "media/event-map",
+    "core/official-contacts",
+    "editorial/agenda",
   ];
   next.roles.forEach((role) => {
     const list = next.roleModuleAccess[role.id] ?? [];

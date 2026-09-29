@@ -6,6 +6,7 @@ import { AccessScreen, BackupScreen, CommsScreen, FormsScreen, LinksScreen, Logo
 import { AiHubScreen } from "./editorial/ai-hub-screen";
 import { AiScreen, OrderScreen, ProcessScreen, SubmissionsScreen, SuggestionsScreen } from "./editorial/other-screens";
 import { CartableScreen } from "./editorial/cartable";
+import { OfficialContactsScreen, ReporterAgendaScreen } from "./editorial/contacts-agenda-screens";
 import { PitchesScreen } from "./editorial/pitches-screen";
 import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audience/audience-screens";
 import { MediaLibraryScreen } from "./media/media-library-screen";
@@ -38,6 +39,7 @@ const screens: Record<string, () => ReactElement> = {
   "core/backup": BackupScreen,
   "core/tickets": TicketsScreen,
   "core/comms": CommsScreen,
+  "core/official-contacts": OfficialContactsScreen,
   "core/subsites": SubsitesScreen,
   "core/links": LinksScreen,
   "core/logos": LogosScreen,
@@ -50,6 +52,7 @@ const screens: Record<string, () => ReactElement> = {
   "editorial/ai-hub": AiHubScreen,
   "editorial/cartable": CartableScreen,
   "editorial/pitches": PitchesScreen,
+  "editorial/agenda": ReporterAgendaScreen,
   "editorial/process": ProcessScreen,
   "editorial/submissions": SubmissionsScreen,
   "editorial/order": OrderScreen,
