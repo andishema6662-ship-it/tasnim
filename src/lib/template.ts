@@ -40,6 +40,16 @@ export function defaultTemplateSettings(): TemplateSettings {
     socialYoutube: "https://youtube.com/@example",
     fontFamily: "vazirmatn",
     fontScale: "md",
+    portalBranding: {
+      mediaName: "",
+      mediaDisplayTitle: "",
+      brandMark: "",
+    },
+    portalHeaderBanner: {
+      enabled: true,
+      image: "",
+      href: "",
+    },
     homepageSlots: defaultHomepageSlots(),
   };
 }
@@ -63,6 +73,22 @@ export function resolveTemplateSettings(data: NewsroomData): TemplateSettings {
       hot: { ...defaults.homepageSlots.hot, ...raw.homepageSlots?.hot },
       photos: { ...defaults.homepageSlots.photos, ...raw.homepageSlots?.photos },
       multimedia: { ...defaults.homepageSlots.multimedia, ...raw.homepageSlots?.multimedia },
+      ticker: {
+        ...defaults.homepageSlots.ticker,
+        ...raw.homepageSlots?.ticker,
+        rss: { ...defaults.homepageSlots.ticker.rss, ...raw.homepageSlots?.ticker?.rss },
+      },
+    },
+    portalBranding: {
+      ...defaults.portalBranding,
+      ...raw.portalBranding,
+      mediaName: raw.portalBranding?.mediaName ?? data.settings.mediaName ?? "",
+      mediaDisplayTitle: raw.portalBranding?.mediaDisplayTitle ?? data.settings.mediaDisplayTitle ?? "",
+      brandMark: raw.portalBranding?.brandMark ?? data.settings.brandMark ?? "",
+    },
+    portalHeaderBanner: {
+      ...defaults.portalHeaderBanner,
+      ...raw.portalHeaderBanner,
     },
   };
 }

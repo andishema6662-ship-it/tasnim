@@ -12,6 +12,7 @@ import type { TemplateSettings } from "@/lib/types";
 import { useNewsroom } from "@/lib/store";
 import { canPerm } from "@/lib/workflow";
 import { Button, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
+import { ThemeBrandingSection } from "./theme-branding-section";
 import { ThemeSlotsSection } from "./theme-slots-section";
 
 export function ThemeScreen() {
@@ -45,9 +46,16 @@ export function ThemeScreen() {
           if (!allowed) return;
           update((current) => ({
             ...current,
+            settings: {
+              ...current.settings,
+              mediaName: form.portalBranding.mediaName.trim(),
+              mediaDisplayTitle: form.portalBranding.mediaDisplayTitle.trim(),
+              brandMark: form.portalBranding.brandMark,
+            },
             templateSettings: {
               ...form,
-              tickerLabel: form.tickerLabel.trim() || "فوری",
+              showBreakingTicker: form.homepageSlots.ticker.enabled,
+              tickerLabel: form.homepageSlots.ticker.label.trim() || "فوری",
               aboutFooter: form.aboutFooter.trim(),
               copyrightText: form.copyrightText.trim() || "تمام حقوق محفوظ است.",
             },
@@ -55,6 +63,12 @@ export function ThemeScreen() {
           setFlash("تنظیمات قالب ذخیره شد. پورتال عمومی را بازخوانی کنید.");
         }}
       >
+        <ThemeBrandingSection
+          form={form}
+          allowed={allowed}
+          onPatch={(partial) => patch(partial)}
+        />
+
         <section className="rounded-lg border border-line bg-sheet p-4">
           <h2 className="text-base font-bold">رنگ اصلی و سازمانی</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -159,27 +173,8 @@ export function ThemeScreen() {
                 دکمه زبان
               </label>
             </li>
-            <li>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={form.showBreakingTicker}
-                  disabled={!allowed}
-                  onChange={(event) => patch({ showBreakingTicker: event.target.checked })}
-                />
-                تیکر خبر فوری
-              </label>
-            </li>
           </ul>
-          <div className="mt-3">
-          <Field label="متن پیش‌فرض نوار فوری">
-            <Input
-              value={form.tickerLabel}
-              disabled={!allowed}
-              onChange={(event) => patch({ tickerLabel: event.target.value })}
-            />
-          </Field>
-          </div>
+          <p className="mt-2 text-xs text-muted">تنظیم پیام متحرک و منبع آن در بخش «جایگاه اخبار صفحه اصلی» پایین‌تر است.</p>
         </section>
 
         <section className="rounded-lg border border-line bg-sheet p-4">
@@ -215,6 +210,8 @@ export function ThemeScreen() {
         <ThemeSlotsSection
           form={form}
           categories={data.categories}
+          feeds={data.feeds}
+          services={data.services}
           allowed={allowed}
           onChange={(homepageSlots) => patch({ homepageSlots })}
         />

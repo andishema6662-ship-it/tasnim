@@ -5,8 +5,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CoverThumb } from "@/components/cover-thumb";
 import { faNum, todayTriCalendar } from "@/lib/format";
-import { publishedStories } from "@/lib/site";
-import { PORTAL_NAV, portalBannerAds, portalSiteSubtitle, portalSiteTitle } from "@/lib/site-portal";
+import { portalSubtitleFromData, portalTitleFromData, resolvePortalBranding, resolvePortalHeaderBanner } from "@/lib/portal-branding";
+import { PORTAL_NAV } from "@/lib/site-portal";
+import { resolveTickerLines, tickerEnabledResolved, tickerLabelResolved } from "@/lib/homepage-slots";
 import { portalThemeStyle, resolveTemplateSettings } from "@/lib/template";
 import { useNewsroom } from "@/lib/store";
 
@@ -29,17 +30,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<"fa" | "en">("fa");
   const [mobileNav, setMobileNav] = useState(false);
   const dates = useMemo(() => todayTriCalendar(), []);
-  const title = portalSiteTitle(data);
-  const subtitle = portalSiteSubtitle(data);
-  const mark = data.settings.brandMark ?? "";
+  const branding = resolvePortalBranding(data);
+  const title = portalTitleFromData(data);
+  const subtitle = portalSubtitleFromData(data);
+  const mark = branding.brandMark;
   const theme = resolveTemplateSettings(data);
   const themeStyle = portalThemeStyle(theme);
-  const ads = portalBannerAds(data);
-  const topAd = ads[0];
-  const tickerLines = [
-    ...data.tickers.filter((item) => item.active).map((item) => item.text),
-    ...publishedStories(data).slice(0, 6).map((story) => story.title),
-  ];
+  const topAd = resolvePortalHeaderBanner(data);
+  const tickerLines = resolveTickerLines(data, theme);
+  const tickerOn = tickerEnabledResolved(theme);
+  const tickerLabel = tickerLabelResolved(theme);
 
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();
@@ -85,7 +85,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       ) : null}
       <header className="border-b border-[#ddd] bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <Link href="/site" className="flex items-center gap-3">
+          <Link href="/site" className="flex items-center gap-3" data-testid="portal-site-brand">
             {mark ? <img src={mark} alt="" className="h-14 w-14 object-contain" /> : null}
             <div>
               <p className="text-xs text-muted">{subtitle}</p>
@@ -93,13 +93,13 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             </div>
           </Link>
           <div className="flex flex-1 flex-col items-stretch gap-3 lg:max-w-xl">
-            {topAd?.image ? (
-              <a href={topAd.href || "#"} className="block overflow-hidden rounded border border-line bg-sheet">
+            {topAd ? (
+              <a href={topAd.href || "#"} data-testid="portal-header-banner" className="block overflow-hidden rounded border border-line bg-sheet">
                 <CoverThumb cover={topAd.image} className="h-[90px] w-full max-w-[728px] mx-auto" />
               </a>
             ) : (
               <div className="mx-auto flex h-[90px] w-full max-w-[728px] items-center justify-center rounded border border-dashed border-line bg-sheet text-xs text-muted">
-                جایگاه تبلیغ ۷۲۸×۹۰
+                بنر هدر غیرفعال است
               </div>
             )}
             <form onSubmit={submitSearch} className="flex gap-2">
@@ -137,10 +137,10 @@ export function PortalLayout({ children }: { children: ReactNode }) {
           </ul>
         </div>
       </nav>
-      {theme.showBreakingTicker && tickerLines.length ? (
-        <div className="overflow-hidden border-b border-line bg-[#2b2b2b] text-white">
+      {tickerOn && tickerLines.length ? (
+        <div data-testid="portal-ticker" className="overflow-hidden border-b border-line bg-[#2b2b2b] text-white">
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 text-sm">
-            <span className="shrink-0 rounded bg-[var(--portal-accent)] px-2 py-0.5 text-xs font-bold">{theme.tickerLabel || "فوری"}</span>
+            <span className="shrink-0 rounded bg-[var(--portal-accent)] px-2 py-0.5 text-xs font-bold">{tickerLabel}</span>
             <div className="relative min-w-0 flex-1 overflow-hidden whitespace-nowrap">
               <span className="ticker-track inline-block">{tickerLines.join(" ◆ ")} ◆ {tickerLines.join(" ◆ ")}</span>
             </div>

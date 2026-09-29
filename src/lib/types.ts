@@ -49,15 +49,54 @@ export type ThemeFontScale = "sm" | "md" | "lg";
 
 export type HeroSourceMode = "pinned" | "latest-category" | "latest-all";
 export type HotStoriesSort = "views" | "latest" | "home-order";
+export type SlotContentKind = "internal" | "rss";
+export type TickerSourceMode = "manual" | "category" | "tag" | "service" | "rss" | "mixed";
+
+export interface RssSlotRef {
+  feedId: string;
+  inlineTitle: string;
+  inlineUrl: string;
+}
+
+export interface CategoryShowcaseBlock {
+  kind: SlotContentKind;
+  categoryId: string;
+  rss: RssSlotRef;
+}
+
+export interface HomepageTickerSlot {
+  enabled: boolean;
+  label: string;
+  source: TickerSourceMode;
+  categoryId: string;
+  serviceId: string;
+  tag: string;
+  rss: RssSlotRef;
+  includeManual: boolean;
+  limit: number;
+}
 
 export interface HomepageSlots {
-  hero: { source: HeroSourceMode; categoryId: string };
-  featuredSide: { categoryId: string; limit: number };
-  editorialPicks: { categoryId: string; limit: number };
-  categoryShowcase: { categoryIds: string[]; storiesPerBlock: number };
+  hero: { contentKind: SlotContentKind; source: HeroSourceMode; categoryId: string; rss: RssSlotRef };
+  featuredSide: { contentKind: SlotContentKind; categoryId: string; limit: number; rss: RssSlotRef };
+  editorialPicks: { contentKind: SlotContentKind; categoryId: string; limit: number; rss: RssSlotRef };
+  categoryShowcase: { blocks: CategoryShowcaseBlock[]; storiesPerBlock: number };
   hot: { sort: HotStoriesSort; limit: number; categoryId: string };
   photos: { limit: number; featuredOnly: boolean };
   multimedia: { enabled: boolean; limit: number };
+  ticker: HomepageTickerSlot;
+}
+
+export interface PortalBrandingSettings {
+  mediaName: string;
+  mediaDisplayTitle: string;
+  brandMark: string;
+}
+
+export interface PortalHeaderBannerSettings {
+  enabled: boolean;
+  image: string;
+  href: string;
 }
 
 export interface TemplateSettings {
@@ -77,6 +116,8 @@ export interface TemplateSettings {
   socialYoutube: string;
   fontFamily: ThemeFontFamily;
   fontScale: ThemeFontScale;
+  portalBranding: PortalBrandingSettings;
+  portalHeaderBanner: PortalHeaderBannerSettings;
   homepageSlots: HomepageSlots;
 }
 

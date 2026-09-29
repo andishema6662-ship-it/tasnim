@@ -6,84 +6,27 @@ import { useSearchParams } from "next/navigation";
 import { CoverThumb } from "@/components/cover-thumb";
 import { featuredPhotoAlbums, publishedAlbums } from "@/lib/albums";
 import { faDate, faNum } from "@/lib/format";
-import { isCoverImage, publishedStories } from "@/lib/site";
-import type { Story } from "@/lib/types";
 import {
   resolveHomepageSlots,
   slotCategoryShowcaseBlocks,
-  slotEditorialPicks,
-  slotFeaturedSideStories,
-  slotHeroStory,
+  slotEditorialItems,
+  slotFeaturedSideItems,
+  slotHeroItem,
   slotHotStories,
-  slotModernGridLead,
+  slotModernGridLeadItems,
 } from "@/lib/homepage-slots";
-import { portalBannerAds, storyCategoryLabel } from "@/lib/site-portal";
+import { portalItemKey } from "@/lib/portal-slot-items";
+import { publishedStories } from "@/lib/site";
+import { portalBannerAds } from "@/lib/site-portal";
 import { resolveTemplateSettings } from "@/lib/template";
 import { useNewsroom } from "@/lib/store";
 import { categoryName } from "@/lib/workflow";
+import { GridPortalItem, HeroPortalItem, ListPortalItem, SidePortalItem } from "./portal-item-cards";
 import { PortalLayout } from "./portal-layout";
 
 const accent = "text-[var(--portal-primary)]";
 const accentBorder = "border-[var(--portal-primary)]";
 const accentHover = "hover:text-[var(--portal-primary)]";
-const accentBadge = "bg-[var(--portal-accent)]";
-
-function HeroBlock({
-  data,
-  hero,
-  tall,
-}: {
-  data: ReturnType<typeof useNewsroom>["data"];
-  hero: Story;
-  tall: boolean;
-}) {
-  return (
-    <Link
-      href={`/site/${hero.id}`}
-      className={`group relative overflow-hidden rounded-lg shadow-lg ${tall ? "min-h-[280px] sm:min-h-[360px]" : "min-h-[200px] sm:min-h-[260px]"}`}
-    >
-      <CoverThumb cover={hero.cover} className="absolute inset-0 h-full w-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-        <span className={`rounded px-2 py-0.5 text-xs font-bold ${accentBadge}`}>{storyCategoryLabel(data, hero)}</span>
-        <h1 className={`mt-2 font-black leading-10 text-white ${tall ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"}`}>{hero.title}</h1>
-        <p className="mt-2 line-clamp-2 text-sm leading-7 text-white/85">{hero.lead}</p>
-      </div>
-    </Link>
-  );
-}
-
-function SideStoryList({
-  data,
-  stories,
-}: {
-  data: ReturnType<typeof useNewsroom>["data"];
-  stories: ReturnType<typeof publishedStories>;
-}) {
-  return (
-    <ul className="flex flex-col gap-3">
-      {stories.map((story) => (
-        <li key={story.id}>
-          <Link
-            href={`/site/${story.id}`}
-            className={`flex gap-3 rounded-lg border border-line bg-white p-2 shadow-sm hover:border-[var(--portal-primary)]/40`}
-          >
-            {isCoverImage(story.cover) ? (
-              <CoverThumb cover={story.cover} className="h-20 w-28 shrink-0 rounded" />
-            ) : (
-              <div className="h-20 w-28 shrink-0 rounded bg-sand" />
-            )}
-            <div className="min-w-0">
-              <p className={`text-[11px] font-semibold ${accent}`}>{storyCategoryLabel(data, story)}</p>
-              <h2 className="line-clamp-2 text-sm font-bold leading-6">{story.title}</h2>
-              <p className="mt-1 line-clamp-2 text-xs text-muted">{story.lead}</p>
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function SiteHomeView() {
   const { data } = useNewsroom();
@@ -99,11 +42,11 @@ export function SiteHomeView() {
     if (cat) list = list.filter((story) => story.categoryId === cat);
     return list;
   }, [data, q, cat]);
-  const hero = slotHeroStory(data, slots);
-  const side = slotFeaturedSideStories(data, slots, hero?.id);
-  const gridLead = slotModernGridLead(data, slots, hero?.id);
+  const heroItem = slotHeroItem(data, slots);
+  const sideItems = slotFeaturedSideItems(data, slots, heroItem);
+  const gridLead = slotModernGridLeadItems(data, slots, heroItem);
   const hot = slotHotStories(data, slots);
-  const editorial = slotEditorialPicks(data, slots);
+  const editorial = slotEditorialItems(data, slots);
   const categoryBlocks = slotCategoryShowcaseBlocks(data, slots);
   const albums = publishedAlbums(data);
   const featuredAlbums = featuredPhotoAlbums(data);
@@ -113,30 +56,23 @@ export function SiteHomeView() {
   const midAd = portalBannerAds(data)[1];
   const sectionTitle = `border-r-4 ${accentBorder} pr-3 text-lg font-bold`;
 
-  const leadSection = !hero ? (
+  const leadSection = !heroItem ? (
     <div className="rounded-lg border border-line bg-sheet p-8 text-center text-muted">خبر منتشرشده‌ای نیست.</div>
   ) : layout === "modern-grid" ? (
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {gridLead.map((story) => (
-        <Link key={story.id} href={`/site/${story.id}`} className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
-          {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-36 w-full" /> : <div className="h-36 bg-sand" />}
-          <div className="p-3">
-            <p className={`text-[11px] font-semibold ${accent}`}>{storyCategoryLabel(data, story)}</p>
-            <h2 className="line-clamp-3 text-sm font-bold leading-6">{story.title}</h2>
-          </div>
-        </Link>
+      {gridLead.map((item) => (
+        <div key={portalItemKey(item)}>
+          <GridPortalItem data={data} item={item} />
+        </div>
       ))}
     </section>
   ) : layout === "magazine" ? (
     <section className="space-y-4">
-      <HeroBlock data={data} hero={hero} tall={false} />
+      <HeroPortalItem data={data} item={heroItem} tall={false} />
       <ul className="flex gap-3 overflow-x-auto pb-1">
-        {side.map((story) => (
-          <li key={story.id} className="w-72 shrink-0">
-            <Link href={`/site/${story.id}`} className="block rounded-lg border border-line bg-white p-3 shadow-sm">
-              <p className={`text-xs font-semibold ${accent}`}>{storyCategoryLabel(data, story)}</p>
-              <h2 className="mt-1 line-clamp-2 text-sm font-bold">{story.title}</h2>
-            </Link>
+        {sideItems.map((item) => (
+          <li key={portalItemKey(item)} className="w-72 shrink-0">
+            <SidePortalItem data={data} item={item} />
           </li>
         ))}
       </ul>
@@ -144,10 +80,16 @@ export function SiteHomeView() {
   ) : (
     <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
       <div data-testid="portal-hero">
-        <HeroBlock data={data} hero={hero} tall={true} />
+        <HeroPortalItem data={data} item={heroItem} tall={true} />
       </div>
       <div data-testid="portal-featured-side">
-        <SideStoryList data={data} stories={side} />
+        <ul className="flex flex-col gap-3">
+          {sideItems.map((item) => (
+            <li key={portalItemKey(item)}>
+              <SidePortalItem data={data} item={item} />
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -158,16 +100,9 @@ export function SiteHomeView() {
         <section className="lg:col-span-2">
           <h2 className={sectionTitle}>برگزیده‌های تحریریه</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {editorial.map((story) => (
-              <li key={story.id}>
-                <Link href={`/site/${story.id}`} className="block overflow-hidden rounded-lg border border-line bg-white shadow-sm">
-                  {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-36 w-full" /> : null}
-                  <div className="p-3">
-                    <p className={`text-xs ${accent}`}>{storyCategoryLabel(data, story)}</p>
-                    <h3 className="mt-1 line-clamp-2 font-bold leading-6">{story.title}</h3>
-                    <p className="mt-1 text-xs text-muted">{faDate(story.publishedAt ?? story.updatedAt)}</p>
-                  </div>
-                </Link>
+            {editorial.map((item) => (
+              <li key={portalItemKey(item)}>
+                <GridPortalItem data={data} item={item} />
               </li>
             ))}
           </ul>
@@ -200,16 +135,9 @@ export function SiteHomeView() {
         <section className="lg:col-span-2">
           <h2 className={sectionTitle}>برگزیده‌های تحریریه</h2>
           <ul className={`mt-4 grid gap-4 ${layout === "modern-grid" ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
-            {editorial.map((story) => (
-              <li key={story.id}>
-                <Link href={`/site/${story.id}`} className="block overflow-hidden rounded-lg border border-line bg-white shadow-sm">
-                  {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-36 w-full" /> : null}
-                  <div className="p-3">
-                    <p className={`text-xs ${accent}`}>{storyCategoryLabel(data, story)}</p>
-                    <h3 className="mt-1 line-clamp-2 font-bold leading-6">{story.title}</h3>
-                    <p className="mt-1 text-xs text-muted">{faDate(story.publishedAt ?? story.updatedAt)}</p>
-                  </div>
-                </Link>
+            {editorial.map((item) => (
+              <li key={portalItemKey(item)}>
+                <GridPortalItem data={data} item={item} />
               </li>
             ))}
           </ul>
@@ -235,21 +163,21 @@ export function SiteHomeView() {
       <div className={`grid gap-6 ${layout === "magazine" ? "lg:grid-cols-[2fr_1fr]" : "lg:grid-cols-3"}`}>{hotAndFeaturedOrder}</div>
       <div className={`mt-8 grid gap-6 ${layout === "modern-grid" ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
         {categoryBlocks.map((block) => (
-          <section key={block.categoryId} data-testid={`portal-category-block-${block.categoryId}`} className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <section
+            key={block.key}
+            data-testid={`portal-category-block-${block.key}`}
+            className="rounded-lg border border-line bg-white p-4 shadow-sm"
+          >
             <h2 className="flex items-center justify-between border-b border-line pb-2 text-base font-bold">
               {block.label}
-              <Link href={`/site?cat=${block.categoryId}`} className={`text-xs ${accent}`}>همه</Link>
+              {block.key.startsWith("cat-") ? (
+                <Link href={`/site?cat=${block.key}`} className={`text-xs ${accent}`}>همه</Link>
+              ) : null}
             </h2>
             <ul className="mt-3 space-y-3">
-              {block.stories.map((story) => (
-                <li key={story.id}>
-                  <Link href={`/site/${story.id}`} className={`flex gap-3 ${accentHover}`}>
-                    {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-16 w-24 shrink-0 rounded" /> : null}
-                    <div>
-                      <h3 className="line-clamp-2 text-sm font-semibold leading-6">{story.title}</h3>
-                      <p className="text-xs text-muted">{faDate(story.publishedAt ?? story.updatedAt)}</p>
-                    </div>
-                  </Link>
+              {block.items.map((item) => (
+                <li key={portalItemKey(item)}>
+                  <ListPortalItem data={data} item={item} />
                 </li>
               ))}
             </ul>
