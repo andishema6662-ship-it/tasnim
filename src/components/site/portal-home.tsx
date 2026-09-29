@@ -7,14 +7,17 @@ import { CoverThumb } from "@/components/cover-thumb";
 import { featuredPhotoAlbums, publishedAlbums } from "@/lib/albums";
 import { faDate, faNum } from "@/lib/format";
 import { isCoverImage, publishedStories } from "@/lib/site";
+import type { Story } from "@/lib/types";
 import {
-  PORTAL_NAV,
-  featuredStory,
-  portalBannerAds,
-  storiesByCategory,
-  storyCategoryLabel,
-  topViewedStories,
-} from "@/lib/site-portal";
+  resolveHomepageSlots,
+  slotCategoryShowcaseBlocks,
+  slotEditorialPicks,
+  slotFeaturedSideStories,
+  slotHeroStory,
+  slotHotStories,
+  slotModernGridLead,
+} from "@/lib/homepage-slots";
+import { portalBannerAds, storyCategoryLabel } from "@/lib/site-portal";
 import { resolveTemplateSettings } from "@/lib/template";
 import { useNewsroom } from "@/lib/store";
 import { categoryName } from "@/lib/workflow";
@@ -31,7 +34,7 @@ function HeroBlock({
   tall,
 }: {
   data: ReturnType<typeof useNewsroom>["data"];
-  hero: NonNullable<ReturnType<typeof featuredStory>>;
+  hero: Story;
   tall: boolean;
 }) {
   return (
@@ -85,6 +88,7 @@ function SideStoryList({
 export function SiteHomeView() {
   const { data } = useNewsroom();
   const theme = resolveTemplateSettings(data);
+  const slots = resolveHomepageSlots(theme);
   const layout = theme.homeLayout;
   const searchParams = useSearchParams();
   const q = (searchParams.get("q") ?? "").trim();
@@ -95,13 +99,17 @@ export function SiteHomeView() {
     if (cat) list = list.filter((story) => story.categoryId === cat);
     return list;
   }, [data, q, cat]);
-  const hero = featuredStory(data);
-  const side = stories.filter((story) => story.id !== hero?.id).slice(0, 3);
-  const gridLead = stories.slice(0, 4);
-  const hot = topViewedStories(data);
+  const hero = slotHeroStory(data, slots);
+  const side = slotFeaturedSideStories(data, slots, hero?.id);
+  const gridLead = slotModernGridLead(data, slots, hero?.id);
+  const hot = slotHotStories(data, slots);
+  const editorial = slotEditorialPicks(data, slots);
+  const categoryBlocks = slotCategoryShowcaseBlocks(data, slots);
   const albums = publishedAlbums(data);
   const featuredAlbums = featuredPhotoAlbums(data);
-  const videos = data.videos.filter((item) => item.published);
+  const photoSource = slots.photos.featuredOnly && featuredAlbums.length ? featuredAlbums : albums;
+  const photoAlbums = photoSource.slice(0, Math.max(1, slots.photos.limit));
+  const videos = data.videos.filter((item) => item.published).slice(0, Math.max(1, slots.multimedia.limit));
   const midAd = portalBannerAds(data)[1];
   const sectionTitle = `border-r-4 ${accentBorder} pr-3 text-lg font-bold`;
 
@@ -135,8 +143,12 @@ export function SiteHomeView() {
     </section>
   ) : (
     <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-      <HeroBlock data={data} hero={hero} tall={true} />
-      <SideStoryList data={data} stories={side} />
+      <div data-testid="portal-hero">
+        <HeroBlock data={data} hero={hero} tall={true} />
+      </div>
+      <div data-testid="portal-featured-side">
+        <SideStoryList data={data} stories={side} />
+      </div>
     </section>
   );
 
@@ -146,7 +158,7 @@ export function SiteHomeView() {
         <section className="lg:col-span-2">
           <h2 className={sectionTitle}>برگزیده‌های تحریریه</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {stories.slice(0, 6).map((story) => (
+            {editorial.map((story) => (
               <li key={story.id}>
                 <Link href={`/site/${story.id}`} className="block overflow-hidden rounded-lg border border-line bg-white shadow-sm">
                   {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-36 w-full" /> : null}
@@ -188,7 +200,7 @@ export function SiteHomeView() {
         <section className="lg:col-span-2">
           <h2 className={sectionTitle}>برگزیده‌های تحریریه</h2>
           <ul className={`mt-4 grid gap-4 ${layout === "modern-grid" ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
-            {stories.slice(0, 6).map((story) => (
+            {editorial.map((story) => (
               <li key={story.id}>
                 <Link href={`/site/${story.id}`} className="block overflow-hidden rounded-lg border border-line bg-white shadow-sm">
                   {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-36 w-full" /> : null}
@@ -222,14 +234,14 @@ export function SiteHomeView() {
       )}
       <div className={`grid gap-6 ${layout === "magazine" ? "lg:grid-cols-[2fr_1fr]" : "lg:grid-cols-3"}`}>{hotAndFeaturedOrder}</div>
       <div className={`mt-8 grid gap-6 ${layout === "modern-grid" ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
-        {PORTAL_NAV.filter((item): item is Extract<typeof item, { categoryId: string }> => "categoryId" in item && Boolean(item.categoryId)).slice(0, layout === "modern-grid" ? 6 : 4).map((nav) => (
-          <section key={nav.id} className="rounded-lg border border-line bg-white p-4 shadow-sm">
+        {categoryBlocks.map((block) => (
+          <section key={block.categoryId} data-testid={`portal-category-block-${block.categoryId}`} className="rounded-lg border border-line bg-white p-4 shadow-sm">
             <h2 className="flex items-center justify-between border-b border-line pb-2 text-base font-bold">
-              {nav.label}
-              <Link href={`/site?cat=${nav.categoryId}`} className={`text-xs ${accent}`}>همه</Link>
+              {block.label}
+              <Link href={`/site?cat=${block.categoryId}`} className={`text-xs ${accent}`}>همه</Link>
             </h2>
             <ul className="mt-3 space-y-3">
-              {storiesByCategory(data, nav.categoryId, 4).map((story) => (
+              {block.stories.map((story) => (
                 <li key={story.id}>
                   <Link href={`/site/${story.id}`} className={`flex gap-3 ${accentHover}`}>
                     {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-16 w-24 shrink-0 rounded" /> : null}
@@ -247,7 +259,7 @@ export function SiteHomeView() {
       <section id="photos" className="mt-10 scroll-mt-24">
         <h2 className={sectionTitle}>گزارش‌های تصویری</h2>
         <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
-          {(featuredAlbums.length ? featuredAlbums : albums).slice(0, 5).map((album) => (
+          {photoAlbums.map((album) => (
             <Link key={album.id} href={`/site/album/${album.id}`} className="w-64 shrink-0 overflow-hidden rounded-lg border border-line bg-white shadow-sm">
               <CoverThumb cover={album.photos[0]?.src ?? "sand"} className="h-40 w-full" />
               <div className="p-3">
@@ -260,7 +272,9 @@ export function SiteHomeView() {
       </section>
       <section id="multimedia" className="mt-10 scroll-mt-24 rounded-lg border border-line bg-white p-4 shadow-sm">
         <h2 className={sectionTitle}>فیلم و صوت</h2>
-        {videos.length ? (
+        {!slots.multimedia.enabled ? (
+          <p className="mt-3 text-sm text-muted">نمایش بخش چندرسانه‌ای در قالب غیرفعال است.</p>
+        ) : videos.length ? (
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {videos.map((video) => (
               <li key={video.id} className="rounded border border-line p-3">

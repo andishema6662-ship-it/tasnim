@@ -47,6 +47,19 @@ export type HomeLayoutStyle = "classic" | "modern-grid" | "magazine";
 export type ThemeFontFamily = "vazirmatn" | "sahel" | "shabnam";
 export type ThemeFontScale = "sm" | "md" | "lg";
 
+export type HeroSourceMode = "pinned" | "latest-category" | "latest-all";
+export type HotStoriesSort = "views" | "latest" | "home-order";
+
+export interface HomepageSlots {
+  hero: { source: HeroSourceMode; categoryId: string };
+  featuredSide: { categoryId: string; limit: number };
+  editorialPicks: { categoryId: string; limit: number };
+  categoryShowcase: { categoryIds: string[]; storiesPerBlock: number };
+  hot: { sort: HotStoriesSort; limit: number; categoryId: string };
+  photos: { limit: number; featuredOnly: boolean };
+  multimedia: { enabled: boolean; limit: number };
+}
+
 export interface TemplateSettings {
   palette: ThemePalette;
   customPrimary: string;
@@ -64,6 +77,7 @@ export interface TemplateSettings {
   socialYoutube: string;
   fontFamily: ThemeFontFamily;
   fontScale: ThemeFontScale;
+  homepageSlots: HomepageSlots;
 }
 
 export type PitchStatus = "active" | "completed" | "cancelled";

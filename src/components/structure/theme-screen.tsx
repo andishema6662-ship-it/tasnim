@@ -12,6 +12,7 @@ import type { TemplateSettings } from "@/lib/types";
 import { useNewsroom } from "@/lib/store";
 import { canPerm } from "@/lib/workflow";
 import { Button, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
+import { ThemeSlotsSection } from "./theme-slots-section";
 
 export function ThemeScreen() {
   const { data, update } = useNewsroom();
@@ -210,6 +211,13 @@ export function ThemeScreen() {
             </Field>
           </div>
         </section>
+
+        <ThemeSlotsSection
+          form={form}
+          categories={data.categories}
+          allowed={allowed}
+          onChange={(homepageSlots) => patch({ homepageSlots })}
+        />
 
         <section className="rounded-lg border border-line bg-sheet p-4">
           <h2 className="text-base font-bold">تایپوگرافی</h2>

@@ -1,5 +1,5 @@
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
-import { defaultTemplateSettings } from "./template";
+import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
 import { createSeedMediaLibrary } from "./media-seed";
 import type { Album, NewsroomData, Settings, Story } from "./types";
@@ -678,7 +678,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
       next.roleModuleAccess[role.id] = [...list, themeModuleKey];
     }
   });
-  next.templateSettings = { ...defaultTemplateSettings(), ...(raw.templateSettings ?? next.templateSettings) };
+  next.templateSettings = resolveTemplateSettings({ ...next, templateSettings: raw.templateSettings ?? next.templateSettings });
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };
   return next;

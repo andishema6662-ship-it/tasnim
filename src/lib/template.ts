@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { defaultHomepageSlots } from "./homepage-slots";
 import type { NewsroomData, TemplateSettings } from "./types";
 
 export const PALETTE_OPTIONS: { id: TemplateSettings["palette"]; label: string; primary: string; accent: string; nav: string }[] = [
@@ -39,11 +40,31 @@ export function defaultTemplateSettings(): TemplateSettings {
     socialYoutube: "https://youtube.com/@example",
     fontFamily: "vazirmatn",
     fontScale: "md",
+    homepageSlots: defaultHomepageSlots(),
   };
 }
 
 export function resolveTemplateSettings(data: NewsroomData): TemplateSettings {
-  return { ...defaultTemplateSettings(), ...data.templateSettings };
+  const defaults = defaultTemplateSettings();
+  const raw = data.templateSettings ?? {};
+  return {
+    ...defaults,
+    ...raw,
+    homepageSlots: {
+      ...defaults.homepageSlots,
+      ...(raw.homepageSlots ?? {}),
+      hero: { ...defaults.homepageSlots.hero, ...raw.homepageSlots?.hero },
+      featuredSide: { ...defaults.homepageSlots.featuredSide, ...raw.homepageSlots?.featuredSide },
+      editorialPicks: { ...defaults.homepageSlots.editorialPicks, ...raw.homepageSlots?.editorialPicks },
+      categoryShowcase: {
+        ...defaults.homepageSlots.categoryShowcase,
+        ...raw.homepageSlots?.categoryShowcase,
+      },
+      hot: { ...defaults.homepageSlots.hot, ...raw.homepageSlots?.hot },
+      photos: { ...defaults.homepageSlots.photos, ...raw.homepageSlots?.photos },
+      multimedia: { ...defaults.homepageSlots.multimedia, ...raw.homepageSlots?.multimedia },
+    },
+  };
 }
 
 export function paletteColors(settings: TemplateSettings) {
