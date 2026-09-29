@@ -154,6 +154,12 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             <p className="text-lg font-bold text-white">{title}</p>
             <p className="mt-2 text-sm leading-7 text-white/70">{theme.aboutFooter || subtitle}</p>
             <p className="mt-3 text-xs text-white/50">{title} · {theme.copyrightText} © {faNum(new Date().getFullYear())}</p>
+            {theme.ershadLicense?.enabled && theme.ershadLicense.code ? (
+              <div className="mt-4 flex items-center gap-2 text-xs text-white/70" data-testid="portal-ershad-license">
+                {theme.ershadLicense.badgeImage ? <img src={theme.ershadLicense.badgeImage} alt="" className="h-10 w-10 object-contain" /> : null}
+                <span>مجوز وزارت فرهنگ و ارشاد اسلامی: {theme.ershadLicense.code}</span>
+              </div>
+            ) : null}
           </div>
           <div>
             <p className="font-semibold text-white">دسترسی سریع</p>

@@ -12,7 +12,7 @@ test("AI hub polish and origin tracker", async ({ page }) => {
     [STORAGE_KEY, JSON.stringify(data)],
   );
   await page.goto("/editorial/ai-hub", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: /خدمات هوش مصنوعی|تبدیل صوت/ }).first()).toBeVisible();
+  await expect(page.getByTestId("ai-text-correction-hero")).toBeVisible();
 
   await page.getByTestId("ai-tab-polish").click();
   await page.getByTestId("ai-polish-input").fill("وزیر گفت که پروژه جدید تا پایان سال اجرا می شود.");

@@ -7,6 +7,7 @@ import { faDate, faNum, htmlToPlainText, norm } from "@/lib/format";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
 import { applyStatus, canPublishCategory, categoryName, currentRole, STATUSES, statusLabel, transitionsFrom } from "@/lib/workflow";
+import { SocialPublishModal } from "./social-publish-modal";
 import { Button, Empty, Flash, Input, ModulePage, Select, StatusBadge } from "../ui";
 
 const queueStatuses: Status[] = ["editing", "review", "ready"];
@@ -22,6 +23,7 @@ export function CartableScreen() {
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [flash, setFlash] = useState("");
+  const [socialStory, setSocialStory] = useState<Story | null>(null);
 
   const authors = useMemo(() => [...new Set(data.stories.map((story) => story.author))].sort((a, b) => a.localeCompare(b, "fa")), [data.stories]);
 
@@ -64,6 +66,7 @@ export function CartableScreen() {
         </Button>
       </div>
       <Flash>{flash}</Flash>
+      {socialStory ? <SocialPublishModal story={socialStory} onClose={() => setSocialStory(null)} /> : null}
 
       {view === "list" ? (
         <>
@@ -108,6 +111,11 @@ export function CartableScreen() {
                   {story.title}
                 </Link>
                 <p className="line-clamp-2 text-sm text-muted">{story.lead}</p>
+                <div className="mt-2">
+                  <Button type="button" tone="ghost" data-testid="cartable-social-publish" onClick={() => setSocialStory(story)}>
+                    انتشار در شبکه‌ها
+                  </Button>
+                </div>
               </article>
             ))}
           </div>

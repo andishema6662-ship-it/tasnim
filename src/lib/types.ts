@@ -18,12 +18,15 @@ export interface RoleDef {
   permissions: Permissions;
 }
 
+export type ReporterGrade = "trainee" | "junior" | "senior" | "desk-chief";
+
 export interface User {
   id: string;
   name: string;
   username: string;
   roleId: string;
   active: boolean;
+  reporterGrade?: ReporterGrade;
 }
 
 export interface AccessRule {
@@ -119,6 +122,13 @@ export interface TemplateSettings {
   portalBranding: PortalBrandingSettings;
   portalHeaderBanner: PortalHeaderBannerSettings;
   homepageSlots: HomepageSlots;
+  ershadLicense: { enabled: boolean; code: string; badgeImage: string };
+  portalWidgets: {
+    showRates: boolean;
+    showWeather: boolean;
+    showLeague: boolean;
+    weatherCities: string;
+  };
 }
 
 export type PitchStatus = "active" | "completed" | "cancelled";
@@ -482,6 +492,57 @@ export interface AiTaskLogEntry {
   createdAt: string;
 }
 
+export interface PayrollRate {
+  id: string;
+  contentType: string;
+  label: string;
+  amount: number;
+}
+
+export interface SocialChannelConfig {
+  id: string;
+  channel: "telegram" | "bale" | "eitaa" | "rubika" | "x";
+  enabled: boolean;
+  template: string;
+}
+
+export interface VersionEntry {
+  id: string;
+  version: string;
+  releasedAt: string;
+  notes: string;
+}
+
+export interface AdminLetterTemplate {
+  id: string;
+  title: string;
+  body: string;
+  kind: "intro" | "certificate" | "letter" | "press-card";
+}
+
+export interface SpecialDossier {
+  id: string;
+  title: string;
+  poster: string;
+  description: string;
+  tags: string[];
+  storyIds: string[];
+  featuredOnHome: boolean;
+}
+
+export interface EventMapPoint {
+  x: number;
+  y: number;
+  label: string;
+}
+
+export interface EventMapProject {
+  id: string;
+  title: string;
+  points: EventMapPoint[];
+  embedCode: string;
+}
+
 export interface OriginHit {
   outlet: string;
   publishedAt: string;
@@ -539,5 +600,11 @@ export interface NewsroomData {
   threads: Thread[];
   activity: Activity[];
   aiTaskLogs: AiTaskLogEntry[];
+  payrollRates: PayrollRate[];
+  socialChannels: SocialChannelConfig[];
+  versionHistory: VersionEntry[];
+  adminTemplates: AdminLetterTemplate[];
+  specialDossiers: SpecialDossier[];
+  eventMaps: EventMapProject[];
   sessionStartedAt: string;
 }

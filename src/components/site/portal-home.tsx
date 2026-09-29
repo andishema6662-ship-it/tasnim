@@ -23,6 +23,7 @@ import { useNewsroom } from "@/lib/store";
 import { categoryName } from "@/lib/workflow";
 import { GridPortalItem, HeroPortalItem, ListPortalItem, SidePortalItem } from "./portal-item-cards";
 import { PortalLayout } from "./portal-layout";
+import { PortalWidgetsSidebar } from "./portal-widgets";
 
 const accent = "text-[var(--portal-primary)]";
 const accentBorder = "border-[var(--portal-primary)]";
@@ -54,6 +55,7 @@ export function SiteHomeView() {
   const photoAlbums = photoSource.slice(0, Math.max(1, slots.photos.limit));
   const videos = data.videos.filter((item) => item.published).slice(0, Math.max(1, slots.multimedia.limit));
   const midAd = portalBannerAds(data)[1];
+  const featuredDossiers = data.specialDossiers?.filter((item) => item.featuredOnHome) ?? [];
   const sectionTitle = `border-r-4 ${accentBorder} pr-3 text-lg font-bold`;
 
   const leadSection = !heroItem ? (
@@ -152,7 +154,28 @@ export function SiteHomeView() {
           {q ? `نتایج جستجو برای «${q}»` : `فیلتر: ${categoryName(data, cat)}`} — {faNum(stories.length)} خبر
         </p>
       ) : null}
-      {leadSection}
+      {featuredDossiers.length ? (
+        <section className="mb-6 rounded-lg border border-line bg-white p-4 shadow-sm" data-testid="portal-featured-dossiers">
+          <h2 className={sectionTitle}>پرونده‌های ویژه</h2>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+            {featuredDossiers.map((dossier) => (
+              <li key={dossier.id}>
+                <Link href={`/site/dossier/${dossier.id}`} className="flex gap-3 rounded border border-line p-3 hover:border-[var(--portal-primary)]">
+                  <CoverThumb cover={dossier.poster} className="h-20 w-28 shrink-0" />
+                  <div>
+                    <h3 className="font-bold leading-7">{dossier.title}</h3>
+                    <p className="line-clamp-2 text-sm text-muted">{dossier.description}</p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
+        <div>{leadSection}</div>
+        <PortalWidgetsSidebar />
+      </div>
       {midAd?.image ? (
         <div className="my-6 overflow-hidden rounded-lg border border-line bg-white p-2">
           <a href={midAd.href || "#"}><CoverThumb cover={midAd.image} className="mx-auto h-24 max-w-[728px] w-full" /></a>

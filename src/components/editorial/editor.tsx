@@ -26,6 +26,7 @@ import { MediaLibraryModal } from "../media/media-library-modal";
 import { CoverThumb } from "../cover-thumb";
 import { AssistBar } from "./assist-bar";
 import { StoryBodyEditor } from "./body-editor";
+import { SocialPublishModal } from "./social-publish-modal";
 import { Button, Field, Flash, Input, Notice, Select, StatusBadge, TextArea } from "../ui";
 
 const forward: Partial<Record<Status, Status>> = {
@@ -65,6 +66,7 @@ export function Editor({ id }: { id: string }) {
   const [error, setError] = useState("");
   const [flash, setFlash] = useState("");
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [socialOpen, setSocialOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const role = currentRole(data);
   const editable = canEditStory(data, form.status);
@@ -363,6 +365,11 @@ export function Editor({ id }: { id: string }) {
           <Flash>{flash}</Flash>
           {!editable ? <Notice>در این وضعیت با نقش شما فقط خواندن ممکن است. {others.length ? `گام بعدی با ${[...new Set(others.map((item) => actorLabel(data, item.actor)))].join(" یا ")} است.` : ""}</Notice> : null}
           <div className="flex flex-col gap-2">
+            {!isNew ? (
+              <Button type="button" tone="ghost" data-testid="editor-social-publish" onClick={() => setSocialOpen(true)}>
+                انتشار در شبکه‌های اجتماعی
+              </Button>
+            ) : null}
             {editable ? (
               <Button tone="ghost" onClick={() => persist()}>
                 {form.status === "draft" ? "ذخیره پیش‌نویس" : "ذخیره تغییرات"}
@@ -389,6 +396,7 @@ export function Editor({ id }: { id: string }) {
           </Button>
         ))}
       </div>
+      {socialOpen && !isNew ? <SocialPublishModal story={form} onClose={() => setSocialOpen(false)} /> : null}
       <MediaLibraryModal
         open={mediaOpen}
         onClose={() => setMediaOpen(false)}

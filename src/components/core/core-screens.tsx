@@ -7,14 +7,17 @@ import { uid } from "@/lib/id";
 import { mergeSeed } from "@/lib/seed";
 import { STORAGE_KEY } from "@/lib/storage";
 import { useNewsroom } from "@/lib/store";
-import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User } from "@/lib/types";
+import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User, VersionEntry } from "@/lib/types";
+import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
 import { canManageModuleAccess } from "@/lib/module-access";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 import { ModuleAccessMatrix, ModuleAccessRolePicker } from "./module-access-matrix";
 
 export function SystemScreen() {
-  const { data } = useNewsroom();
+  const { data, update } = useNewsroom();
+  const [form, setForm] = useState({ version: "", notes: "" });
+  const [flash, setFlash] = useState("");
   const rows = [
     ["نام اتاق خبر", data.settings.newsroomName],
     ["نقش فعلی", currentRole(data).name],
@@ -36,6 +39,42 @@ export function SystemScreen() {
           </div>
         ))}
       </dl>
+      <section className="mt-8 rounded-lg border border-line bg-sheet p-4" data-testid="version-changelog">
+        <h2 className="font-bold">تاریخچه نسخه‌ها (Changelog)</h2>
+        <Flash>{flash}</Flash>
+        <form
+          className="mt-3 grid gap-3 md:grid-cols-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!form.version.trim() || !form.notes.trim()) return;
+            const entry: VersionEntry = {
+              id: uid("ver"),
+              version: form.version.trim(),
+              releasedAt: new Date().toISOString(),
+              notes: form.notes.trim(),
+            };
+            update((current) => ({ ...current, versionHistory: [entry, ...current.versionHistory] }));
+            setForm({ version: "", notes: "" });
+            setFlash("نسخه ثبت شد.");
+          }}
+        >
+          <Field label="شماره نسخه">
+            <Input value={form.version} onChange={(event) => setForm({ ...form, version: event.target.value })} placeholder="1.5.1" dir="ltr" />
+          </Field>
+          <Field label="جزئیات تغییرات">
+            <TextArea rows={2} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+          </Field>
+          <Button type="submit" className="self-end">ثبت نسخه</Button>
+        </form>
+        <ul className="mt-4 divide-y divide-line">
+          {(data.versionHistory ?? []).map((entry) => (
+            <li key={entry.id} className="py-3">
+              <p className="font-semibold">نسخه {entry.version} · {faDate(entry.releasedAt)}</p>
+              <p className="mt-1 text-sm text-muted whitespace-pre-wrap">{entry.notes}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
     </ModulePage>
   );
 }
@@ -136,7 +175,7 @@ export function UsersScreen() {
           }
           update((current) =>
             pushActivity(
-              { ...current, users: [...current.users, { id: uid("user"), name: form.name.trim(), username: form.username.trim(), roleId: form.roleId, active: true }] },
+              { ...current, users: [...current.users, { id: uid("user"), name: form.name.trim(), username: form.username.trim(), roleId: form.roleId, active: true, reporterGrade: form.roleId === "reporter" ? "junior" : undefined }] },
               `کاربر ${form.name.trim()} اضافه شد`,
             ),
           );
@@ -170,6 +209,7 @@ export function UsersScreen() {
               <th className="px-3 py-2 text-right font-medium">نام</th>
               <th className="px-3 py-2 text-right font-medium">کاربری</th>
               <th className="px-3 py-2 text-right font-medium">نقش</th>
+              <th className="px-3 py-2 text-right font-medium">رتبه</th>
               <th className="px-3 py-2 text-right font-medium">وضعیت</th>
               <th className="px-3 py-2 text-right font-medium">عملیات</th>
             </tr>
@@ -210,6 +250,21 @@ export function UsersScreen() {
                   <td className="px-3 py-2">
                     {isEditing ? (
                       <Select
+                        value={row.reporterGrade ?? "junior"}
+                        aria-label="رتبه خبرنگار"
+                        onChange={(event) => setEditing({ ...row, reporterGrade: event.target.value as User["reporterGrade"] })}
+                      >
+                        {Object.entries(REPORTER_GRADE_LABELS).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                      </Select>
+                    ) : (
+                      user.reporterGrade ? REPORTER_GRADE_LABELS[user.reporterGrade] : "—"
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEditing ? (
+                      <Select
                         value={row.active ? "active" : "inactive"}
                         aria-label="وضعیت کاربر"
                         onChange={(event) => setEditing({ ...row, active: event.target.value === "active" })}
@@ -234,6 +289,25 @@ export function UsersScreen() {
                         </>
                       ) : (
                         <>
+                          <Button
+                            tone="ghost"
+                            disabled={!allowed}
+                            data-testid={`user-toggle-active-${user.id}`}
+                            onClick={() => {
+                              if (!allowed) return;
+                              update((current) =>
+                                pushActivity(
+                                  {
+                                    ...current,
+                                    users: current.users.map((item) => (item.id === user.id ? { ...item, active: !item.active } : item)),
+                                  },
+                                  `دسترسی ${user.name} ${user.active ? "غیرفعال" : "فعال"} شد`,
+                                ),
+                              );
+                            }}
+                          >
+                            {user.active ? "غیرفعال‌سازی" : "فعال‌سازی"}
+                          </Button>
                           <Button
                             tone="ghost"
                             disabled={!allowed}

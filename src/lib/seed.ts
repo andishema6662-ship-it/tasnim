@@ -70,9 +70,9 @@ export function createSeed(): NewsroomData {
     users: [
       { id: "u-leila", name: "لیلا نوری", username: "leila", roleId: "publisher", active: true },
       { id: "u-kamran", name: "کامران شفیعی", username: "kamran", roleId: "chief", active: true },
-      { id: "u-sara", name: "سارا محمدی", username: "sara", roleId: "reporter", active: true },
-      { id: "u-ali", name: "علی رضایی", username: "ali", roleId: "reporter", active: true },
-      { id: "u-narges", name: "نرگس کاظمی", username: "narges", roleId: "reporter", active: true },
+      { id: "u-sara", name: "سارا محمدی", username: "sara", roleId: "reporter", active: true, reporterGrade: "senior" },
+      { id: "u-ali", name: "علی رضایی", username: "ali", roleId: "reporter", active: true, reporterGrade: "junior" },
+      { id: "u-narges", name: "نرگس کاظمی", username: "narges", roleId: "reporter", active: true, reporterGrade: "trainee" },
     ],
     access,
     categories,
@@ -646,6 +646,77 @@ export function createSeed(): NewsroomData {
       },
     ],
     aiTaskLogs: [],
+    payrollRates: [
+      { id: "rate-news", contentType: "news", label: "خبر عادی", amount: 850_000 },
+      { id: "rate-note", contentType: "note", label: "یادداشت", amount: 1_200_000 },
+      { id: "rate-exclusive", contentType: "exclusive-report", label: "گزارش اختصاصی", amount: 2_500_000 },
+      { id: "rate-interview", contentType: "interview", label: "مصاحبه و گفتگو", amount: 1_800_000 },
+      { id: "rate-photo", contentType: "photo-report", label: "گزارش تصویری", amount: 1_100_000 },
+    ],
+    socialChannels: [
+      { id: "sch-tg", channel: "telegram", enabled: true, template: "{title}\n{lead}\n{hashtags}\n{link}" },
+      { id: "sch-bale", channel: "bale", enabled: true, template: "{title}\n{lead}\n{link}" },
+      { id: "sch-eitaa", channel: "eitaa", enabled: true, template: "{title}\n{link}" },
+      { id: "sch-rubika", channel: "rubika", enabled: false, template: "{title}\n{lead}" },
+      { id: "sch-x", channel: "x", enabled: true, template: "{title}\n{link} {hashtags}" },
+    ],
+    versionHistory: [
+      {
+        id: "ver-1",
+        version: "1.4.0",
+        releasedAt: iso("2026-09-20T08:00:00Z"),
+        notes: "خدمات هوش مصنوعی، قالب پورتال، جایگاه‌های صفحه اصلی و کارتابل یکپارچه.",
+      },
+      {
+        id: "ver-2",
+        version: "1.5.0",
+        releasedAt: iso("2026-09-28T08:00:00Z"),
+        notes: "حق‌الزحمه، گزارش سوژه، انتشار شبکه‌های اجتماعی، پرونده ویژه، نقشه رویداد و ویجت‌های زنده.",
+      },
+    ],
+    adminTemplates: [
+      {
+        id: "adm-press",
+        title: "کارت خبرنگاری",
+        kind: "press-card",
+        body: "این کارت گواهی می‌کند {name} با سمت {grade} در {newsroom} فعالیت می‌کند.",
+      },
+      {
+        id: "adm-intro",
+        title: "معرفی‌نامه اداری",
+        kind: "letter",
+        body: "مدیریت محترم {organization}\nبا سلام و احترام، {name} جهت پوشش خبری معرفی می‌گردد.",
+      },
+      {
+        id: "adm-cert",
+        title: "گواهی فعالیت مطبوعاتی",
+        kind: "certificate",
+        body: "گواهی می‌شود {name} در بازه {period} در تولید محتوای {newsroom} فعال بوده است.",
+      },
+    ],
+    specialDossiers: [
+      {
+        id: "dos-1",
+        title: "پرونده ویژه: حمل‌ونقل شهری",
+        poster: "sand",
+        description: "پیگیری لایحه، اعتراضات و اصلاحات سازمان حمل‌ونقل در پاییز ۱۴۰۵.",
+        tags: ["شهر", "حمل‌ونقل", "مجلس"],
+        storyIds: ["s-bus", "s-karaj"],
+        featuredOnHome: true,
+      },
+    ],
+    eventMaps: [
+      {
+        id: "map-1",
+        title: "مسیر راهپیمایی نمونه",
+        points: [
+          { x: 18, y: 72, label: "میدان آغاز" },
+          { x: 42, y: 48, label: "ایستگاه سخنرانی" },
+          { x: 78, y: 28, label: "محل تجمع" },
+        ],
+        embedCode: '<div data-event-map="map-1" class="event-map-widget"></div>',
+      },
+    ],
     activity: [
       { id: "act-1", at: iso("2026-09-25T06:40:00Z"), text: "پیش‌نویس خورشیدی یزد به‌روز شد" },
       { id: "act-2", at: iso("2026-09-25T04:10:00Z"), text: "خبر ماهواره به بازبینی رفت" },
@@ -681,12 +752,34 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   });
   next.templateSettings = resolveTemplateSettings({ ...next, templateSettings: raw.templateSettings ?? next.templateSettings });
   if (!Array.isArray(next.aiTaskLogs)) next.aiTaskLogs = base.aiTaskLogs;
+  if (!Array.isArray(next.payrollRates) || next.payrollRates.length === 0) next.payrollRates = base.payrollRates;
+  if (!Array.isArray(next.socialChannels) || next.socialChannels.length === 0) next.socialChannels = base.socialChannels;
+  if (!Array.isArray(next.versionHistory) || next.versionHistory.length === 0) next.versionHistory = base.versionHistory;
+  if (!Array.isArray(next.adminTemplates) || next.adminTemplates.length === 0) next.adminTemplates = base.adminTemplates;
+  if (!Array.isArray(next.specialDossiers)) next.specialDossiers = base.specialDossiers;
+  if (!Array.isArray(next.eventMaps)) next.eventMaps = base.eventMaps;
+  next.users = next.users.map((user) => ({
+    ...user,
+    reporterGrade: user.reporterGrade ?? (user.roleId === "reporter" ? "junior" : undefined),
+  }));
   const aiHubKey = "editorial/ai-hub";
+  const chiefEnterpriseKeys = [
+    aiHubKey,
+    "reports/pitch-performance",
+    "reports/payroll",
+    "reports/reporter-period",
+    "core/admin-affairs",
+    "structure/dossiers",
+    "media/event-map",
+  ];
   next.roles.forEach((role) => {
-    if (role.base === "reporter" || role.base === "chief" || role.base === "publisher") {
-      const list = next.roleModuleAccess[role.id] ?? [];
-      if (!list.includes(aiHubKey)) next.roleModuleAccess[role.id] = [...list, aiHubKey];
-    }
+    const list = next.roleModuleAccess[role.id] ?? [];
+    const keys = role.base === "reporter" ? [aiHubKey] : role.base === "chief" || role.base === "publisher" ? chiefEnterpriseKeys : [];
+    let merged = list;
+    keys.forEach((key) => {
+      if (!merged.includes(key)) merged = [...merged, key];
+    });
+    next.roleModuleAccess[role.id] = merged;
   });
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };

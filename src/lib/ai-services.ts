@@ -35,7 +35,7 @@ export function simulateTranscription(opts: { fileName: string; durationSec: num
   return { transcript, title, lead, tags: suggestTags(`${title} ${transcript}`, ["صوت", "گزارش میدانی"]) };
 }
 
-export function polishNewsText(text: string, mode: "grammar" | "journalistic" | "lead") {
+export function polishNewsText(text: string, mode: "grammar" | "journalistic" | "lead" | "structure") {
   const raw = text.replace(/\s+/g, " ").trim();
   if (!raw) return { result: "", lead: "", bullets: [] as string[] };
 
@@ -64,6 +64,11 @@ export function polishNewsText(text: string, mode: "grammar" | "journalistic" | 
 
   if (mode === "lead") {
     return { result: lead, lead, bullets };
+  }
+
+  if (mode === "structure") {
+    const structured = bullets.length ? bullets.map((line, index) => `${index + 1}. ${line}`).join("\n") : result;
+    return { result: structured, lead, bullets };
   }
 
   return { result, lead, bullets };

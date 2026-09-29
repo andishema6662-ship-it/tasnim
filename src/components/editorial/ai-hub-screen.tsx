@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import {
   exclusiveLabel,
@@ -28,8 +29,9 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export function AiHubScreen() {
+  const router = useRouter();
   const { data, update } = useNewsroom();
-  const [tab, setTab] = useState<TabId>("transcribe");
+  const [tab, setTab] = useState<TabId>("polish");
   const [flash, setFlash] = useState("");
 
   const [audioHint, setAudioHint] = useState("");
@@ -39,8 +41,10 @@ export function AiHubScreen() {
   const [transcriptLead, setTranscriptLead] = useState("");
 
   const [draftText, setDraftText] = useState("");
-  const [polishMode, setPolishMode] = useState<"grammar" | "journalistic" | "lead">("grammar");
+  const [polishMode, setPolishMode] = useState<"grammar" | "journalistic" | "lead" | "structure">("grammar");
   const [polished, setPolished] = useState("");
+  const [heroHeadlines, setHeroHeadlines] = useState<string[]>([]);
+  const [lastCartableStoryId, setLastCartableStoryId] = useState("");
 
   const [headlineQuery, setHeadlineQuery] = useState("");
   const [originHits, setOriginHits] = useState<ReturnType<typeof trackHeadlineOrigin>>([]);
@@ -84,7 +88,13 @@ export function AiHubScreen() {
       createdAt: ts,
     };
     update((current) => placeStory(current, story, { log: `پیش‌نویس از خدمات هوش مصنوعی: ${story.title}` }));
+    setLastCartableStoryId(story.id);
     setFlash(`«${story.title}» به کارتابل (پیش‌نویس) رفت.`);
+    return story.id;
+  }
+
+  function openInEditor(storyId: string) {
+    router.push(`/editorial/cartable/${storyId}`);
   }
 
   function runTranscription(fileName: string, durationSec: number) {
@@ -162,6 +172,47 @@ export function AiHubScreen() {
       </Notice>
       <Flash>{flash}</Flash>
 
+      <section
+        className="space-y-4 rounded-xl border-2 border-accent/40 bg-gradient-to-l from-accent/10 to-sheet p-5 shadow-sm"
+        data-testid="ai-text-correction-hero"
+      >
+        <h2 className="text-xl font-black">اصلاح متن خبر</h2>
+        <p className="text-sm text-muted">پیشنهاد تیتر، اصلاح لحن و نگارش، ویرایش ساختار و نیم‌فاصله — سپس انتقال مستقیم به ویرایشگر کارتابل.</p>
+        <Field label="متن خبر برای اصلاح">
+          <TextArea rows={5} value={draftText} onChange={(e) => setDraftText(e.target.value)} data-testid="ai-hero-text-input" />
+        </Field>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" tone="accent" data-testid="ai-hero-run" onClick={() => { runPolish(); setHeroHeadlines(suggestAlternateHeadlines(draftText)); }}>
+            اجرای اصلاح هوشمند
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              const id = sendToCartable({
+                title: (polished || draftText).split(/[.!?؟]/)[0]?.trim() || "خبر اصلاح‌شده",
+                lead: polished.slice(0, 220) || draftText.slice(0, 220),
+                body: polished || draftText,
+              });
+              if (id) openInEditor(id);
+            }}
+            data-testid="ai-hero-to-editor"
+          >
+            انتقال به ویرایشگر کارتابل
+          </Button>
+          {lastCartableStoryId ? (
+            <Button type="button" tone="ghost" onClick={() => openInEditor(lastCartableStoryId)}>بازگشت به آخرین پیش‌نویس</Button>
+          ) : null}
+        </div>
+        {heroHeadlines.length ? (
+          <ul className="text-sm">
+            <li className="font-semibold">تیترهای پیشنهادی:</li>
+            {heroHeadlines.slice(0, 4).map((item) => (
+              <li key={item} className="text-muted">• {item}</li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
       <div className="flex flex-wrap gap-2 border-b border-line pb-3">
         {TABS.map((item) => (
           <button
@@ -220,6 +271,7 @@ export function AiHubScreen() {
             <Button type="button" tone={polishMode === "grammar" ? "accent" : "ghost"} onClick={() => setPolishMode("grammar")}>اصلاح نگارشی</Button>
             <Button type="button" tone={polishMode === "journalistic" ? "accent" : "ghost"} onClick={() => setPolishMode("journalistic")}>بازنویسی ژورنالیستی</Button>
             <Button type="button" tone={polishMode === "lead" ? "accent" : "ghost"} onClick={() => setPolishMode("lead")}>استخراج لید</Button>
+            <Button type="button" tone={polishMode === "structure" ? "accent" : "ghost"} onClick={() => setPolishMode("structure")}>ویرایش ساختار</Button>
             <Button type="button" data-testid="ai-run-polish" onClick={runPolish}>اجرای ویرایش</Button>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -233,8 +285,15 @@ export function AiHubScreen() {
             </div>
           </div>
           {polished ? (
-            <Button type="button" onClick={() => sendToCartable({ title: polished.split(/[.!?؟]/)[0] ?? "خبر ویرایش‌شده", lead: polished.slice(0, 200), body: polished })}>
-              اعمال در خبر (پیش‌نویس کارتابل)
+            <Button
+              type="button"
+              data-testid="ai-polish-to-editor"
+              onClick={() => {
+                const id = sendToCartable({ title: polished.split(/[.!?؟]/)[0] ?? "خبر ویرایش‌شده", lead: polished.slice(0, 200), body: polished });
+                if (id) openInEditor(id);
+              }}
+            >
+              انتقال به ویرایشگر کارتابل
             </Button>
           ) : null}
         </section>

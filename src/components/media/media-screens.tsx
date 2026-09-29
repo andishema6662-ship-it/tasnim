@@ -274,8 +274,41 @@ export function SocialScreen() {
 
   return (
     <ModulePage slug="social">
-      <Notice>پیش‌نویس در مرورگر می‌ماند و به شبکه‌ای فرستاده نمی‌شود.</Notice>
+      <Notice>پیش‌نویس در مرورگر می‌ماند و به شبکه‌ای فرستاده نمی‌شود. الگوهای کانال در کارتابل برای انتشار مستقیم استفاده می‌شوند.</Notice>
       <Flash>{flash}</Flash>
+      <section className="mb-4 rounded-lg border border-line bg-sheet p-4" data-testid="social-channel-templates">
+        <h2 className="font-bold">الگوی کانال‌های متصل</h2>
+        <p className="text-xs text-muted">متغیرها: {"{title}"}، {"{lead}"}، {"{hashtags}"}، {"{link}"}</p>
+        <div className="mt-3 space-y-3">
+          {(data.socialChannels ?? []).map((channel) => (
+            <div key={channel.id} className="grid gap-2 border-b border-line/60 pb-3 last:border-0">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={channel.enabled}
+                  onChange={(event) =>
+                    update((current) => ({
+                      ...current,
+                      socialChannels: current.socialChannels.map((item) => (item.id === channel.id ? { ...item, enabled: event.target.checked } : item)),
+                    }))
+                  }
+                />
+                {channel.channel}
+              </label>
+              <TextArea
+                rows={2}
+                value={channel.template}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialChannels: current.socialChannels.map((item) => (item.id === channel.id ? { ...item, template: event.target.value } : item)),
+                  }))
+                }
+              />
+            </div>
+          ))}
+        </div>
+      </section>
       <form
         className="space-y-3 rounded-lg border border-line bg-sheet p-4"
         onSubmit={(event) => {

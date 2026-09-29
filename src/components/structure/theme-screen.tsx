@@ -207,6 +207,62 @@ export function ThemeScreen() {
           </div>
         </section>
 
+        <section className="rounded-lg border border-line bg-sheet p-4">
+          <h2 className="text-base font-bold">مجوز وزارت فرهنگ و ارشاد اسلامی</h2>
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.ershadLicense.enabled}
+              disabled={!allowed}
+              onChange={(event) => patch({ ershadLicense: { ...form.ershadLicense, enabled: event.target.checked } })}
+            />
+            نمایش در فوتر سایت عمومی
+          </label>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Field label="شماره / کد مجوز">
+              <Input
+                value={form.ershadLicense.code}
+                disabled={!allowed}
+                onChange={(event) => patch({ ershadLicense: { ...form.ershadLicense, code: event.target.value } })}
+                data-testid="theme-ershad-code"
+              />
+            </Field>
+            <Field label="آدرس تصویر نماد (اختیاری)">
+              <Input
+                dir="ltr"
+                value={form.ershadLicense.badgeImage}
+                disabled={!allowed}
+                onChange={(event) => patch({ ershadLicense: { ...form.ershadLicense, badgeImage: event.target.value } })}
+              />
+            </Field>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-line bg-sheet p-4">
+          <h2 className="text-base font-bold">ویجت‌های زنده پورتال</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.portalWidgets.showRates} disabled={!allowed} onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, showRates: event.target.checked } })} />
+              نرخ ارز و طلا
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.portalWidgets.showWeather} disabled={!allowed} onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, showWeather: event.target.checked } })} />
+              آب و هوا
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.portalWidgets.showLeague} disabled={!allowed} onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, showLeague: event.target.checked } })} />
+              جدول لیگ
+            </label>
+          </div>
+          <Field label="شهرهای هواشناسی">
+            <Input
+              value={form.portalWidgets.weatherCities}
+              disabled={!allowed}
+              onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, weatherCities: event.target.value } })}
+            />
+          </Field>
+        </section>
+
         <ThemeSlotsSection
           form={form}
           categories={data.categories}

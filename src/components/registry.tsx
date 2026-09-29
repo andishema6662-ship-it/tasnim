@@ -11,6 +11,14 @@ import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audie
 import { MediaLibraryScreen } from "./media/media-library-screen";
 import { AlbumsScreen } from "./media/albums-screen";
 import { EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
+import {
+  AdminAffairsScreen,
+  DossiersScreen,
+  EventMapScreen,
+  PayrollScreen,
+  PitchPerformanceScreen,
+  ReporterPeriodScreen,
+} from "./enterprise/enterprise-screens";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
 import { AdsScreen, BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
 import { ThemeScreen } from "./structure/theme-screen";
@@ -37,6 +45,7 @@ const screens: Record<string, () => ReactElement> = {
   "core/menus": MenusScreen,
   "core/roles": RolesScreen,
   "core/portal": PortalScreen,
+  "core/admin-affairs": AdminAffairsScreen,
   "editorial/ai": AiScreen,
   "editorial/ai-hub": AiHubScreen,
   "editorial/cartable": CartableScreen,
@@ -53,6 +62,7 @@ const screens: Record<string, () => ReactElement> = {
   "media/social": SocialScreen,
   "media/email": EmailScreen,
   "media/people": PeopleScreen,
+  "media/event-map": EventMapScreen,
   "audience/comments": CommentsScreen,
   "audience/polls": PollsScreen,
   "audience/contact": ContactScreen,
@@ -60,6 +70,9 @@ const screens: Record<string, () => ReactElement> = {
   "reports/news-report": NewsReportScreen,
   "reports/views": ViewsScreen,
   "reports/staff": StaffScreen,
+  "reports/pitch-performance": PitchPerformanceScreen,
+  "reports/payroll": PayrollScreen,
+  "reports/reporter-period": ReporterPeriodScreen,
   "reports/traffic": TrafficScreen,
   "structure/categories": CategoriesScreen,
   "structure/services": ServicesScreen,
@@ -70,6 +83,7 @@ const screens: Record<string, () => ReactElement> = {
   "structure/ticker": TickerScreen,
   "structure/calendar": CalendarScreen,
   "structure/theme": ThemeScreen,
+  "structure/dossiers": DossiersScreen,
 };
 
 export function ModuleScreen() {

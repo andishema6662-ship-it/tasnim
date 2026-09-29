@@ -51,6 +51,13 @@ export function defaultTemplateSettings(): TemplateSettings {
       href: "",
     },
     homepageSlots: defaultHomepageSlots(),
+    ershadLicense: { enabled: false, code: "", badgeImage: "" },
+    portalWidgets: {
+      showRates: true,
+      showWeather: true,
+      showLeague: true,
+      weatherCities: "تهران، مشهد، اصفهان",
+    },
   };
 }
 
@@ -89,6 +96,14 @@ export function resolveTemplateSettings(data: NewsroomData): TemplateSettings {
     portalHeaderBanner: {
       ...defaults.portalHeaderBanner,
       ...raw.portalHeaderBanner,
+    },
+    ershadLicense: {
+      ...defaults.ershadLicense,
+      ...raw.ershadLicense,
+    },
+    portalWidgets: {
+      ...defaults.portalWidgets,
+      ...raw.portalWidgets,
     },
   };
 }
