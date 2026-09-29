@@ -1,0 +1,27 @@
+import { test, expect } from "@playwright/test";
+import { createSeed } from "../src/lib/seed";
+import { STORAGE_KEY } from "../src/lib/storage";
+
+test("enhancements smoke", async ({ page }) => {
+  const data = createSeed();
+  data.currentRoleId = "publisher";
+  await page.addInitScript(
+    ([key, value]) => {
+      window.localStorage.setItem(key, value);
+    },
+    [STORAGE_KEY, JSON.stringify(data)],
+  );
+
+  await page.goto("/core/official-contacts", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("official-contacts-search")).toBeVisible();
+
+  await page.goto("/editorial/agenda", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("agenda-jalali-header")).toBeVisible();
+
+  await page.goto("/site", { waitUntil: "networkidle" });
+  await expect(page.getByTestId("portal-home-poll")).toBeVisible();
+
+  await page.goto("/reports/pitch-performance", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("pitch-produced-link").first().click();
+  await expect(page.getByTestId("pitch-stories-modal")).toBeVisible();
+});

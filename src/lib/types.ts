@@ -262,6 +262,8 @@ export interface VideoItem {
   duration: string;
   summary: string;
   published: boolean;
+  source?: "url" | "upload";
+  fileName?: string;
 }
 
 export interface FeedItem {
@@ -334,11 +336,15 @@ export interface NewsPage {
   blocks: Block[];
 }
 
+export type TablePlacement = "story-attach" | "dedicated-page" | "home" | "service-sports" | "service-economy";
+
 export interface NewsTable {
   id: string;
   title: string;
   columns: string[];
   rows: string[][];
+  placement: TablePlacement;
+  attachStoryId?: string;
 }
 
 export interface Ad {
@@ -452,6 +458,8 @@ export interface Poll {
   question: string;
   options: PollOption[];
   closed: boolean;
+  shortCode: string;
+  showOnHomepage: boolean;
 }
 
 export interface ContactMsg {
@@ -531,6 +539,7 @@ export interface SpecialDossier {
 }
 
 export interface EventMapPoint {
+  id: string;
   x: number;
   y: number;
   label: string;
@@ -540,6 +549,7 @@ export interface EventMapProject {
   id: string;
   title: string;
   points: EventMapPoint[];
+  routeOrder: string[];
   embedCode: string;
 }
 

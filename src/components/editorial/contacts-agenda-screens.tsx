@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { agendaVisibleToUser, formatAgendaReminder, reporterName, upcomingAgendaItems } from "@/lib/agenda";
+import { formatJalaliDateTime, formatJalaliDayHeader } from "@/lib/jalali";
+import { JalaliDateTimeField } from "@/components/jalali-datetime-field";
 import { faDate, faNum, norm } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { pushActivity } from "@/lib/activity";
@@ -94,21 +96,6 @@ export function OfficialContactsScreen() {
     <ModulePage slug="official-contacts">
       <Notice>دفترچه در localStorage ذخیره می‌شود و فقط برای تحریریه است.</Notice>
       <Flash>{flash}</Flash>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="جستجو در نام، سازمان، تلفن…" data-testid="official-contacts-search" />
-        <Select value={orgFilter} onChange={(e) => setOrgFilter(e.target.value)} aria-label="فیلتر سازمان">
-          <option value="all">همه سازمان‌ها</option>
-          {orgs.map((org) => (
-            <option key={org} value={org}>{org}</option>
-          ))}
-        </Select>
-        <Select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} aria-label="فیلتر برچسب">
-          <option value="all">همه برچسب‌ها</option>
-          {tags.map((tag) => (
-            <option key={tag} value={tag}>{tag}</option>
-          ))}
-        </Select>
-      </div>
       <form
         className="mt-4 grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-2"
         onSubmit={(e) => {
@@ -149,6 +136,31 @@ export function OfficialContactsScreen() {
           {editingId ? <Button type="button" tone="ghost" onClick={reset}>انصراف</Button> : null}
         </div>
       </form>
+      <section className="mt-6 rounded-xl border-2 border-accent/30 bg-sheet p-4 shadow-sm" aria-label="جستجوی مخاطبین">
+        <label className="block text-sm font-bold text-ink">جستجوی فوری در دفترچه</label>
+        <p className="mt-1 text-xs text-muted">نام، سازمان، سمت، شماره تماس و برچسب</p>
+        <Input
+          className="mt-3 text-base"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="مثلاً آموزش و پرورش، مدیرکل، ۰۹۱۲…"
+          data-testid="official-contacts-search"
+        />
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Select value={orgFilter} onChange={(e) => setOrgFilter(e.target.value)} aria-label="فیلتر سازمان">
+            <option value="all">همه سازمان‌ها</option>
+            {orgs.map((org) => (
+              <option key={org} value={org}>{org}</option>
+            ))}
+          </Select>
+          <Select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} aria-label="فیلتر برچسب">
+            <option value="all">همه برچسب‌ها</option>
+            {tags.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </Select>
+        </div>
+      </section>
       <div className="mt-4 overflow-x-auto rounded-lg border border-line bg-sheet" data-testid="official-contacts-table">
         <table className="w-full min-w-[48rem] text-sm">
           <thead className="border-b border-line text-xs text-muted">
@@ -183,13 +195,6 @@ export function OfficialContactsScreen() {
       </div>
     </ModulePage>
   );
-}
-
-function toLocalInput(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 const emptyAgenda = (reporterUserId: string): Omit<ReporterAgendaItem, "id" | "createdAt" | "updatedAt"> => ({
@@ -233,7 +238,7 @@ export function ReporterAgendaScreen() {
 
   function save() {
     if (!form.title.trim() || !form.startAt) {
-      setFlash("عنوان و زمان شروع لازم است.");
+      setFlash("عنوان و زمان شروع (شمسی) لازم است.");
       return;
     }
     const ts = new Date().toISOString();
@@ -242,8 +247,8 @@ export function ReporterAgendaScreen() {
       id: editingId ?? uid("ag"),
       title: form.title.trim(),
       reporterUserId: form.reporterUserId,
-      startAt: new Date(form.startAt).toISOString(),
-      endAt: new Date(endAt).toISOString(),
+      startAt: form.startAt,
+      endAt: endAt,
       location: form.location.trim(),
       meetingLink: form.meetingLink.trim(),
       coordinatorPhone: form.coordinatorPhone.trim(),
@@ -270,8 +275,8 @@ export function ReporterAgendaScreen() {
     setForm({
       title: item.title,
       reporterUserId: item.reporterUserId,
-      startAt: toLocalInput(item.startAt),
-      endAt: toLocalInput(item.endAt),
+      startAt: item.startAt,
+      endAt: item.endAt,
       location: item.location,
       meetingLink: item.meetingLink,
       coordinatorPhone: item.coordinatorPhone,
@@ -316,6 +321,7 @@ export function ReporterAgendaScreen() {
   return (
     <ModulePage slug="agenda">
       <Flash>{flash}</Flash>
+      <p className="text-sm font-semibold text-muted" data-testid="agenda-jalali-header">تقویم شمسی — {formatJalaliDayHeader(new Date().toISOString())}</p>
       <form
         className="space-y-3 rounded-lg border border-line bg-sheet p-4"
         onSubmit={(e) => {
@@ -346,12 +352,8 @@ export function ReporterAgendaScreen() {
               ))}
             </Select>
           </Field>
-          <Field label="شروع">
-            <Input type="datetime-local" value={form.startAt} onChange={(e) => setForm({ ...form, startAt: e.target.value })} />
-          </Field>
-          <Field label="پایان">
-            <Input type="datetime-local" value={form.endAt} onChange={(e) => setForm({ ...form, endAt: e.target.value })} />
-          </Field>
+          <JalaliDateTimeField label="شروع (شمسی)" value={form.startAt} onChange={(iso) => setForm({ ...form, startAt: iso })} testId="agenda-start-jalali" />
+          <JalaliDateTimeField label="پایان (شمسی)" value={form.endAt} onChange={(iso) => setForm({ ...form, endAt: iso })} testId="agenda-end-jalali" />
           <Field label="مکان">
             <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
           </Field>
@@ -373,8 +375,9 @@ export function ReporterAgendaScreen() {
           <li key={item.id} className={`rounded-lg border p-4 ${item.done ? "border-line bg-sand/40 opacity-80" : "border-line bg-sheet"}`}>
             <p className="font-bold">{item.title}</p>
             <p className="mt-1 text-sm text-muted">
-              {reporterName(data, item.reporterUserId)} · {faDate(item.startAt)} · {item.location}
+              {reporterName(data, item.reporterUserId)} · {formatJalaliDateTime(item.startAt)} · {item.location}
             </p>
+            <p className="mt-1 text-xs text-accent">{formatJalaliDayHeader(item.startAt)}</p>
             <p className="mt-2 text-sm">{formatAgendaReminder(item, data)}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button type="button" tone="ghost" onClick={() => loadItem(item)}>ویرایش</Button>

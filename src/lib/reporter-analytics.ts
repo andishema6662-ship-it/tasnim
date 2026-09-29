@@ -21,6 +21,14 @@ function pitchesForReporter(data: NewsroomData, user: User): NewsPitch[] {
   });
 }
 
+export function producedStoriesForReporter(data: NewsroomData, userId: string): Story[] {
+  const user = data.users.find((item) => item.id === userId);
+  if (!user) return [];
+  return data.stories.filter(
+    (story) => story.author === user.name && (story.status === "published" || story.status === "ready" || story.status === "editing" || story.status === "review"),
+  );
+}
+
 export function reporterPitchStats(data: NewsroomData): ReporterPitchStats[] {
   const reporters = data.users.filter((user) => data.roles.find((role) => role.id === user.roleId)?.base === "reporter");
   return reporters.map((user) => {

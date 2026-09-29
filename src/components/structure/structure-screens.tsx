@@ -303,7 +303,10 @@ export function TablesScreen() {
           onClick={() => {
             if (!title.trim()) return;
             const id = uid("tbl");
-            update((current) => ({ ...current, tables: [...current.tables, { id, title: title.trim(), columns: ["ستون"], rows: [[""]] }] }));
+            update((current) => ({
+              ...current,
+              tables: [...current.tables, { id, title: title.trim(), columns: ["ستون"], rows: [[""]], placement: "story-attach" }],
+            }));
             setTableId(id);
             setTitle("");
           }}
@@ -313,6 +316,48 @@ export function TablesScreen() {
       </div>
       {table ? (
         <div className="space-y-3 overflow-x-auto rounded-lg border border-line bg-sheet p-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="محل نشر جدول">
+              <Select
+                value={table.placement ?? "story-attach"}
+                disabled={!allowed}
+                onChange={(event) => save({ ...table, placement: event.target.value as typeof table.placement })}
+              >
+                <option value="story-attach">پیوست به خبر</option>
+                <option value="dedicated-page">صفحه اختصاصی</option>
+                <option value="home">صفحه اصلی</option>
+                <option value="service-sports">سرویس ورزشی</option>
+                <option value="service-economy">سرویس اقتصادی</option>
+              </Select>
+            </Field>
+            {table.placement === "story-attach" ? (
+              <Field label="شناسه خبر (اختیاری)">
+                <Select
+                  value={table.attachStoryId ?? ""}
+                  disabled={!allowed}
+                  onChange={(event) => save({ ...table, attachStoryId: event.target.value || undefined })}
+                >
+                  <option value="">—</option>
+                  {data.stories.map((story) => (
+                    <option key={story.id} value={story.id}>{story.title}</option>
+                  ))}
+                </Select>
+              </Field>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              tone="ghost"
+              data-testid="table-embed-code"
+              onClick={() => {
+                const code = `[table:${table.id}]`;
+                navigator.clipboard?.writeText(code);
+              }}
+            >
+              کپی کد جاسازی در خبر
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Button tone="ghost" disabled={!allowed} onClick={() => save({ ...table, columns: [...table.columns, "ستون"], rows: table.rows.map((row) => [...row, ""]) })}>
               ستون

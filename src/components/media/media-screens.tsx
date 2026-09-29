@@ -17,21 +17,51 @@ export function VideosScreen() {
   const { data, update } = useNewsroom();
   const [form, setForm] = useState({ title: "", url: "", duration: "", summary: "" });
   const [flash, setFlash] = useState("");
+  const [uploadName, setUploadName] = useState("");
+
+  function onVideoFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setFlash("فقط فایل ویدیویی مجاز است.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setForm((current) => ({ ...current, url, title: current.title || file.name.replace(/\.[^.]+$/, "") }));
+    setUploadName(file.name);
+    setFlash("فایل ویدیو برای پیش‌نمایش محلی آماده شد.");
+  }
 
   return (
     <ModulePage slug="videos">
-      <Notice>این فهرست مشخصات ویدئو را نگه می‌دارد. فایلی روی سرور ذخیره نمی‌شود.</Notice>
+      <Notice>ویدیو با لینک بیرونی یا بارگذاری محلی (آدرس object در مرورگر) ثبت می‌شود.</Notice>
       <Flash>{flash}</Flash>
       <form
         className="grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
           if (!form.title.trim()) return;
+          if (!form.url.trim()) {
+            setFlash("لینک یا فایل ویدیو لازم است.");
+            return;
+          }
           update((current) => ({
             ...current,
-            videos: [{ id: uid("vid"), ...form, title: form.title.trim(), published: false }, ...current.videos],
+            videos: [
+              {
+                id: uid("vid"),
+                ...form,
+                title: form.title.trim(),
+                published: false,
+                source: uploadName ? "upload" : "url",
+                fileName: uploadName || undefined,
+              },
+              ...current.videos,
+            ],
           }));
           setForm({ title: "", url: "", duration: "", summary: "" });
+          setUploadName("");
           setFlash("ویدئو ثبت شد.");
         }}
       >
@@ -39,7 +69,11 @@ export function VideosScreen() {
           <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
         </Field>
         <Field label="نشانی">
-          <Input value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} placeholder="https://" />
+          <Input value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} placeholder="https://" dir="ltr" />
+        </Field>
+        <Field label="بارگذاری از رایانه">
+          <input type="file" accept="video/*" data-testid="video-file-upload" onChange={onVideoFile} className="text-sm" />
+          {uploadName ? <p className="text-xs text-muted">{uploadName}</p> : null}
         </Field>
         <Field label="مدت">
           <Input value={form.duration} onChange={(event) => setForm({ ...form, duration: event.target.value })} placeholder="۰۲:۰۰" />
@@ -55,8 +89,9 @@ export function VideosScreen() {
             <div>
               <h2 className="font-semibold">{video.title}</h2>
               <p className="text-xs text-muted">
-                {video.duration} · {video.summary}
+                {video.duration} · {video.summary} {video.source === "upload" ? "· بارگذاری محلی" : ""}
               </p>
+              {video.url.startsWith("blob:") ? <video src={video.url} controls className="mt-2 max-h-40 w-full rounded" /> : null}
             </div>
             <Button
               tone={video.published ? "ghost" : "primary"}

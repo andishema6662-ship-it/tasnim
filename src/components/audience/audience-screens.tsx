@@ -79,11 +79,27 @@ export function PollsScreen() {
         const total = poll.options.reduce((sum, option) => sum + option.votes, 0);
         return (
           <article key={poll.id} className="rounded-lg border border-line bg-sheet p-4">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="font-bold">{poll.question}</h2>
-              <Button tone="ghost" onClick={() => update((current) => ({ ...current, polls: current.polls.map((item) => (item.id === poll.id ? { ...item, closed: !item.closed } : item)) }))}>
-                {poll.closed ? "بازگشایی" : "بستن"}
-              </Button>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-bold">{poll.question}</h2>
+                <p className="mt-1 text-xs text-muted" dir="ltr">کد درج در خبر: [poll:{poll.shortCode ?? poll.id}]</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  tone="ghost"
+                  onClick={() =>
+                    update((current) => ({
+                      ...current,
+                      polls: current.polls.map((item) => (item.id === poll.id ? { ...item, showOnHomepage: !item.showOnHomepage } : item)),
+                    }))
+                  }
+                >
+                  {poll.showOnHomepage ? "برداشتن از صفحه اصلی" : "نمایش در صفحه اصلی"}
+                </Button>
+                <Button tone="ghost" onClick={() => update((current) => ({ ...current, polls: current.polls.map((item) => (item.id === poll.id ? { ...item, closed: !item.closed } : item)) }))}>
+                  {poll.closed ? "بازگشایی" : "بستن"}
+                </Button>
+              </div>
             </div>
             <ul className="mt-3 space-y-2">
               {poll.options.map((option) => (
@@ -125,7 +141,17 @@ export function PollsScreen() {
           }
           update((current) => ({
             ...current,
-            polls: [{ id: uid("poll"), question: question.trim(), closed: false, options: labels.map((label) => ({ id: uid("op"), label, votes: 0 })) }, ...current.polls],
+            polls: [
+              {
+                id: uid("poll"),
+                question: question.trim(),
+                closed: false,
+                shortCode: `poll-${uid("p").slice(-4)}`,
+                showOnHomepage: false,
+                options: labels.map((label) => ({ id: uid("op"), label, votes: 0 })),
+              },
+              ...current.polls,
+            ],
           }));
           setQuestion("");
           setFlash("نظرسنجی ساخته شد.");

@@ -564,6 +564,7 @@ export function createSeed(): NewsroomData {
           ["برزیل", "۱", "۱", "۳"],
           ["ژاپن", "۰", "۲", "۰"],
         ],
+        placement: "service-sports",
       },
     ],
     ads: [
@@ -666,6 +667,8 @@ export function createSeed(): NewsroomData {
           { id: "op-3", label: "متن کوتاه با ویدئو", votes: 7 },
         ],
         closed: false,
+        shortCode: "poll-urgent",
+        showOnHomepage: true,
       },
     ],
     contacts: [
@@ -755,10 +758,11 @@ export function createSeed(): NewsroomData {
         id: "map-1",
         title: "مسیر راهپیمایی نمونه",
         points: [
-          { x: 18, y: 72, label: "میدان آغاز" },
-          { x: 42, y: 48, label: "ایستگاه سخنرانی" },
-          { x: 78, y: 28, label: "محل تجمع" },
+          { id: "pt-1", x: 18, y: 72, label: "میدان آغاز" },
+          { id: "pt-2", x: 42, y: 48, label: "ایستگاه سخنرانی" },
+          { id: "pt-3", x: 78, y: 28, label: "محل تجمع" },
         ],
+        routeOrder: ["pt-1", "pt-2", "pt-3"],
         embedCode: '<div data-event-map="map-1" class="event-map-widget"></div>',
       },
     ],
@@ -830,6 +834,25 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!Array.isArray(next.eventMaps)) next.eventMaps = base.eventMaps;
   if (!Array.isArray(next.officialContacts) || next.officialContacts.length === 0) next.officialContacts = base.officialContacts;
   if (!Array.isArray(next.reporterAgenda) || next.reporterAgenda.length === 0) next.reporterAgenda = base.reporterAgenda;
+  next.tables = (next.tables ?? []).map((table) => ({
+    ...table,
+    placement: table.placement ?? "story-attach",
+  }));
+  next.polls = (next.polls ?? []).map((poll) => ({
+    ...poll,
+    shortCode: poll.shortCode ?? poll.id.replace(/^poll-/, "poll-"),
+    showOnHomepage: poll.showOnHomepage ?? false,
+  }));
+  next.eventMaps = (next.eventMaps ?? []).map((map) => {
+    const points = map.points.map((point, index) => ({
+      id: point.id ?? `pt-${map.id}-${index}`,
+      x: point.x,
+      y: point.y,
+      label: point.label,
+    }));
+    const routeOrder = map.routeOrder?.length ? map.routeOrder : points.map((p) => p.id);
+    return { ...map, points, routeOrder };
+  });
   next.users = next.users.map((user) => ({
     ...user,
     reporterGrade: user.reporterGrade ?? (user.roleId === "reporter" ? "junior" : undefined),

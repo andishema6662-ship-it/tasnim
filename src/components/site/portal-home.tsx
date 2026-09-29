@@ -23,6 +23,7 @@ import { useNewsroom } from "@/lib/store";
 import { categoryName } from "@/lib/workflow";
 import { GridPortalItem, HeroPortalItem, ListPortalItem, SidePortalItem } from "./portal-item-cards";
 import { PortalLayout } from "./portal-layout";
+import { PortalPollWidget } from "./portal-poll-widget";
 import { PortalWidgetsSidebar } from "./portal-widgets";
 
 const accent = "text-[var(--portal-primary)]";
@@ -174,7 +175,10 @@ export function SiteHomeView() {
       ) : null}
       <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
         <div>{leadSection}</div>
-        <PortalWidgetsSidebar />
+        <div className="space-y-4">
+          <PortalPollWidget />
+          <PortalWidgetsSidebar />
+        </div>
       </div>
       {midAd?.image ? (
         <div className="my-6 overflow-hidden rounded-lg border border-line bg-white p-2">

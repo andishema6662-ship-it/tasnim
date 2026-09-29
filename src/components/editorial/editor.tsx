@@ -364,6 +364,26 @@ export function Editor({ id }: { id: string }) {
           {error ? <p className="text-sm text-rule">{error}</p> : null}
           <Flash>{flash}</Flash>
           {!editable ? <Notice>در این وضعیت با نقش شما فقط خواندن ممکن است. {others.length ? `گام بعدی با ${[...new Set(others.map((item) => actorLabel(data, item.actor)))].join(" یا ")} است.` : ""}</Notice> : null}
+          {data.polls.length ? (
+            <Field label="درج نظرسنجی در متن">
+              <Select
+                defaultValue=""
+                disabled={!editable}
+                onChange={(event) => {
+                  const poll = data.polls.find((item) => item.id === event.target.value);
+                  if (!poll) return;
+                  const token = `[poll:${poll.shortCode ?? poll.id}]`;
+                  patch({ body: `${form.body}<p>${token}</p>` });
+                  setFlash(`کد ${token} به متن خبر افزوده شد.`);
+                }}
+              >
+                <option value="">انتخاب نظرسنجی…</option>
+                {data.polls.map((poll) => (
+                  <option key={poll.id} value={poll.id}>{poll.question}</option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
           <div className="flex flex-col gap-2">
             {!isNew ? (
               <Button type="button" tone="ghost" data-testid="editor-social-publish" onClick={() => setSocialOpen(true)}>

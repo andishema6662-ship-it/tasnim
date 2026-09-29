@@ -7,18 +7,24 @@ import { uid } from "@/lib/id";
 import { monthlyPayrollForAuthor } from "@/lib/payroll-calc";
 import {
   periodStart,
+  producedStoriesForReporter,
   reporterPitchStats,
   storiesInPeriod,
   type PeriodKind,
 } from "@/lib/reporter-analytics";
+import { PayrollSlipView } from "@/components/payroll-slip";
+import { EventMapCanvas } from "@/components/event-map-canvas";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
 import { useNewsroom } from "@/lib/store";
-import type { AdminLetterTemplate, EventMapPoint, SpecialDossier } from "@/lib/types";
+import type { AdminLetterTemplate, SpecialDossier } from "@/lib/types";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
 export function PitchPerformanceScreen() {
   const { data } = useNewsroom();
   const rows = reporterPitchStats(data);
+  const [modalUserId, setModalUserId] = useState<string | null>(null);
+  const modalStories = modalUserId ? producedStoriesForReporter(data, modalUserId) : [];
+
   return (
     <ModulePage slug="pitch-performance">
       <Notice>آمار از سوژه‌های ثبت‌شده و اخبار متصل در همین مرورگر محاسبه می‌شود.</Notice>
@@ -39,7 +45,16 @@ export function PitchPerformanceScreen() {
               <tr key={row.userId} className="border-b border-line last:border-0">
                 <td className="px-3 py-2 font-medium">{row.name}</td>
                 <td className="px-3 py-2">{faNum(row.pitchesReceived)}</td>
-                <td className="px-3 py-2">{faNum(row.storiesProduced)}</td>
+                <td className="px-3 py-2">
+                  <button
+                    type="button"
+                    className="font-bold text-accent underline"
+                    data-testid="pitch-produced-link"
+                    onClick={() => setModalUserId(row.userId)}
+                  >
+                    {faNum(row.storiesProduced)}
+                  </button>
+                </td>
                 <td className="px-3 py-2">{faNum(row.successRate)}٪</td>
                 <td className="px-3 py-2">{faNum(row.onTimeRate)}٪</td>
                 <td className="px-3 py-2">{faNum(row.lateCount)}</td>
@@ -48,6 +63,27 @@ export function PitchPerformanceScreen() {
           </tbody>
         </table>
       </div>
+      {modalUserId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" data-testid="pitch-stories-modal">
+          <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg border border-line bg-sheet p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold">اخبار تولیدی</h3>
+              <Button type="button" tone="ghost" onClick={() => setModalUserId(null)}>بستن</Button>
+            </div>
+            <ul className="mt-3 space-y-2 text-sm">
+              {modalStories.length === 0 ? <li className="text-muted">خبری ثبت نشده است.</li> : null}
+              {modalStories.map((story) => (
+                <li key={story.id}>
+                  <Link href={`/editorial/cartable/${story.id}`} className="font-semibold text-accent hover:underline">
+                    {story.title}
+                  </Link>
+                  <p className="text-xs text-muted">{story.status}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
     </ModulePage>
   );
 }
@@ -103,35 +139,10 @@ export function PayrollScreen() {
         </Field>
       </div>
       {payroll ? (
-        <section className="mt-4 rounded-lg border border-line bg-sheet p-4" data-testid="payroll-slip">
-          <h2 className="text-lg font-bold">پیش‌نمایش فیش — {payroll.monthLabel}</h2>
-          <p className="text-sm text-muted">نام: {payroll.author}</p>
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b border-line text-muted">
-                <th className="py-2 text-right">عنوان خبر</th>
-                <th className="py-2 text-right">نوع</th>
-                <th className="py-2 text-right">مبلغ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payroll.lines.map((line) => (
-                <tr key={line.storyId} className="border-b border-line/60">
-                  <td className="py-2">{line.title}</td>
-                  <td className="py-2">{line.label}</td>
-                  <td className="py-2">{faNum(line.amount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <dl className="mt-4 grid gap-1 text-sm sm:grid-cols-2">
-            <div className="flex justify-between"><dt>جمع کارکرد</dt><dd>{faNum(payroll.gross)}</dd></div>
-            <div className="flex justify-between"><dt>پاداش</dt><dd>{faNum(payroll.bonus)}</dd></div>
-            <div className="flex justify-between"><dt>کسورات</dt><dd>{faNum(payroll.deduction)}</dd></div>
-            <div className="flex justify-between font-bold"><dt>خالص</dt><dd>{faNum(payroll.net)}</dd></div>
-          </dl>
-          <Button type="button" className="mt-3" onClick={() => { window.print(); setFlash("پنجره چاپ باز شد."); }}>چاپ فیش</Button>
-        </section>
+        <div className="mt-4 space-y-3">
+          <PayrollSlipView payroll={payroll} newsroomName={data.settings.newsroomName} />
+          <Button type="button" onClick={() => { window.print(); setFlash("پنجره چاپ / PDF باز شد."); }}>چاپ یا ذخیره PDF</Button>
+        </div>
       ) : (
         <Empty>خبرنگاری انتخاب نشده است.</Empty>
       )}
@@ -205,7 +216,9 @@ export function AdminAffairsScreen() {
   const [selectedUserId, setSelectedUserId] = useState(data.users[0]?.id ?? "");
   const [org, setOrg] = useState("سازمان نمونه");
   const [templateId, setTemplateId] = useState(data.adminTemplates[0]?.id ?? "");
-  const [output, setOutput] = useState("");
+  const [letterBody, setLetterBody] = useState("");
+  const [editingTplId, setEditingTplId] = useState<string | null>(null);
+  const [tplDraft, setTplDraft] = useState({ title: "", body: "" });
   const user = data.users.find((item) => item.id === selectedUserId);
   const template = data.adminTemplates.find((item) => item.id === templateId);
 
@@ -243,18 +256,33 @@ export function AdminAffairsScreen() {
               ))}
             </Select>
           </Field>
-          <Button type="button" onClick={() => setOutput(template ? renderTemplate(template) : "")}>تولید متن</Button>
-          {output ? (
-            <div className="rounded border border-line bg-paper p-4 text-sm leading-8 whitespace-pre-wrap" data-testid="admin-letter-output">
-              <div className="mb-4 flex items-center gap-3 border-b border-line pb-3">
-                <div className="flex h-16 w-16 items-center justify-center rounded bg-sand text-xs">QR</div>
-                <div>
-                  <p className="font-bold">{user?.name}</p>
-                  <p className="text-xs text-muted">{data.settings.newsroomName}</p>
+          <Button type="button" onClick={() => setLetterBody(template ? renderTemplate(template) : "")}>تولید متن</Button>
+          {letterBody ? (
+            <>
+              <Field label="ویرایش زنده متن نامه">
+                <TextArea rows={8} value={letterBody} onChange={(event) => setLetterBody(event.target.value)} data-testid="admin-letter-editor" />
+              </Field>
+              <div
+                className="mx-auto w-full max-w-[148mm] min-h-[210mm] rounded border-2 border-[#1a3a5f] bg-white p-8 text-sm leading-9 shadow-lg print:shadow-none"
+                data-testid="admin-letter-output"
+              >
+                <header className="border-b-2 border-[#8e1e2d] pb-4 text-center">
+                  <p className="text-xs text-muted">بسمه تعالی</p>
+                  <p className="mt-2 text-lg font-black text-[#8e1e2d]">{data.settings.newsroomName}</p>
+                  <p className="text-xs">معاونت روابط عمومی و امور اداری</p>
+                </header>
+                <div className="mt-4 flex items-center justify-between text-xs">
+                  <span>تاریخ: {faDate(new Date().toISOString())}</span>
+                  <span>شماره: ADM-{faNum(Date.now()).slice(-6)}</span>
+                </div>
+                <div className="mt-6 whitespace-pre-wrap">{letterBody}</div>
+                <div className="mt-10 flex justify-between text-xs text-muted">
+                  <span>مهر و امضا</span>
+                  <div className="flex h-14 w-14 items-center justify-center rounded border border-dashed">QR</div>
                 </div>
               </div>
-              {output}
-            </div>
+              <Button type="button" tone="ghost" onClick={() => window.print()}>چاپ A5</Button>
+            </>
           ) : null}
         </section>
         <section className="rounded-lg border border-line bg-sheet p-4">
@@ -262,8 +290,53 @@ export function AdminAffairsScreen() {
           <ul className="mt-3 space-y-2 text-sm">
             {data.adminTemplates.map((item) => (
               <li key={item.id} className="rounded border border-line/70 px-3 py-2">
-                <p className="font-semibold">{item.title}</p>
-                <p className="text-xs text-muted">{item.kind}</p>
+                {editingTplId === item.id ? (
+                  <div className="space-y-2">
+                    <Input value={tplDraft.title} onChange={(e) => setTplDraft({ ...tplDraft, title: e.target.value })} />
+                    <TextArea rows={3} value={tplDraft.body} onChange={(e) => setTplDraft({ ...tplDraft, body: e.target.value })} />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          update((current) => ({
+                            ...current,
+                            adminTemplates: current.adminTemplates.map((row) =>
+                              row.id === item.id ? { ...row, title: tplDraft.title.trim(), body: tplDraft.body.trim() } : row,
+                            ),
+                          }));
+                          setEditingTplId(null);
+                        }}
+                      >
+                        ذخیره الگو
+                      </Button>
+                      <Button type="button" tone="ghost" onClick={() => setEditingTplId(null)}>انصراف</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="text-xs text-muted">{item.kind}</p>
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        type="button"
+                        tone="ghost"
+                        onClick={() => {
+                          setEditingTplId(item.id);
+                          setTplDraft({ title: item.title, body: item.body });
+                        }}
+                      >
+                        ویرایش
+                      </Button>
+                      <Button
+                        type="button"
+                        tone="ghost"
+                        onClick={() => update((current) => ({ ...current, adminTemplates: current.adminTemplates.filter((row) => row.id !== item.id) }))}
+                      >
+                        حذف
+                      </Button>
+                    </div>
+                  </>
+                )}
               </li>
             ))}
           </ul>
@@ -368,15 +441,6 @@ export function EventMapScreen() {
   const project = data.eventMaps.find((item) => item.id === activeId) ?? data.eventMaps[0];
   const [flash, setFlash] = useState("");
 
-  function addPoint() {
-    if (!project) return;
-    const point: EventMapPoint = { x: 50, y: 50, label: "نقطه تازه" };
-    update((current) => ({
-      ...current,
-      eventMaps: current.eventMaps.map((item) => (item.id === project.id ? { ...item, points: [...item.points, point] } : item)),
-    }));
-  }
-
   return (
     <ModulePage slug="event-map">
       <Flash>{flash}</Flash>
@@ -389,20 +453,15 @@ export function EventMapScreen() {
       </Field>
       {project ? (
         <>
-          <div className="relative mt-4 h-72 overflow-hidden rounded-lg border border-line bg-gradient-to-br from-emerald-100 to-sky-100" data-testid="event-map-canvas">
-            {project.points.map((point, index) => (
-              <button
-                key={`${point.x}-${point.y}-${index}`}
-                type="button"
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-2 py-1 text-xs text-sheet shadow"
-                style={{ left: `${point.x}%`, top: `${point.y}%` }}
-                title={point.label}
-              >
-                {point.label}
-              </button>
-            ))}
-          </div>
-          <Button type="button" className="mt-2" onClick={addPoint}>افزودن ایستگاه</Button>
+          <EventMapCanvas
+            project={{ ...project, routeOrder: project.routeOrder ?? project.points.map((p) => p.id) }}
+            onChange={(next) =>
+              update((current) => ({
+                ...current,
+                eventMaps: current.eventMaps.map((item) => (item.id === project.id ? next : item)),
+              }))
+            }
+          />
           <div className="mt-4">
             <Field label="کد درج در خبر">
               <TextArea readOnly rows={2} value={project.embedCode} data-testid="event-map-embed" />
