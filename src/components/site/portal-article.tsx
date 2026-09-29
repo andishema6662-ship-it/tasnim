@@ -21,7 +21,7 @@ export function SiteArticleView({ id }: { id: string }) {
     return (
       <PortalLayout>
         <h1 className="text-xl font-bold">این خبر در خروجی عمومی نیست</h1>
-        <Link href="/site" className="mt-4 inline-block text-sm text-[#8e1e2d]">بازگشت به صفحه اصلی</Link>
+        <Link href="/site" className="mt-4 inline-block text-sm text-[var(--portal-primary)]">بازگشت به صفحه اصلی</Link>
       </PortalLayout>
     );
   }
@@ -62,14 +62,14 @@ export function SiteArticleView({ id }: { id: string }) {
   return (
     <PortalLayout>
       <nav className="text-sm text-muted" aria-label="مسیر">
-        <Link href="/site" className="hover:text-[#8e1e2d]">خانه</Link>
+        <Link href="/site" className="hover:text-[var(--portal-primary)]">خانه</Link>
         <span className="mx-2">›</span>
-        <Link href={`/site?cat=${story.categoryId}`} className="hover:text-[#8e1e2d]">{storyCategoryLabel(data, story)}</Link>
+        <Link href={`/site?cat=${story.categoryId}`} className="hover:text-[var(--portal-primary)]">{storyCategoryLabel(data, story)}</Link>
         <span className="mx-2">›</span>
         <span className="text-ink">{story.title}</span>
       </nav>
       <article className="mt-4 rounded-lg border border-line bg-white p-4 shadow-sm sm:p-6 lg:p-8">
-        <p className="text-sm font-semibold text-[#8e1e2d]">{storyServiceLabel(data, story)}</p>
+        <p className="text-sm font-semibold text-[var(--portal-primary)]">{storyServiceLabel(data, story)}</p>
         <h1 className="mt-2 text-3xl font-black leading-snug sm:text-4xl">{story.title}</h1>
         <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           <li>{faDate(published)} · {time}</li>
@@ -77,7 +77,7 @@ export function SiteArticleView({ id }: { id: string }) {
           <li>زمان مطالعه: حدود {faNum(readingMin)} دقیقه</li>
           <li>{faNum(words)} کلمه</li>
         </ul>
-        <blockquote className="mt-6 border-r-4 border-[#8e1e2d] bg-[#fdf8f8] px-4 py-3 text-lg leading-9 text-ink/90">{story.lead}</blockquote>
+        <blockquote className="mt-6 border-r-4 border-[var(--portal-primary)] bg-[#fdf8f8] px-4 py-3 text-lg leading-9 text-ink/90">{story.lead}</blockquote>
         {isCoverImage(story.cover) ? (
           <figure className="mt-6">
             <CoverThumb cover={story.cover} className="w-full max-h-[480px] rounded-lg object-cover" />
@@ -85,7 +85,7 @@ export function SiteArticleView({ id }: { id: string }) {
           </figure>
         ) : null}
         <div
-          className="prose-site mt-8 text-base leading-8 [&_a]:text-[#8e1e2d] [&_a]:underline [&_ol]:list-decimal [&_ol]:pr-8 [&_ul]:list-disc [&_ul]:pr-8"
+          className="prose-site mt-8 text-base leading-8 [&_a]:text-[var(--portal-primary)] [&_a]:underline [&_ol]:list-decimal [&_ol]:pr-8 [&_ul]:list-disc [&_ul]:pr-8"
           dangerouslySetInnerHTML={{ __html: storyBodyHtml(story.body) }}
         />
         {story.tags.length ? (
@@ -97,11 +97,11 @@ export function SiteArticleView({ id }: { id: string }) {
         ) : null}
       </article>
       <section className="mt-8">
-        <h2 className="border-r-4 border-[#8e1e2d] pr-3 text-lg font-bold">اخبار مرتبط</h2>
+        <h2 className="border-r-4 border-[var(--portal-primary)] pr-3 text-lg font-bold">اخبار مرتبط</h2>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {related.map((item) => (
             <li key={item.id}>
-              <Link href={`/site/${item.id}`} className="block rounded border border-line bg-white p-3 text-sm font-semibold hover:border-[#8e1e2d]/40">
+              <Link href={`/site/${item.id}`} className="block rounded border border-line bg-white p-3 text-sm font-semibold hover:border-[var(--portal-primary)]/40">
                 {item.title}
               </Link>
             </li>
@@ -124,7 +124,7 @@ export function SiteArticleView({ id }: { id: string }) {
         <form className="mt-6 space-y-3 border-t border-line pt-4" onSubmit={submitComment}>
           <input value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="نام شما" className="w-full rounded border border-line px-3 py-2 text-sm" aria-label="نام" />
           <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={4} placeholder="نظر خود را بنویسید…" className="w-full rounded border border-line px-3 py-2 text-sm" aria-label="متن نظر" />
-          <button type="submit" className="rounded bg-[#8e1e2d] px-4 py-2 text-sm text-white">ارسال نظر</button>
+          <button type="submit" className="rounded bg-[var(--portal-primary)] px-4 py-2 text-sm text-white">ارسال نظر</button>
         </form>
       </section>
     </PortalLayout>

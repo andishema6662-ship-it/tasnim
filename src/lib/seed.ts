@@ -1,4 +1,5 @@
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
+import { defaultTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
 import { createSeedMediaLibrary } from "./media-seed";
 import type { Album, NewsroomData, Settings, Story } from "./types";
@@ -39,6 +40,7 @@ export function createSeed(): NewsroomData {
       mediaDisplayTitle: "",
       brandMark: "",
     },
+    templateSettings: defaultTemplateSettings(),
     roles: [
       {
         id: "publisher",
@@ -668,6 +670,15 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   next.albums = (next.albums ?? []).map((album) => normalizeAlbum(album as Album));
   if (next.albums.length === 0) next.albums = base.albums;
   next.roleModuleAccess = mergeRoleModuleAccess(base.roleModuleAccess, raw.roleModuleAccess, next.roles);
+  const themeModuleKey = "structure/theme";
+  next.roles.forEach((role) => {
+    if (role.base !== "chief" && role.base !== "publisher") return;
+    const list = next.roleModuleAccess[role.id] ?? [];
+    if (!list.includes(themeModuleKey)) {
+      next.roleModuleAccess[role.id] = [...list, themeModuleKey];
+    }
+  });
+  next.templateSettings = { ...defaultTemplateSettings(), ...(raw.templateSettings ?? next.templateSettings) };
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };
   return next;

@@ -50,6 +50,7 @@ function chiefPreset(): string[] {
     "structure/ticker",
     "structure/calendar",
     "structure/ads",
+    "structure/theme",
     "core/logos",
     "core/links",
     "core/menus",

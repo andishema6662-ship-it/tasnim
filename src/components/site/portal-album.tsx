@@ -14,7 +14,7 @@ export function SiteAlbumView({ id }: { id: string }) {
     return (
       <PortalLayout>
         <h1 className="text-xl font-bold">این گزارش تصویری در خروجی نیست</h1>
-        <Link href="/site" className="mt-4 inline-block text-sm text-[#8e1e2d]">بازگشت</Link>
+        <Link href="/site" className="mt-4 inline-block text-sm text-[var(--portal-primary)]">بازگشت</Link>
       </PortalLayout>
     );
   }
@@ -22,9 +22,9 @@ export function SiteAlbumView({ id }: { id: string }) {
   return (
     <PortalLayout>
       <nav className="text-sm text-muted">
-        <Link href="/site" className="hover:text-[#8e1e2d]">خانه</Link>
+        <Link href="/site" className="hover:text-[var(--portal-primary)]">خانه</Link>
         <span className="mx-2">›</span>
-        <Link href="/site#photos" className="hover:text-[#8e1e2d]">گزارش تصویری</Link>
+        <Link href="/site#photos" className="hover:text-[var(--portal-primary)]">گزارش تصویری</Link>
       </nav>
       <article className="mt-4 rounded-lg border border-line bg-white p-6 shadow-sm">
         <h1 className="text-3xl font-black leading-snug">{album.title}</h1>

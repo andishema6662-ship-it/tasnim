@@ -69,6 +69,7 @@ export const modules: ModuleInfo[] = [
   { group: "structure", slug: "banners", title: "بنرها و اعلانات", description: "اعلان بالای صفحه، ستون یا میان‌متن." },
   { group: "structure", slug: "ticker", title: "پیام متحرک", description: "متن‌های نوار خبر فوری و پیش‌نمایش حرکت." },
   { group: "structure", slug: "calendar", title: "تقویم رویداد", description: "رویدادهای تحریریه و پوشش خبری." },
+  { group: "structure", slug: "theme", title: "مدیریت قالب و تنظیمات", description: "رنگ، چیدمان صفحه اصلی، هدر، فوتر و تایپوگرافی پورتال عمومی." },
 ];
 
 export function moduleBySlug(slug: string): ModuleInfo | undefined {

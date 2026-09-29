@@ -42,6 +42,30 @@ export interface Settings {
   brandMark: string;
 }
 
+export type ThemePalette = "ordibehesht" | "news-blue" | "green" | "navy" | "custom";
+export type HomeLayoutStyle = "classic" | "modern-grid" | "magazine";
+export type ThemeFontFamily = "vazirmatn" | "sahel" | "shabnam";
+export type ThemeFontScale = "sm" | "md" | "lg";
+
+export interface TemplateSettings {
+  palette: ThemePalette;
+  customPrimary: string;
+  customAccent: string;
+  homeLayout: HomeLayoutStyle;
+  showTriCalendar: boolean;
+  showLiveClock: boolean;
+  showLanguageToggle: boolean;
+  showBreakingTicker: boolean;
+  tickerLabel: string;
+  aboutFooter: string;
+  copyrightText: string;
+  socialTelegram: string;
+  socialInstagram: string;
+  socialYoutube: string;
+  fontFamily: ThemeFontFamily;
+  fontScale: ThemeFontScale;
+}
+
 export type PitchStatus = "active" | "completed" | "cancelled";
 export type PitchPriority = "low" | "normal" | "high";
 export type PitchAudience = "all_reporters" | "specific";
@@ -396,6 +420,7 @@ export interface Activity {
 export interface NewsroomData {
   currentRoleId: string;
   settings: Settings;
+  templateSettings: TemplateSettings;
   roles: RoleDef[];
   users: User[];
   /** نقش → فهرست کلیدهای مجاز (dashboard + group/slug) */

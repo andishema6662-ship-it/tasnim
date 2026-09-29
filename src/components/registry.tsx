@@ -12,6 +12,7 @@ import { AlbumsScreen } from "./media/albums-screen";
 import { EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
 import { AdsScreen, BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
+import { ThemeScreen } from "./structure/theme-screen";
 import { canAccessModuleKey, moduleKeyFromPath } from "@/lib/module-access";
 import { moduleKeyFromParts } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
@@ -66,6 +67,7 @@ const screens: Record<string, () => ReactElement> = {
   "structure/banners": BannersScreen,
   "structure/ticker": TickerScreen,
   "structure/calendar": CalendarScreen,
+  "structure/theme": ThemeScreen,
 };
 
 export function ModuleScreen() {
