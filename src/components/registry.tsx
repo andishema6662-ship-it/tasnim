@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import { useParams } from "next/navigation";
 import { AccessScreen, BackupScreen, CommsScreen, FormsScreen, LinksScreen, LogosScreen, MenusScreen, MonitoringScreen, PortalScreen, RolesScreen, SettingsScreen, SubsitesScreen, SystemScreen, TicketsScreen, UsersScreen } from "./core/core-screens";
+import { AiHubScreen } from "./editorial/ai-hub-screen";
 import { AiScreen, OrderScreen, ProcessScreen, SubmissionsScreen, SuggestionsScreen } from "./editorial/other-screens";
 import { CartableScreen } from "./editorial/cartable";
 import { PitchesScreen } from "./editorial/pitches-screen";
@@ -37,6 +38,7 @@ const screens: Record<string, () => ReactElement> = {
   "core/roles": RolesScreen,
   "core/portal": PortalScreen,
   "editorial/ai": AiScreen,
+  "editorial/ai-hub": AiHubScreen,
   "editorial/cartable": CartableScreen,
   "editorial/pitches": PitchesScreen,
   "editorial/process": ProcessScreen,

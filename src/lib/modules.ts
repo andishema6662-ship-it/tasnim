@@ -39,6 +39,7 @@ export const modules: ModuleInfo[] = [
   { group: "core", slug: "roles", title: "نقش‌ها و دسترسی", description: "سطح دسترسی مدیر مسئول، سردبیر، خبرنگار و نقش‌های تازه." },
   { group: "core", slug: "portal", title: "اتصال به پورتال", description: "نگهداری مشخصات اتصال. از این پنل تماسی با پورتال برقرار نمی‌شود." },
   { group: "editorial", slug: "ai", title: "تحریریه هوشمند", description: "دستیار محلی برای پیش‌نویس، عنوان، خلاصه، برچسب، تصویر و صوت." },
+  { group: "editorial", slug: "ai-hub", title: "خدمات هوش مصنوعی", description: "تبدیل صوت به متن، ویرایش هوشمند، ردیابی منبع انتشار و ابزارهای تکمیلی." },
   { group: "editorial", slug: "cartable", title: "کارتابل و سردبیری", description: "فهرست خبر، ویرایش و صف تأیید تا انتشار." },
   { group: "editorial", slug: "pitches", title: "سوژه‌های خبری", description: "تعریف سوژه برای خبرنگاران، پیگیری مهلت و گزارش اخبار متصل." },
   { group: "editorial", slug: "process", title: "فرایندساز خبر", description: "گام‌ها و گذارهای گردش کار و نقش مسئول هر گذار." },

@@ -645,6 +645,7 @@ export function createSeed(): NewsroomData {
         ],
       },
     ],
+    aiTaskLogs: [],
     activity: [
       { id: "act-1", at: iso("2026-09-25T06:40:00Z"), text: "پیش‌نویس خورشیدی یزد به‌روز شد" },
       { id: "act-2", at: iso("2026-09-25T04:10:00Z"), text: "خبر ماهواره به بازبینی رفت" },
@@ -679,6 +680,14 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     }
   });
   next.templateSettings = resolveTemplateSettings({ ...next, templateSettings: raw.templateSettings ?? next.templateSettings });
+  if (!Array.isArray(next.aiTaskLogs)) next.aiTaskLogs = base.aiTaskLogs;
+  const aiHubKey = "editorial/ai-hub";
+  next.roles.forEach((role) => {
+    if (role.base === "reporter" || role.base === "chief" || role.base === "publisher") {
+      const list = next.roleModuleAccess[role.id] ?? [];
+      if (!list.includes(aiHubKey)) next.roleModuleAccess[role.id] = [...list, aiHubKey];
+    }
+  });
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };
   return next;

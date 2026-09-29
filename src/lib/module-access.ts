@@ -12,6 +12,7 @@ function reporterPreset(): string[] {
   return [
     DASHBOARD_MODULE_KEY,
     "editorial/ai",
+    "editorial/ai-hub",
     "editorial/cartable",
     "editorial/pitches",
     "editorial/submissions",

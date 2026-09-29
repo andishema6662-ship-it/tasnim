@@ -472,6 +472,24 @@ export interface Activity {
   text: string;
 }
 
+export type AiTaskKind = "transcribe" | "polish" | "origin" | "extras";
+
+export interface AiTaskLogEntry {
+  id: string;
+  kind: AiTaskKind;
+  inputSummary: string;
+  outputSummary: string;
+  createdAt: string;
+}
+
+export interface OriginHit {
+  outlet: string;
+  publishedAt: string;
+  similarity: number;
+  exclusive: "exclusive" | "reprint" | "syndicated";
+  url: string;
+}
+
 export interface NewsroomData {
   currentRoleId: string;
   settings: Settings;
@@ -520,5 +538,6 @@ export interface NewsroomData {
   contacts: ContactMsg[];
   threads: Thread[];
   activity: Activity[];
+  aiTaskLogs: AiTaskLogEntry[];
   sessionStartedAt: string;
 }
