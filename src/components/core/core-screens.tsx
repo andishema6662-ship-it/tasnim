@@ -10,6 +10,7 @@ import { useNewsroom } from "@/lib/store";
 import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User, VersionEntry } from "@/lib/types";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
 import { canManageModuleAccess } from "@/lib/module-access";
+import { defaultTicketRecipient, TICKET_RECIPIENT_PRESETS, ticketRecipientLabel } from "@/lib/ticket-recipients";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 import { ModuleAccessMatrix, ModuleAccessRolePicker } from "./module-access-matrix";
@@ -570,56 +571,130 @@ export function BackupScreen() {
 
 export function TicketsScreen() {
   const { data, update } = useNewsroom();
-  const [form, setForm] = useState({ title: "", body: "" });
+  const defaultRecipient = defaultTicketRecipient(data);
+  const [form, setForm] = useState({ title: "", body: "", recipient: defaultRecipient });
+  const [recipientFilter, setRecipientFilter] = useState("all");
   const [flash, setFlash] = useState("");
+
+  const recipientOptions = [
+    ...TICKET_RECIPIENT_PRESETS.map((item) => ({ value: item.id, label: item.label })),
+    ...data.users.filter((user) => user.active).map((user) => ({ value: `user:${user.id}`, label: `${user.name} (کاربر)` })),
+  ];
+
+  const filteredTickets = data.tickets.filter((ticket) => {
+    if (recipientFilter === "all") return true;
+    return (ticket.recipient ?? defaultRecipient) === recipientFilter;
+  });
+
   return (
     <ModulePage slug="tickets">
       <Flash>{flash}</Flash>
       <form
         className="space-y-3 rounded-lg border border-line bg-sheet p-4"
+        data-testid="ticket-create-form"
         onSubmit={(event) => {
           event.preventDefault();
           if (!form.title.trim()) return;
           update((current) => ({
             ...current,
-            tickets: [{ id: uid("ticket"), title: form.title.trim(), body: form.body.trim(), status: "open", author: currentRole(current).name, createdAt: new Date().toISOString() }, ...current.tickets],
+            tickets: [
+              {
+                id: uid("ticket"),
+                title: form.title.trim(),
+                body: form.body.trim(),
+                status: "open",
+                author: currentRole(current).name,
+                recipient: form.recipient || defaultRecipient,
+                createdAt: new Date().toISOString(),
+              },
+              ...current.tickets,
+            ],
           }));
-          setForm({ title: "", body: "" });
+          setForm({ title: "", body: "", recipient: defaultRecipient });
           setFlash("تیکت ثبت شد.");
         }}
       >
+        <Field label="گیرنده تیکت / ارجاع به">
+          <Select
+            value={form.recipient}
+            data-testid="ticket-recipient-select"
+            aria-label="گیرنده تیکت"
+            onChange={(event) => setForm({ ...form, recipient: event.target.value })}
+          >
+            <optgroup label="نقش‌ها و واحدها">
+              {TICKET_RECIPIENT_PRESETS.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="کاربر مشخص">
+              {data.users.filter((user) => user.active).map((user) => (
+                <option key={user.id} value={`user:${user.id}`}>{user.name}</option>
+              ))}
+            </optgroup>
+          </Select>
+        </Field>
         <Field label="موضوع">
-          <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+          <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} data-testid="ticket-title-input" />
         </Field>
         <Field label="شرح">
           <TextArea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} />
         </Field>
-        <Button type="submit">ثبت تیکت</Button>
+        <Button type="submit" data-testid="ticket-submit">ثبت تیکت</Button>
       </form>
-      {data.tickets.map((ticket) => (
-        <article key={ticket.id} className="rounded-lg border border-line bg-sheet p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-bold">{ticket.title}</h2>
-            <Select
-              value={ticket.status}
-              aria-label="وضعیت تیکت"
-              onChange={(event) => {
-                const status = event.target.value as typeof ticket.status;
-                update((current) => ({ ...current, tickets: current.tickets.map((item) => (item.id === ticket.id ? { ...item, status } : item)) }));
-              }}
-              className="max-w-40"
-            >
-              <option value="open">باز</option>
-              <option value="pending">در حال بررسی</option>
-              <option value="closed">بسته</option>
-            </Select>
-          </div>
-          <p className="text-sm text-muted">{ticket.body}</p>
-          <p className="text-xs text-muted">
-            {ticket.author} · {faDate(ticket.createdAt)}
-          </p>
-        </article>
-      ))}
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Field label="فیلتر گیرنده">
+          <Select value={recipientFilter} onChange={(event) => setRecipientFilter(event.target.value)} data-testid="ticket-recipient-filter" aria-label="فیلتر گیرنده">
+            <option value="all">همه گیرنده‌ها</option>
+            {recipientOptions.map((item) => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+
+      <div className="mt-4 overflow-x-auto rounded-lg border border-line bg-sheet" data-testid="ticket-list">
+        <table className="w-full min-w-[40rem] text-sm">
+          <thead className="border-b border-line text-xs text-muted">
+            <tr>
+              <th className="px-3 py-2 text-right">موضوع</th>
+              <th className="px-3 py-2 text-right">گیرنده</th>
+              <th className="px-3 py-2 text-right">فرستنده</th>
+              <th className="px-3 py-2 text-right">وضعیت</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTickets.map((ticket) => (
+              <tr key={ticket.id} className="border-b border-line last:border-0 align-top">
+                <td className="px-3 py-3">
+                  <p className="font-bold">{ticket.title}</p>
+                  <p className="mt-1 text-xs text-muted line-clamp-2">{ticket.body}</p>
+                  <p className="mt-1 text-[11px] text-muted">{faDate(ticket.createdAt)}</p>
+                </td>
+                <td className="px-3 py-3 font-medium text-accent" data-testid="ticket-recipient-cell">
+                  {ticketRecipientLabel(data, ticket.recipient ?? defaultRecipient)}
+                </td>
+                <td className="px-3 py-3">{ticket.author}</td>
+                <td className="px-3 py-3">
+                  <Select
+                    value={ticket.status}
+                    aria-label="وضعیت تیکت"
+                    onChange={(event) => {
+                      const status = event.target.value as typeof ticket.status;
+                      update((current) => ({ ...current, tickets: current.tickets.map((item) => (item.id === ticket.id ? { ...item, status } : item)) }));
+                    }}
+                    className="max-w-36"
+                  >
+                    <option value="open">باز</option>
+                    <option value="pending">در حال بررسی</option>
+                    <option value="closed">بسته</option>
+                  </Select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </ModulePage>
   );
 }

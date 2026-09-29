@@ -385,6 +385,8 @@ export interface Ticket {
   body: string;
   status: "open" | "pending" | "closed";
   author: string;
+  /** preset id (chief, publisher, …) or user:userId */
+  recipient: string;
   createdAt: string;
 }
 

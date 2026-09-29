@@ -609,9 +609,9 @@ export function createSeed(): NewsroomData {
       { id: "ev-4", title: "افتتاح سایت خورشیدی", date: "2026-10-06", place: "مهریز", note: "هماهنگی با برق منطقه‌ای" },
     ],
     tickets: [
-      { id: "tk-photo", title: "دسترسی آلبوم شهر برای خبرنگار تازه‌کار", body: "لازم است علی رضایی هم آلبوم تجریش را ببیند.", status: "open", author: "سارا محمدی", createdAt: iso("2026-09-24T09:00:00Z") },
-      { id: "tk-font", title: "فاصله تیتر در پیش‌نمایش صفحه", body: "در صفحه‌ساز، تیتر به متن چسبیده دیده می‌شود.", status: "pending", author: "کامران شفیعی", createdAt: iso("2026-09-23T11:20:00Z") },
-      { id: "tk-desk", title: "پیشنهاد میز انرژی", body: "خبرهای خورشیدی بهتر است دسته جدا داشته باشند.", status: "closed", author: "لیلا نوری", createdAt: iso("2026-09-18T10:00:00Z") },
+      { id: "tk-photo", title: "دسترسی آلبوم شهر برای خبرنگار تازه‌کار", body: "لازم است علی رضایی هم آلبوم تجریش را ببیند.", status: "open", author: "سارا محمدی", recipient: "chief", createdAt: iso("2026-09-24T09:00:00Z") },
+      { id: "tk-font", title: "فاصله تیتر در پیش‌نمایش صفحه", body: "در صفحه‌ساز، تیتر به متن چسبیده دیده می‌شود.", status: "pending", author: "کامران شفیعی", recipient: "it-support", createdAt: iso("2026-09-23T11:20:00Z") },
+      { id: "tk-desk", title: "پیشنهاد میز انرژی", body: "خبرهای خورشیدی بهتر است دسته جدا داشته باشند.", status: "closed", author: "لیلا نوری", recipient: "publisher", createdAt: iso("2026-09-18T10:00:00Z") },
     ],
     notes: [
       { id: "nt-1", from: "کامران شفیعی", to: "سارا محمدی", body: "لید خبر یزد را کوتاه‌تر کن و عدد مگاوات را در تیتر نیاور اگر هنوز قطعی نیست.", read: false, createdAt: iso("2026-09-25T06:50:00Z") },
@@ -842,6 +842,10 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     ...poll,
     shortCode: poll.shortCode ?? poll.id.replace(/^poll-/, "poll-"),
     showOnHomepage: poll.showOnHomepage ?? false,
+  }));
+  next.tickets = (next.tickets ?? []).map((ticket) => ({
+    ...ticket,
+    recipient: ticket.recipient ?? "chief",
   }));
   next.eventMaps = (next.eventMaps ?? []).map((map) => {
     const points = map.points.map((point, index) => ({
