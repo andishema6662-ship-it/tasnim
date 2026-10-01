@@ -13,6 +13,13 @@ test("reporter todo list and dashboard alerts", async ({ page }) => {
   );
   await page.goto("/reporters/my-tasks", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("todo-list")).toBeVisible();
+  await page.getByTestId("todo-add-btn").click();
+  await expect(page.getByTestId("todo-form-due-popover")).not.toBeVisible();
+  await page.getByTestId("todo-form-due-trigger").click();
+  const popover = page.getByTestId("todo-form-due-popover");
+  await expect(popover).toBeVisible();
+  await expect(popover.getByText("ساعت و دقیقه")).toBeVisible();
+  await expect(popover.getByLabel("ساعت")).toBeVisible();
   await expect(page.getByText("تکمیل لید گزارش معیشت")).toBeVisible();
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dashboard-deadline-alerts")).toBeVisible();

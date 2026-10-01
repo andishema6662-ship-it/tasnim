@@ -16,6 +16,8 @@ import {
 import { useNewsroom } from "@/lib/store";
 import type { ReporterFileEntry, ReporterStickyNote, ReporterTodo, StickyNoteLabel, TodoPriority } from "@/lib/types";
 import { currentRole, currentUser } from "@/lib/workflow";
+import { JalaliDateTimePicker } from "@/components/jalali-datetime-picker";
+import { formatJalaliDateTime } from "@/lib/jalali";
 import { faDate, faNum } from "@/lib/format";
 import { Button, Empty, Field, Flash, Input, ModulePage, Select, TextArea, cn } from "../ui";
 
@@ -38,7 +40,7 @@ export function ReporterTodoScreen() {
   const [flash, setFlash] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [dueAt, setDueAt] = useState("");
+  const [dueIso, setDueIso] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("normal");
 
   const items = useMemo(() => (user ? todosForUser(data, user.id) : []), [data, user]);
@@ -79,7 +81,7 @@ export function ReporterTodoScreen() {
   }
 
   function addTodo() {
-    if (!user || !title.trim() || !dueAt) {
+    if (!user || !title.trim() || !dueIso) {
       setFlash("عنوان و تاریخ سررسید لازم است.");
       return;
     }
@@ -91,12 +93,12 @@ export function ReporterTodoScreen() {
       favorite: false,
       priority,
       sortOrder: items.length,
-      dueAt: new Date(dueAt).toISOString(),
+      dueAt: dueIso,
       createdAt: new Date().toISOString(),
     };
     update((current) => ({ ...current, reporterTodos: [...current.reporterTodos, todo] }));
     setTitle("");
-    setDueAt("");
+    setDueIso("");
     setModalOpen(false);
     setFlash("کار جدید اضافه شد.");
   }
@@ -128,7 +130,7 @@ export function ReporterTodoScreen() {
               <input type="checkbox" checked={item.done} onChange={() => toggleDone(item.id)} aria-label="انجام شد" />
               <div className="min-w-0 flex-1">
                 <p className={cn("font-medium", item.done && "line-through text-muted")}>{item.title}</p>
-                <p className="text-xs text-muted">{faDate(item.dueAt)} · {item.priority}</p>
+                <p className="text-xs text-muted" data-testid="todo-due-jalali">{formatJalaliDateTime(item.dueAt)} · {item.priority}</p>
               </div>
               {badge ? (
                 <span
@@ -154,9 +156,7 @@ export function ReporterTodoScreen() {
         <Field label="عنوان کار">
           <Input value={title} onChange={(event) => setTitle(event.target.value)} data-testid="todo-form-title" />
         </Field>
-        <Field label="سررسید (تاریخ و زمان)">
-          <Input type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} data-testid="todo-form-due" />
-        </Field>
+        <JalaliDateTimePicker label="سررسید (تاریخ و زمان شمسی)" value={dueIso} onChange={setDueIso} testId="todo-form-due" />
         <Field label="اولویت">
           <Select value={priority} onChange={(event) => setPriority(event.target.value as TodoPriority)}>
             <option value="low">کم</option>

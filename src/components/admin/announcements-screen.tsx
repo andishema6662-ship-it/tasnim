@@ -8,6 +8,7 @@ import type { AnnouncementPriority, AnnouncementTarget, EditorialAnnouncement } 
 import { canPerm, currentUser } from "@/lib/workflow";
 import { faDate } from "@/lib/format";
 import { PERSON_KINDS } from "@/lib/people";
+import { JalaliDateTimePicker } from "@/components/jalali-datetime-picker";
 import { Button, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
 function pinUntilFromPreset(preset: string): string | null {
@@ -29,7 +30,7 @@ export function AnnouncementsScreen() {
   const [targetUserId, setTargetUserId] = useState("");
   const [targetGroup, setTargetGroup] = useState("خبرنگار");
   const [pinPreset, setPinPreset] = useState("3d");
-  const [pinCustom, setPinCustom] = useState("");
+  const [pinCustomIso, setPinCustomIso] = useState("");
 
   const reporters = data.users.filter((u) => data.roles.find((r) => r.id === u.roleId)?.base === "reporter");
 
@@ -42,8 +43,8 @@ export function AnnouncementsScreen() {
     if (targetType === "user" && targetUserId) target = { type: "user", userId: targetUserId };
     if (targetType === "editorial_group") target = { type: "editorial_group", group: targetGroup };
     const pinnedUntil =
-      pinPreset === "custom" && pinCustom
-        ? new Date(pinCustom).toISOString()
+      pinPreset === "custom" && pinCustomIso
+        ? pinCustomIso
         : pinUntilFromPreset(pinPreset);
     const roleBase = data.roles.find((r) => r.id === user.roleId)?.base;
     const announcement: EditorialAnnouncement = {
@@ -125,9 +126,13 @@ export function AnnouncementsScreen() {
           </Select>
         </Field>
         {pinPreset === "custom" ? (
-          <Field label="پایان سنجاق">
-            <Input type="datetime-local" value={pinCustom} onChange={(event) => setPinCustom(event.target.value)} disabled={!allowed} />
-          </Field>
+          <JalaliDateTimePicker
+            label="پایان سنجاق (شمسی)"
+            value={pinCustomIso}
+            onChange={setPinCustomIso}
+            testId="announcement-pin-jalali"
+            disabled={!allowed}
+          />
         ) : null}
         <Button type="submit" disabled={!allowed} data-testid="announcement-publish">ارسال و سنجاق</Button>
       </form>

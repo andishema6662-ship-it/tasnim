@@ -4,7 +4,7 @@ import Link from "next/link";
 import { activeAnnouncementsForUser, deadlineBadge, pinExpiryLabel, urgentTodosForUser } from "@/lib/reporter-workspace";
 import { useNewsroom } from "@/lib/store";
 import { currentUser } from "@/lib/workflow";
-import { faDate } from "@/lib/format";
+import { formatJalaliDateTime } from "@/lib/jalali";
 import { cn } from "../ui";
 
 export function DashboardPinnedAnnouncements() {
@@ -59,7 +59,7 @@ export function DashboardDeadlineAlerts() {
           return (
             <li key={todo.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/70 px-3 py-2">
               <span className="font-medium">{todo.title}</span>
-              <span className="text-xs text-muted">{faDate(todo.dueAt)}</span>
+              <span className="text-xs text-muted">{formatJalaliDateTime(todo.dueAt)}</span>
               {badge ? (
                 <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-800" data-testid="dashboard-deadline-badge">
                   {badge.text}

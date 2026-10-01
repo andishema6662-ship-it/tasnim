@@ -103,6 +103,22 @@ export function formatJalaliDateTime(iso: string): string {
   return `${faNum(jd)} ${JALALI_MONTHS[jm - 1]} ${faNum(jy)} — ${time}`;
 }
 
+/** Saturday = 0 … Friday = 6 */
+export function jalaliWeekday(jy: number, jm: number, jd: number): number {
+  const { gy, gm, gd } = jalaliToGregorian(jy, jm, jd);
+  const js = new Date(gy, gm - 1, gd).getDay();
+  return (js + 1) % 7;
+}
+
+export function jalaliMonthLength(jy: number, jm: number): number {
+  if (jm <= 6) return 31;
+  if (jm <= 11) return 30;
+  const isLeap = [1, 5, 9, 13, 17, 22, 26, 30].includes(jy % 33);
+  return isLeap ? 30 : 29;
+}
+
+export const JALALI_WEEKDAYS_SHORT = ["ش", "ی", "د", "س", "چ", "پ", "ج"] as const;
+
 export function formatJalaliDayHeader(iso: string): string {
   const d = new Date(iso);
   const { jy, jm, jd } = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
