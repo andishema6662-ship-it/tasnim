@@ -95,7 +95,7 @@ function RssFeedFields({
       </Field>
       <p className="self-end text-xs text-muted sm:col-span-2">
         فیدهای جدید را در{" "}
-        <Link href="/media/rss" className="font-semibold text-accent underline">فیدخوان</Link> اضافه کنید یا آدرس مستقیم وارد کنید.
+        <Link href="/template/rss" className="font-semibold text-accent underline">فیدخوان</Link> اضافه کنید یا آدرس مستقیم وارد کنید.
       </p>
       <Field label="نام منبع (مستقیم)">
         <Input

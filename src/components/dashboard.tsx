@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { faDate, faNum } from "@/lib/format";
-import { hrefFor } from "@/lib/modules";
+import { groups, hrefFor, modules } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
 import { categoryName, currentRole, STATUSES, statusLabel } from "@/lib/workflow";
 import { DashboardAgendaWidget } from "./editorial/contacts-agenda-screens";
@@ -124,7 +124,7 @@ export function Dashboard() {
           label="خبرنگاران فعال"
           value={reporterCount}
           hint="بر اساس نقش کاربران"
-          href="/core/users"
+          href="/admin/users"
           iconBg="bg-indigo-50 text-accent-blue"
           icon={
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -136,7 +136,7 @@ export function Dashboard() {
           label="تیکت باز"
           value={openTickets}
           hint="پشتیبانی و درخواست داخلی"
-          href="/core/tickets"
+          href="/admin/tickets"
           iconBg="bg-amber-50 text-amber-600"
           icon={
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -244,27 +244,19 @@ export function Dashboard() {
             </ul>
           </section>
           <section className="rounded-2xl border border-line bg-sheet p-4 text-sm leading-7 shadow-sm">
-            <h2 className="font-bold">شش گروه منو</h2>
+            <h2 className="font-bold">گروه‌های منو</h2>
             <ul className="mt-2 space-y-1">
-              {[
-                ["core", "system"],
-                ["editorial", "cartable"],
-                ["media", "albums"],
-                ["audience", "comments"],
-                ["reports", "news-report"],
-                ["structure", "categories"],
-              ].map(([group, slug]) => (
-                <li key={group}>
-                  <Link href={hrefFor(group, slug)} className="hover:text-primary">
-                    {group === "core" && "هسته مدیریتی"}
-                    {group === "editorial" && "تحریریه و تولید"}
-                    {group === "media" && "رسانه‌های مکمل"}
-                    {group === "audience" && "تعامل با مخاطب"}
-                    {group === "reports" && "تحلیل و گزارش"}
-                    {group === "structure" && "ساختار و انتشار"}
-                  </Link>
-                </li>
-              ))}
+              {groups.map((group) => {
+                const first = modules.find((item) => item.group === group.id);
+                if (!first) return null;
+                return (
+                  <li key={group.id}>
+                    <Link href={hrefFor(first.group, first.slug)} className="hover:text-primary">
+                      {group.title}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         </aside>

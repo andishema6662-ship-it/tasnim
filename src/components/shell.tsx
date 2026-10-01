@@ -98,12 +98,14 @@ function IconHome({ className }: { className?: string }) {
 }
 
 const groupAccent: Record<GroupId, string> = {
-  core: "text-primary bg-primary-light",
   editorial: "text-accent-blue bg-indigo-50",
   media: "text-emerald-600 bg-emerald-50",
   audience: "text-amber-600 bg-amber-50",
   reports: "text-sky-600 bg-sky-50",
   structure: "text-rose-600 bg-rose-50",
+  template: "text-primary bg-primary-light",
+  admin: "text-violet-700 bg-violet-50",
+  infra: "text-slate-600 bg-slate-100",
 };
 
 function NavList({
@@ -387,7 +389,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="m-3 rounded-xl border border-line bg-gradient-to-l from-primary-light/80 to-sheet p-3 text-xs leading-6">
             <p className="font-bold text-ink">پشتیبانی تحریریه</p>
             <p className="mt-1 text-muted">تیکت فنی یا درخواست دسترسی را از بخش تیکتینگ ثبت کنید.</p>
-            <Link href="/core/tickets" className="mt-2 inline-block font-semibold text-primary hover:underline">
+            <Link href="/admin/tickets" className="mt-2 inline-block font-semibold text-primary hover:underline">
               تیکت جدید
             </Link>
           </div>
@@ -452,7 +454,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </label>
             </form>
             <div className="ms-auto flex flex-wrap items-center gap-0.5 sm:gap-1">
-              <HeaderIconButton href="/core/tickets" label="تیکت‌ها" badge={ticketCount}>
+              <HeaderIconButton href="/admin/tickets" label="تیکت‌ها" badge={ticketCount}>
                 <IconTicket className="h-5 w-5" />
               </HeaderIconButton>
               <HeaderIconButton href="/editorial/submissions" label="اعلان‌ها" badge={notifyCount}>
@@ -537,7 +539,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     <Link href="/site" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       خروجی سایت
                     </Link>
-                    <Link href="/core/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    <Link href="/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       تنظیمات سیستم
                     </Link>
                   </div>

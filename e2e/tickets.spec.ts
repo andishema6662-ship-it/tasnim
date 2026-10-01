@@ -11,7 +11,7 @@ test("ticket creation with recipient", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/core/tickets", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/tickets", { waitUntil: "domcontentloaded" });
   await page.getByTestId("ticket-recipient-select").selectOption("it-support");
   await page.getByTestId("ticket-title-input").fill("درخواست تست گیرنده");
   await page.getByTestId("ticket-submit").click();

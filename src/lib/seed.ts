@@ -1,4 +1,5 @@
 import { applyBrandingDefaults, defaultBrandingSettings, LEGACY_NEWSROOM_NAME } from "./branding";
+import { migrateModuleAccessList } from "./nav-migration";
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
 import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
@@ -619,7 +620,7 @@ export function createSeed(): NewsroomData {
       { id: "site-province", name: "استان‌ها", slug: "ostanha", active: true },
     ],
     links: [
-      { id: "ln-1", title: "درباره تحریریه", url: "/structure/pages", group: "پاصفحه" },
+      { id: "ln-1", title: "درباره تحریریه", url: "/template/pages", group: "پاصفحه" },
       { id: "ln-2", title: "تماس", url: "/audience/contact", group: "پاصفحه" },
       { id: "ln-3", title: "آرشیو", url: "/editorial/cartable?status=archived", group: "ستون" },
       { id: "ln-4", title: "خبرنامه", url: "/media/newsletter", group: "ستون" },
@@ -813,7 +814,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   next.albums = (next.albums ?? []).map((album) => normalizeAlbum(album as Album));
   if (next.albums.length === 0) next.albums = base.albums;
   next.roleModuleAccess = mergeRoleModuleAccess(base.roleModuleAccess, raw.roleModuleAccess, next.roles);
-  const themeModuleKey = "structure/theme";
+  const themeModuleKey = "template/theme";
   next.roles.forEach((role) => {
     if (role.base !== "chief" && role.base !== "publisher") return;
     const list = next.roleModuleAccess[role.id] ?? [];
@@ -864,10 +865,10 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     "reports/pitch-performance",
     "reports/payroll",
     "reports/reporter-period",
-    "core/admin-affairs",
+    "admin/admin-affairs",
     "structure/dossiers",
     "media/event-map",
-    "core/official-contacts",
+    "admin/official-contacts",
     "editorial/agenda",
   ];
   next.roles.forEach((role) => {
@@ -881,6 +882,12 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   });
   if (!raw.userModuleAccess || typeof raw.userModuleAccess !== "object") next.userModuleAccess = base.userModuleAccess;
   else next.userModuleAccess = { ...base.userModuleAccess, ...raw.userModuleAccess };
+  next.roleModuleAccess = Object.fromEntries(
+    Object.entries(next.roleModuleAccess).map(([roleId, keys]) => [roleId, migrateModuleAccessList(keys)]),
+  );
+  next.userModuleAccess = Object.fromEntries(
+    Object.entries(next.userModuleAccess).map(([userId, keys]) => [userId, migrateModuleAccessList(keys)]),
+  );
   return next;
 }
 

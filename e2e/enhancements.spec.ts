@@ -12,7 +12,7 @@ test("enhancements smoke", async ({ page }) => {
     [STORAGE_KEY, JSON.stringify(data)],
   );
 
-  await page.goto("/core/official-contacts", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/official-contacts", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("official-contacts-search")).toBeVisible();
 
   await page.goto("/editorial/agenda", { waitUntil: "domcontentloaded" });

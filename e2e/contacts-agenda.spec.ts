@@ -11,7 +11,7 @@ test("official contacts directory CRUD search", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/core/official-contacts", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/official-contacts", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("official-contacts-table")).toBeVisible();
   await page.getByTestId("official-contacts-search").fill("احمدی");
   await expect(page.getByText("دکتر مریم احمدی")).toBeVisible();
