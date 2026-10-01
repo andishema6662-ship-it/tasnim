@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>شمسه — انیمیشن لوگو</title>
+    <style>
+      :root {
+        --blue: #2f4f8a;
+        --blue-light: #4a6db5;
+        --gold: #d4a84b;
+        --gold-deep: #b8862e;
+        --ink: #272b41;
+        --violet: #8231d3;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(ellipse at 50% 30%, #f8f4ff 0%, #f4f5f7 45%, #ebe8f2 100%);
+        font-family: "Tahoma", "Segoe UI", sans-serif;
+        color: var(--ink);
+        overflow: hidden;
+      }
+      .stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.5rem;
+      }
+      .logo-wrap {
+        width: min(72vw, 280px);
+        aspect-ratio: 1;
+        position: relative;
+        will-change: transform;
+      }
+      svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .petal {
+        fill: none;
+        stroke: var(--blue);
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0;
+        transform-origin: 128px 128px;
+        transform-box: fill-box;
+        animation: petal-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      .petal:nth-child(1) {
+        animation-delay: 0.05s;
+        --from-rot: -120deg;
+        --from-x: -80px;
+        --from-y: -40px;
+      }
+      .petal:nth-child(2) {
+        animation-delay: 0.12s;
+        --from-rot: 90deg;
+        --from-x: 70px;
+        --from-y: -60px;
+      }
+      .petal:nth-child(3) {
+        animation-delay: 0.18s;
+        --from-rot: 200deg;
+        --from-x: 90px;
+        --from-y: 20px;
+      }
+      .petal:nth-child(4) {
+        animation-delay: 0.24s;
+        --from-rot: -200deg;
+        --from-x: -90px;
+        --from-y: 30px;
+      }
+      .petal:nth-child(5) {
+        animation-delay: 0.3s;
+        --from-rot: 45deg;
+        --from-x: 40px;
+        --from-y: 90px;
+      }
+      .petal:nth-child(6) {
+        animation-delay: 0.36s;
+        --from-rot: -45deg;
+        --from-x: -50px;
+        --from-y: 85px;
+      }
+      .petal:nth-child(7) {
+        animation-delay: 0.42s;
+        --from-rot: 160deg;
+        --from-x: 0;
+        --from-y: -95px;
+      }
+      .petal:nth-child(8) {
+        animation-delay: 0.48s;
+        --from-rot: -160deg;
+        --from-x: 0;
+        --from-y: 95px;
+      }
+      @keyframes petal-in {
+        0% {
+          opacity: 0;
+          transform: translate(var(--from-x, 0), var(--from-y, 0)) rotate(var(--from-rot, 0deg)) scale(0.2);
+        }
+        70% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 1;
+          transform: translate(0, 0) rotate(0deg) scale(1);
+        }
+      }
+      .sunburst {
+        transform-origin: 128px 128px;
+        opacity: 0;
+        animation: sun-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s forwards;
+      }
+      @keyframes sun-in {
+        0% {
+          opacity: 0;
+          transform: scale(0);
+        }
+        60% {
+          opacity: 1;
+          filter: drop-shadow(0 0 12px rgba(212, 168, 75, 0.8));
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+          filter: drop-shadow(0 0 4px rgba(212, 168, 75, 0.35));
+        }
+      }
+      .sun-fill {
+        fill: url(#goldGrad);
+      }
+      .core-ring {
+        fill: #fff;
+        stroke: #e8e8ec;
+        stroke-width: 2;
+        opacity: 0;
+        transform-origin: 128px 128px;
+        animation: core-in 0.5s ease-out 1.05s forwards;
+      }
+      @keyframes core-in {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .nib {
+        fill: #8a919e;
+        opacity: 0;
+        transform-origin: 128px 138px;
+        animation: nib-drop 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 1.2s forwards;
+      }
+      @keyframes nib-drop {
+        0% {
+          opacity: 0;
+          transform: translateY(-36px) scale(0.6);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      .lock-pulse {
+        transform-origin: 128px 128px;
+        animation: lock 0.45s ease-out 1.65s forwards;
+      }
+      @keyframes lock {
+        0% {
+          filter: drop-shadow(0 0 0 rgba(130, 49, 211, 0));
+        }
+        50% {
+          filter: drop-shadow(0 0 18px rgba(130, 49, 211, 0.45));
+        }
+        100% {
+          filter: drop-shadow(0 0 6px rgba(47, 79, 138, 0.2));
+        }
+      }
+      .title {
+        text-align: center;
+        max-width: 22rem;
+        opacity: 0;
+        transform: translateY(12px);
+        animation: title-in 0.9s ease-out 1.75s forwards;
+      }
+      .title h1 {
+        margin: 0;
+        font-size: clamp(1rem, 4vw, 1.25rem);
+        font-weight: 800;
+        line-height: 1.65;
+        background: linear-gradient(105deg, var(--ink) 0%, var(--violet) 45%, var(--blue) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        position: relative;
+      }
+      .title h1::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.65) 50%, transparent 100%);
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        animation: sheen 2.2s ease-in-out 2.4s infinite;
+        pointer-events: none;
+        opacity: 0.35;
+      }
+      @keyframes title-in {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes sheen {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+      .subtitle {
+        margin: 0.35rem 0 0;
+        font-size: 0.8rem;
+        color: #8c90a4;
+        opacity: 0;
+        animation: title-in 0.6s ease-out 2.1s forwards;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .petal,
+        .sunburst,
+        .core-ring,
+        .nib,
+        .lock-pulse,
+        .title,
+        .subtitle {
+          animation: none !important;
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="logo-wrap lock-pulse" aria-hidden="true">
+        <svg viewBox="0 0 256 256" role="img" aria-label="لوگوی شمسه">
+          <defs>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f0d078" />
+              <stop offset="50%" stop-color="#d4a84b" />
+              <stop offset="100%" stop-color="#b8862e" />
+            </linearGradient>
+          </defs>
+          <g class="petals">
+            <path class="petal" d="M128 28 L148 78 L198 88 L158 118 L168 168 L128 138 L88 168 L98 118 L58 88 L108 78 Z" />
+            <path class="petal" d="M128 32 L142 72 L182 82 L150 108 L158 148 L128 124 L98 148 L106 108 L74 82 L114 72 Z" transform="rotate(45 128 128)" />
+            <path class="petal" d="M128 30 L145 75 L190 85 L155 115 L165 160 L128 135 L91 160 L101 115 L66 85 L111 75 Z" transform="rotate(90 128 128)" />
+            <path class="petal" d="M128 32 L142 72 L182 82 L150 108 L158 148 L128 124 L98 148 L106 108 L74 82 L114 72 Z" transform="rotate(135 128 128)" />
+            <path class="petal" d="M128 28 L148 78 L198 88 L158 118 L168 168 L128 138 L88 168 L98 118 L58 88 L108 78 Z" transform="rotate(180 128 128)" />
+            <path class="petal" d="M128 32 L142 72 L182 82 L150 108 L158 148 L128 124 L98 148 L106 108 L74 82 L114 72 Z" transform="rotate(225 128 128)" />
+            <path class="petal" d="M128 30 L145 75 L190 85 L155 115 L165 160 L128 135 L91 160 L101 115 L66 85 L111 75 Z" transform="rotate(270 128 128)" />
+            <path class="petal" d="M128 32 L142 72 L182 82 L150 108 L158 148 L128 124 L98 148 L106 108 L74 82 L114 72 Z" transform="rotate(315 128 128)" />
+          </g>
+          <g class="sunburst">
+            <polygon
+              class="sun-fill"
+              points="128,52 134,96 178,102 142,124 152,168 128,144 104,168 114,124 78,102 122,96"
+            />
+            <circle cx="128" cy="128" r="42" class="sun-fill" />
+          </g>
+          <circle class="core-ring" cx="128" cy="128" r="28" />
+          <path
+            class="nib"
+            d="M128 108 L138 148 L128 142 L118 148 Z M128 108 L128 98 M124 104 L132 104"
+            stroke="#6b7280"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+      <div class="title">
+        <h1>سامانه جامع تحریریه خبر شمسه</h1>
+        <p class="subtitle">شمسه</p>
+      </div>
+    </div>
+  </body>
+</html>

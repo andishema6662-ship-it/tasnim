@@ -6,6 +6,7 @@ import { createSeed } from "./seed";
 import { loadState, saveState } from "./storage";
 import type { NewsroomData, Story } from "./types";
 import { placeStory } from "./workflow";
+import { ShamsehSplashGate } from "@/components/shamseh-splash";
 
 interface StoreValue {
   data: NewsroomData;
@@ -66,15 +67,11 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
     [data, update, commitStory, setRole, replaceData, resetData],
   );
 
-  if (!value) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-paper text-ink">
-        <p>در حال گشودن سامانه شمسه…</p>
-      </div>
-    );
-  }
-
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+  return (
+    <ShamsehSplashGate ready={value !== null}>
+      {value ? <StoreContext.Provider value={value}>{children}</StoreContext.Provider> : null}
+    </ShamsehSplashGate>
+  );
 }
 
 export function useNewsroom(): StoreValue {
