@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { EventMapPoint, EventMapProject } from "@/lib/types";
+import type { EventMapPoint, EventMapPointKind, EventMapProject, EventMapStyle } from "@/lib/types";
+import { cn } from "./ui";
 import { uid } from "@/lib/id";
 
 export function EventMapCanvas({
@@ -43,7 +44,7 @@ export function EventMapCanvas({
     const pos = placeFromEvent(event.clientX, event.clientY);
     if (!pos) return;
     const id = uid("pt");
-    const point: EventMapPoint = { id, x: pos.x, y: pos.y, label: `ایستگاه ${project.points.length + 1}` };
+    const point: EventMapPoint = { id, x: pos.x, y: pos.y, label: `ایستگاه ${project.points.length + 1}`, kind: "checkpoint" };
     patch({ points: [...project.points, point], routeOrder: [...(project.routeOrder ?? []), id] });
   }
 
@@ -53,10 +54,30 @@ export function EventMapCanvas({
 
   const polyline = routePoints.map((p) => `${(p.x / 100) * size.w},${(p.y / 100) * size.h}`).join(" ");
 
+  const KIND_STYLES: Record<EventMapPointKind, string> = {
+    checkpoint: "bg-accent",
+    gather: "bg-emerald-600",
+    rally: "bg-violet-700",
+  };
+
+  function cycleKind(kind?: EventMapPointKind): EventMapPointKind {
+    const order: EventMapPointKind[] = ["checkpoint", "gather", "rally"];
+    const index = order.indexOf(kind ?? "checkpoint");
+    return order[(index + 1) % order.length];
+  }
+
+  const style: EventMapStyle = project.mapStyle ?? "light";
+  const mapSkin =
+    style === "dark"
+      ? "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900"
+      : style === "brand"
+        ? "bg-gradient-to-br from-violet-200 via-primary-light to-amber-100"
+        : "bg-gradient-to-br from-emerald-100 via-sky-50 to-amber-50";
+
   return (
     <div
       ref={ref}
-      className="relative mt-4 h-80 cursor-crosshair overflow-hidden rounded-lg border border-line bg-gradient-to-br from-emerald-100 via-sky-50 to-amber-50"
+      className={cn("relative h-[min(24rem,55vh)] min-h-80 w-full cursor-crosshair overflow-hidden rounded-xl border border-line shadow-inner", mapSkin)}
       data-testid="event-map-canvas"
       onClick={onCanvasClick}
       onMouseLeave={() => setDragId(null)}
@@ -71,7 +92,10 @@ export function EventMapCanvas({
         <button
           key={point.id}
           type="button"
-          className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-accent px-2 py-1 text-xs text-sheet shadow-md"
+          className={cn(
+            "absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white px-2 py-1 text-xs text-sheet shadow-md",
+            KIND_STYLES[point.kind ?? "checkpoint"],
+          )}
           style={{ left: `${point.x}%`, top: `${point.y}%` }}
           title={point.label}
           onMouseDown={(e) => {
@@ -90,6 +114,12 @@ export function EventMapCanvas({
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => {
             e.stopPropagation();
+            if (e.altKey) {
+              patch({
+                points: project.points.map((p) => (p.id === point.id ? { ...p, kind: cycleKind(p.kind) } : p)),
+              });
+              return;
+            }
             const label = window.prompt("نام ایستگاه", point.label);
             if (!label) return;
             patch({ points: project.points.map((p) => (p.id === point.id ? { ...p, label } : p)) });
@@ -98,7 +128,9 @@ export function EventMapCanvas({
           {point.label}
         </button>
       ))}
-      <p className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/80 px-2 py-1 text-[10px] text-muted">کلیک: ایستگاه · درگ: جابه‌جایی · دوبارکلیک: نام</p>
+      <p className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/80 px-2 py-1 text-[10px] text-muted">
+        کلیک: ایستگاه · درگ: جابه‌جایی · دوبارکلیک: نام · Alt+دوبارکلیک: نوع (عبور / تجمع / مسیر)
+      </p>
     </div>
   );
 }

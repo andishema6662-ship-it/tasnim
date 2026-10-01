@@ -11,6 +11,7 @@ import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sect
 import { useNewsroom } from "@/lib/store";
 import { currentRole, currentUser } from "@/lib/workflow";
 import { NotificationPreviewList } from "./dashboard/dashboard-alerts";
+import { LiveClock } from "./live-clock";
 import { dashboardAlertCount } from "@/lib/reporter-workspace";
 import { UnauthorizedPanel } from "./unauthorized-panel";
 import { cn } from "./ui";
@@ -348,7 +349,10 @@ export function Shell({ children }: { children: ReactNode }) {
     data.suggestions.filter((item) => item.status === "pending").length +
     data.comments.filter((item) => item.status === "pending").length +
     dashboardAlertCount(data);
-  const ticketCount = data.tickets.filter((item) => item.status === "open" || item.status === "pending").length;
+  const chatUnread = data.chatMessages.filter((message) => {
+    const cursor = data.chatReadCursors.find((item) => item.userId === user?.id && item.threadId === message.threadId);
+    return message.senderUserId !== user?.id && message.createdAt > (cursor?.lastReadAt ?? "");
+  }).length;
 
   const isPublicSite = path === "/site" || path.startsWith("/site/");
   if (isPublicSite) {
@@ -394,7 +398,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="m-3 rounded-xl border border-line bg-gradient-to-l from-primary-light/80 to-sheet p-3 text-xs leading-6">
             <p className="font-bold text-ink">پشتیبانی تحریریه</p>
             <p className="mt-1 text-muted">تیکت فنی یا درخواست دسترسی را از بخش تیکتینگ ثبت کنید.</p>
-            <Link href="/admin/tickets" className="mt-2 inline-block font-semibold text-primary hover:underline">
+            <Link href="/admin/chat" className="mt-2 inline-block font-semibold text-primary hover:underline">
               تیکت جدید
             </Link>
           </div>
@@ -459,7 +463,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </label>
             </form>
             <div className="ms-auto flex flex-wrap items-center gap-0.5 sm:gap-1">
-              <HeaderIconButton href="/admin/tickets" label="تیکت‌ها" badge={ticketCount}>
+              <HeaderIconButton href="/admin/chat" label="چت تحریریه" badge={chatUnread}>
                 <IconTicket className="h-5 w-5" />
               </HeaderIconButton>
               <div className="relative">
@@ -567,6 +571,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <span className="font-semibold text-ink/70">{item.label}:</span> {item.text}
                 </li>
               ))}
+              <LiveClock />
             </ul>
           </div>
         </header>

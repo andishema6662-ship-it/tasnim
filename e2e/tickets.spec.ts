@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
-test("ticket creation with recipient", async ({ page }) => {
+test("editorial chat messenger", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
   await page.addInitScript(
@@ -12,12 +12,10 @@ test("ticket creation with recipient", async ({ page }) => {
     [STORAGE_KEY, JSON.stringify(data)],
   );
   await page.goto("/admin/tickets", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("ticket-recipient-select").selectOption("it-support");
-  await page.getByTestId("ticket-title-input").fill("درخواست تست گیرنده");
-  await page.getByTestId("ticket-submit").click();
-  await expect(page.getByTestId("ticket-list")).toContainText("پشتیبانی فنی و IT");
-  await expect(page.getByTestId("ticket-list")).toContainText("درخواست تست گیرنده");
-
-  await page.getByTestId("ticket-recipient-filter").selectOption("it-support");
-  await expect(page.getByTestId("ticket-recipient-cell").first()).toContainText("پشتیبانی فنی");
+  await expect(page.getByTestId("chat-layout")).toBeVisible();
+  await expect(page.getByTestId("chat-sidebar")).toBeVisible();
+  await page.getByTestId("chat-thread-item").first().click();
+  await page.getByTestId("chat-input").fill("پیام آزمایشی از تست");
+  await page.getByTestId("chat-send").click();
+  await expect(page.getByTestId("chat-messages")).toContainText("پیام آزمایشی از تست");
 });

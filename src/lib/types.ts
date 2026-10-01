@@ -559,12 +559,17 @@ export interface SpecialDossier {
   featuredOnHome: boolean;
 }
 
+export type EventMapPointKind = "checkpoint" | "gather" | "rally";
+
 export interface EventMapPoint {
   id: string;
   x: number;
   y: number;
   label: string;
+  kind?: EventMapPointKind;
 }
+
+export type EventMapStyle = "light" | "dark" | "brand";
 
 export interface EventMapProject {
   id: string;
@@ -572,6 +577,7 @@ export interface EventMapProject {
   points: EventMapPoint[];
   routeOrder: string[];
   embedCode: string;
+  mapStyle?: EventMapStyle;
 }
 
 export interface OfficialContact {
@@ -633,6 +639,45 @@ export interface ReporterFileEntry {
   mime: string;
   sharedWith: ReporterFileShare[];
   createdAt: string;
+  dataUrl?: string;
+  lastModified?: string;
+}
+
+export interface ChatThread {
+  id: string;
+  kind: "direct" | "group";
+  title: string;
+  participantIds: string[];
+  lastPreview: string;
+  lastAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  threadId: string;
+  senderUserId: string;
+  body: string;
+  createdAt: string;
+  attachmentName?: string;
+  dataUrl?: string;
+  reaction?: string;
+}
+
+export interface ChatReadCursor {
+  userId: string;
+  threadId: string;
+  lastReadAt: string;
+}
+
+export interface SocialBotCredentials {
+  telegram: { token: string; channelId: string };
+  bale: { token: string; channelId: string };
+  eitaa: { token: string; channelId: string };
+  rubika: { token: string; channelId: string };
+  twitter: { apiKey: string; bearerToken: string };
+  messageTemplate: string;
+  lastTestAt?: string;
+  lastTestOk?: boolean;
 }
 
 export interface ReporterStorageQuota {
@@ -748,5 +793,9 @@ export interface NewsroomData {
   reporterFiles: ReporterFileEntry[];
   reporterStorageQuotas: ReporterStorageQuota[];
   editorialAnnouncements: EditorialAnnouncement[];
+  chatThreads: ChatThread[];
+  chatMessages: ChatMessage[];
+  chatReadCursors: ChatReadCursor[];
+  socialBots: SocialBotCredentials;
   sessionStartedAt: string;
 }

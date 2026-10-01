@@ -6,7 +6,7 @@ import { faDate } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { pushActivity } from "@/lib/activity";
 import { useNewsroom } from "@/lib/store";
-import type { Feed, Mail, Story } from "@/lib/types";
+import type { Feed, Mail, SocialBotCredentials, Story } from "@/lib/types";
 import { blankStory, placeStory } from "@/lib/workflow";
 import { CoverThumb } from "../cover-thumb";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
@@ -301,16 +301,195 @@ export function NewsletterScreen() {
   );
 }
 
+function patchSocialBots(update: ReturnType<typeof useNewsroom>["update"], patch: Partial<SocialBotCredentials>) {
+  update((current) => ({
+    ...current,
+    socialBots: { ...current.socialBots, ...patch },
+  }));
+}
+
 export function SocialScreen() {
   const { data, update } = useNewsroom();
   const [form, setForm] = useState({ channel: "تلگرام", text: "", storyId: data.stories.find((story) => story.status === "published")?.id ?? "" });
   const [flash, setFlash] = useState("");
+  const [botFlash, setBotFlash] = useState("");
   const channels = ["تلگرام", "بله", "اینستاگرام", "ایکس"];
+  const bots = data.socialBots;
+
+  function testBotConnection() {
+    const hasAny =
+      bots.telegram.token.trim() ||
+      bots.bale.token.trim() ||
+      bots.eitaa.token.trim() ||
+      bots.rubika.token.trim() ||
+      bots.twitter.bearerToken.trim();
+    const ok = Boolean(hasAny);
+    patchSocialBots(update, { lastTestAt: new Date().toISOString(), lastTestOk: ok });
+    setBotFlash(ok ? "اتصال آزمایشی موفق بود (شبیه‌سازی محلی)." : "حداقل یک توکن یا کلید API وارد کنید.");
+  }
 
   return (
     <ModulePage slug="social">
       <Notice>پیش‌نویس در مرورگر می‌ماند و به شبکه‌ای فرستاده نمی‌شود. الگوهای کانال در کارتابل برای انتشار مستقیم استفاده می‌شوند.</Notice>
       <Flash>{flash}</Flash>
+      <Flash>{botFlash}</Flash>
+      <section className="mb-4 rounded-lg border border-line bg-sheet p-4" data-testid="social-bots-config">
+        <h2 className="font-bold">ربات‌های شبکه‌های اجتماعی (انتشار خودکار)</h2>
+        <p className="mt-1 text-xs text-muted">توکن‌ها فقط در localStorage مرورگر ذخیره می‌شوند و در این نسخه به API واقعی متصل نیستند.</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">ربات تلگرام</h3>
+            <Field label="توکن ربات تلگرام">
+              <Input
+                value={bots.telegram.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, telegram: { ...current.socialBots.telegram, token: event.target.value } },
+                  }))
+                }
+                data-testid="bot-telegram-token"
+              />
+            </Field>
+            <Field label="شناسه کانال (مثلاً @channel)">
+              <Input
+                value={bots.telegram.channelId}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, telegram: { ...current.socialBots.telegram, channelId: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">پیام‌رسان بله</h3>
+            <Field label="توکن بازوی بله">
+              <Input
+                value={bots.bale.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, bale: { ...current.socialBots.bale, token: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="شناسه کانال">
+              <Input
+                value={bots.bale.channelId}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, bale: { ...current.socialBots.bale, channelId: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">پیام‌رسان ایتا</h3>
+            <Field label="کلید API / توکن ایتا">
+              <Input
+                value={bots.eitaa.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, eitaa: { ...current.socialBots.eitaa, token: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="شناسه کانال">
+              <Input
+                value={bots.eitaa.channelId}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, eitaa: { ...current.socialBots.eitaa, channelId: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">پیام‌رسان روبیکا</h3>
+            <Field label="توکن احراز هویت">
+              <Input
+                value={bots.rubika.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, rubika: { ...current.socialBots.rubika, token: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="شناسه کانال">
+              <Input
+                value={bots.rubika.channelId}
+                onChange={(event) =>
+                  update((current) =>
+                    ({
+                      ...current,
+                      socialBots: { ...current.socialBots, rubika: { ...current.socialBots.rubika, channelId: event.target.value } },
+                    }),
+                  )
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3 lg:col-span-2">
+            <h3 className="text-sm font-bold">توییتر / X</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="API Key">
+                <Input
+                  value={bots.twitter.apiKey}
+                  onChange={(event) =>
+                    update((current) => ({
+                      ...current,
+                      socialBots: { ...current.socialBots, twitter: { ...current.socialBots.twitter, apiKey: event.target.value } },
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Bearer Token">
+                <Input
+                  value={bots.twitter.bearerToken}
+                  onChange={(event) =>
+                    update((current) => ({
+                      ...current,
+                      socialBots: { ...current.socialBots, twitter: { ...current.socialBots.twitter, bearerToken: event.target.value } },
+                    }))
+                  }
+                  data-testid="bot-twitter-bearer"
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Field label="قالب ارسال پیام (تیتر + لید + هشتگ + لینک)">
+            <TextArea
+              rows={3}
+              value={bots.messageTemplate}
+              onChange={(event) => patchSocialBots(update, { messageTemplate: event.target.value })}
+              data-testid="bot-message-template"
+            />
+          </Field>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={testBotConnection} data-testid="bot-test-connection">
+            تست اتصال به ربات
+          </Button>
+          {bots.lastTestAt ? (
+            <span className="text-xs text-muted" data-testid="bot-test-result">
+              آخرین تست: {faDate(bots.lastTestAt)} — {bots.lastTestOk ? "موفق" : "ناموفق"}
+            </span>
+          ) : null}
+        </div>
+      </section>
       <section className="mb-4 rounded-lg border border-line bg-sheet p-4" data-testid="social-channel-templates">
         <h2 className="font-bold">الگوی کانال‌های متصل</h2>
         <p className="text-xs text-muted">متغیرها: {"{title}"}، {"{lead}"}، {"{hashtags}"}، {"{link}"}</p>

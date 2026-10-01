@@ -2,7 +2,8 @@
 
 import type { ReactElement } from "react";
 import { useParams } from "next/navigation";
-import { AccessScreen, BackupScreen, CommsScreen, FormsScreen, LinksScreen, LogosScreen, MenusScreen, MonitoringScreen, PortalScreen, RolesScreen, SettingsScreen, SubsitesScreen, SystemScreen, TicketsScreen, UsersScreen } from "./core/core-screens";
+import { ChatScreen } from "./admin/chat-screen";
+import { AccessScreen, BackupScreen, CommsScreen, FormsScreen, LinksScreen, LogosScreen, MenusScreen, MonitoringScreen, PortalScreen, RolesScreen, SettingsScreen, SubsitesScreen, SystemScreen, UsersScreen } from "./core/core-screens";
 import { AiHubScreen } from "./editorial/ai-hub-screen";
 import { AiScreen, OrderScreen, ProcessScreen, SubmissionsScreen, SuggestionsScreen } from "./editorial/other-screens";
 import { CartableScreen } from "./editorial/cartable";
@@ -49,7 +50,7 @@ const screens: Record<string, () => ReactElement> = {
   "infra/portal": PortalScreen,
   "admin/users": UsersScreen,
   "admin/access": AccessScreen,
-  "admin/tickets": TicketsScreen,
+  "admin/chat": ChatScreen,
   "admin/comms": CommsScreen,
   "admin/official-contacts": OfficialContactsScreen,
   "admin/roles": RolesScreen,

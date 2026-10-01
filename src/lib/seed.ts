@@ -872,9 +872,9 @@ export function createSeed(): NewsroomData {
         id: "map-1",
         title: "مسیر راهپیمایی نمونه",
         points: [
-          { id: "pt-1", x: 18, y: 72, label: "میدان آغاز" },
-          { id: "pt-2", x: 42, y: 48, label: "ایستگاه سخنرانی" },
-          { id: "pt-3", x: 78, y: 28, label: "محل تجمع" },
+          { id: "pt-1", x: 18, y: 72, label: "میدان آغاز", kind: "rally" },
+          { id: "pt-2", x: 42, y: 48, label: "ایستگاه سخنرانی", kind: "checkpoint" },
+          { id: "pt-3", x: 78, y: 28, label: "محل تجمع", kind: "gather" },
         ],
         routeOrder: ["pt-1", "pt-2", "pt-3"],
         embedCode: '<div data-event-map="map-1" class="event-map-widget"></div>',
@@ -995,6 +995,48 @@ export function createSeed(): NewsroomData {
         createdAt: iso("2026-09-30T07:00:00Z"),
       },
     ],
+    chatThreads: [
+      {
+        id: "cht-sara-chief",
+        kind: "direct",
+        title: "کامران شفیعی (سردبیر)",
+        participantIds: ["u-sara", "u-kamran"],
+        lastPreview: "لطفاً لید را تا ۱۸:۰۰ بفرست.",
+        lastAt: iso("2026-10-01T14:30:00Z"),
+      },
+      {
+        id: "cht-sara-pub",
+        kind: "direct",
+        title: "لیلا نوری (مدیر مسئول)",
+        participantIds: ["u-sara", "u-leila"],
+        lastPreview: "نسخه نهایی را ببین.",
+        lastAt: iso("2026-09-30T16:00:00Z"),
+      },
+      {
+        id: "cht-desk",
+        kind: "group",
+        title: "میز تحریریه — صبح",
+        participantIds: ["u-sara", "u-kamran", "u-leila", "u-narges", "u-ali"],
+        lastPreview: "جلسه ست ۹:۳۰ در اتاق سردبیری",
+        lastAt: iso("2026-10-01T06:00:00Z"),
+      },
+    ],
+    chatMessages: [
+      { id: "msg-1", threadId: "cht-sara-chief", senderUserId: "u-kamran", body: "سلام سارا، وضعیت گزارش معیشت؟", createdAt: iso("2026-10-01T14:00:00Z") },
+      { id: "msg-2", threadId: "cht-sara-chief", senderUserId: "u-sara", body: "در حال جمع‌آوری آمار نهایی هستم.", createdAt: iso("2026-10-01T14:15:00Z") },
+      { id: "msg-3", threadId: "cht-sara-chief", senderUserId: "u-kamran", body: "لطفاً لید را تا ۱۸:۰۰ بفرست.", createdAt: iso("2026-10-01T14:30:00Z") },
+      { id: "msg-4", threadId: "cht-sara-pub", senderUserId: "u-leila", body: "نسخه نهایی را ببین.", createdAt: iso("2026-09-30T16:00:00Z") },
+      { id: "msg-5", threadId: "cht-desk", senderUserId: "u-kamran", body: "جلسه ست ۹:۳۰ در اتاق سردبیری", createdAt: iso("2026-10-01T06:00:00Z") },
+    ],
+    chatReadCursors: [{ userId: "u-sara", threadId: "cht-sara-pub", lastReadAt: iso("2026-09-30T17:00:00Z") }],
+    socialBots: {
+      telegram: { token: "", channelId: "@shamseh_news" },
+      bale: { token: "", channelId: "@shamseh" },
+      eitaa: { token: "", channelId: "@shamseh" },
+      rubika: { token: "", channelId: "shamseh_channel" },
+      twitter: { apiKey: "", bearerToken: "" },
+      messageTemplate: "{title}\n{lead}\n{hashtags}\n{link}",
+    },
     activity: [
       { id: "act-1", at: iso("2026-09-25T06:40:00Z"), text: "پیش‌نویس خورشیدی یزد به‌روز شد" },
       { id: "act-2", at: iso("2026-09-25T04:10:00Z"), text: "خبر ماهواره به بازبینی رفت" },
@@ -1122,6 +1164,10 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!Array.isArray(next.reporterFiles)) next.reporterFiles = base.reporterFiles;
   if (!Array.isArray(next.reporterStorageQuotas)) next.reporterStorageQuotas = base.reporterStorageQuotas;
   if (!Array.isArray(next.editorialAnnouncements)) next.editorialAnnouncements = base.editorialAnnouncements;
+  if (!Array.isArray(next.chatThreads)) next.chatThreads = base.chatThreads;
+  if (!Array.isArray(next.chatMessages)) next.chatMessages = base.chatMessages;
+  if (!Array.isArray(next.chatReadCursors)) next.chatReadCursors = base.chatReadCursors;
+  if (!next.socialBots?.messageTemplate) next.socialBots = base.socialBots;
   const reporterHubKeys = [
     "reporters/my-profile",
     "reporters/my-news",

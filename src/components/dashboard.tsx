@@ -72,7 +72,11 @@ export function Dashboard() {
 
   const publishedCount = data.stories.filter((s) => s.status === "published").length;
   const reviewCount = data.stories.filter((s) => s.status === "review" || s.status === "editing").length;
-  const openTickets = data.tickets.filter((t) => t.status === "open" || t.status === "pending").length;
+  const chatUnread = data.chatMessages.filter((message) => {
+    const me = data.users.find((u) => u.roleId === data.currentRoleId);
+    const cursor = data.chatReadCursors.find((item) => item.userId === me?.id && item.threadId === message.threadId);
+    return message.senderUserId !== me?.id && message.createdAt > (cursor?.lastReadAt ?? "");
+  }).length;
 
   const pipelineStatuses = STATUSES;
   const chartItems = [
@@ -137,10 +141,10 @@ export function Dashboard() {
           }
         />
         <KpiCard
-          label="تیکت باز"
-          value={openTickets}
-          hint="پشتیبانی و درخواست داخلی"
-          href="/admin/tickets"
+          label="پیام خوانده‌نشده"
+          value={chatUnread}
+          hint="گفتگو و پیام‌رسان تحریریه"
+          href="/admin/chat"
           iconBg="bg-amber-50 text-amber-600"
           icon={
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

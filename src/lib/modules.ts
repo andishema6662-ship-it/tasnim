@@ -44,7 +44,7 @@ export const modules: ModuleInfo[] = [
   { group: "admin", slug: "users", title: "مدیریت کاربران", description: "تعریف کاربران تحریریه و نسبت دادنشان به نقش." },
   { group: "admin", slug: "access", title: "کنترل دسترسی محتوا", description: "دسترسی منو و بخش‌ها برای هر نقش، و ویرایش و انتشار هر دسته." },
   { group: "admin", slug: "roles", title: "نقش‌ها و دسترسی", description: "سطح دسترسی مدیر مسئول، سردبیر، خبرنگار و نقش‌های تازه." },
-  { group: "admin", slug: "tickets", title: "تیکتینگ", description: "درخواست‌های داخلی تحریریه و تغییر وضعیتشان." },
+  { group: "admin", slug: "chat", title: "گفتگو و پیام‌رسان تحریریه", description: "چت شخصی و گروهی بین خبرنگاران، سردبیر و مدیر مسئول." },
   { group: "admin", slug: "comms", title: "میز ارتباطات ویژه", description: "پیام‌های داخلی بین اعضای تحریریه." },
   { group: "admin", slug: "official-contacts", title: "دفترچه تلفن مسئولین", description: "مخاطبین رسمی، سمت، تماس و یادداشت‌های تحریریه." },
   { group: "admin", slug: "admin-affairs", title: "امور اداری خبرنگاران", description: "کارت خبرنگاری، معرفی‌نامه، گواهی و الگونامه." },

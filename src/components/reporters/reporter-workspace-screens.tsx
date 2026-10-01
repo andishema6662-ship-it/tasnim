@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { uid } from "@/lib/id";
 import {
   DEFAULT_QUOTA_BYTES,
@@ -275,20 +275,16 @@ export function ReporterFileManagerScreen() {
   const [newName, setNewName] = useState("");
   const [shareUserId, setShareUserId] = useState("");
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const quota = user ? quotaForUser(data, user.id) : DEFAULT_QUOTA_BYTES;
-  const used = user ? usedBytesForUser(data, user.id) : 0;
+  const userId = user?.id ?? "";
+  const quota = userId ? quotaForUser(data, userId) : DEFAULT_QUOTA_BYTES;
+  const used = userId ? usedBytesForUser(data, userId) : 0;
   const pct = Math.min(100, Math.round((used / quota) * 100));
 
-  const visible = useMemo(() => {
-    if (!user) return [];
-    return filesForUser(data, user.id).filter((file) => file.parentId === folderId);
-  }, [data, user, folderId]);
-
-  const folders = useMemo(() => {
-    if (!user) return [];
-    return filesForUser(data, user.id).filter((file) => file.kind === "folder");
-  }, [data, user]);
+  const visible = userId ? filesForUser(data, userId).filter((file) => file.parentId === folderId) : [];
+  const folders = userId ? filesForUser(data, userId).filter((file) => file.kind === "folder") : [];
 
   function addFolder() {
     if (!user || !newName.trim()) return;
@@ -308,26 +304,38 @@ export function ReporterFileManagerScreen() {
     setFlash("پوشه ساخته شد.");
   }
 
-  function simulateUpload() {
+  function ingestFiles(fileList: FileList | File[]) {
     if (!user) return;
-    const size = 12 * 1024 * 1024;
-    if (used + size > quota) {
-      setFlash("سهمیه فضا تکمیل شده است.");
-      return;
-    }
-    const entry: ReporterFileEntry = {
-      id: uid("fil"),
-      ownerUserId: user.id,
-      parentId: folderId,
-      name: `فایل-${uid("f").slice(-4)}.docx`,
-      kind: "file",
-      sizeBytes: size,
-      mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      sharedWith: [],
-      createdAt: new Date().toISOString(),
-    };
-    update((current) => ({ ...current, reporterFiles: [...current.reporterFiles, entry] }));
-    setFlash("فایل (نمونه) بارگذاری شد.");
+    const files = Array.from(fileList);
+    let added = 0;
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = typeof reader.result === "string" ? reader.result : undefined;
+        const size = file.size;
+        if (usedBytesForUser({ ...data, reporterFiles: data.reporterFiles } as typeof data, user.id) + size > quota) {
+          setFlash("سهمیه فضا تکمیل شده است.");
+          return;
+        }
+        const entry: ReporterFileEntry = {
+          id: uid("fil"),
+          ownerUserId: user.id,
+          parentId: folderId,
+          name: file.name,
+          kind: "file",
+          sizeBytes: size,
+          mime: file.type || "application/octet-stream",
+          sharedWith: [],
+          createdAt: new Date().toISOString(),
+          dataUrl: size <= 1_500_000 ? dataUrl : undefined,
+          lastModified: new Date(file.lastModified).toISOString(),
+        };
+        update((current) => ({ ...current, reporterFiles: [...current.reporterFiles, entry] }));
+        added += 1;
+        if (added === files.length) setFlash(`${faNum(added)} فایل از رایانه بارگذاری شد.`);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   function shareFile(fileId: string) {
@@ -402,8 +410,38 @@ export function ReporterFileManagerScreen() {
           </div>
         </aside>
         <div>
-          <div className="mb-3 flex flex-wrap gap-2">
-            <Button type="button" onClick={simulateUpload} data-testid="file-upload-btn">بارگذاری فایل نمونه</Button>
+          <div
+            className={cn(
+              "mb-3 rounded-xl border-2 border-dashed p-6 text-center transition-colors",
+              dragOver ? "border-primary bg-violet-50" : "border-line bg-paper",
+            )}
+            data-testid="file-drop-zone"
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragOver(false);
+              if (event.dataTransfer.files.length) ingestFiles(event.dataTransfer.files);
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              data-testid="file-upload-input"
+              onChange={(event) => {
+                if (event.target.files?.length) ingestFiles(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            <p className="text-sm text-muted">فایل را اینجا بکشید و رها کنید یا از رایانه انتخاب کنید.</p>
+            <Button type="button" className="mt-3" onClick={() => fileInputRef.current?.click()} data-testid="file-upload-btn">
+              انتخاب فایل از رایانه
+            </Button>
           </div>
           <div className="grid gap-2 sm:grid-cols-2" data-testid="file-grid">
             {visible.length === 0 ? <Empty>فایلی در این مسیر نیست.</Empty> : null}
@@ -412,7 +450,12 @@ export function ReporterFileManagerScreen() {
                 <p className="font-semibold">{file.name}</p>
                 <p className="text-xs text-muted">{file.kind === "folder" ? "پوشه" : formatBytes(file.sizeBytes)}</p>
                 {file.kind === "file" ? (
-                  <Button type="button" tone="ghost" className="mt-2 text-xs" onClick={() => setSelectedFile(file.id)}>اشتراک‌گذاری</Button>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {file.dataUrl ? (
+                      <a href={file.dataUrl} download={file.name} className="text-xs font-medium text-primary hover:underline">دانلود</a>
+                    ) : null}
+                    <Button type="button" tone="ghost" className="text-xs" onClick={() => setSelectedFile(file.id)}>اشتراک‌گذاری</Button>
+                  </div>
                 ) : null}
               </div>
             ))}

@@ -42,9 +42,11 @@ export function JalaliDateTimePicker({
   const [parts, setParts] = useState<JalaliParts>(() => partsFromIso(value));
   const rootRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (value) setParts(partsFromIso(value));
-  }, [value]);
+  function toggleOpen() {
+    if (disabled) return;
+    if (!open) setParts(partsFromIso(value));
+    setOpen((v) => !v);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -103,7 +105,7 @@ export function JalaliDateTimePicker({
             "flex w-full items-center justify-between rounded-lg border border-line bg-paper px-3 py-2 text-right text-sm",
             disabled && "opacity-60",
           )}
-          onClick={() => !disabled && setOpen((v) => !v)}
+          onClick={toggleOpen}
           data-testid={`${testId}-trigger`}
           aria-expanded={open}
         >

@@ -23,84 +23,57 @@ export interface JalaliParts {
   minute: number;
 }
 
-function div(a: number, b: number) {
-  return Math.floor(a / b);
+const persianDtf = new Intl.DateTimeFormat("en-u-ca-persian", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+
+/** Authoritative Jalali (Persian) calendar parts via ICU — avoids manual conversion drift. */
+export function persianPartsFromDate(date: Date): { jy: number; jm: number; jd: number } {
+  const bag: Partial<Record<"year" | "month" | "day", number>> = {};
+  for (const part of persianDtf.formatToParts(date)) {
+    if (part.type === "year" || part.type === "month" || part.type === "day") {
+      bag[part.type] = Number(part.value);
+    }
+  }
+  return { jy: bag.year ?? 1400, jm: bag.month ?? 1, jd: bag.day ?? 1 };
 }
 
 export function gregorianToJalali(gy: number, gm: number, gd: number): { jy: number; jm: number; jd: number } {
-  const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  let jy = gy <= 1600 ? 0 : 979;
-  gy -= gy <= 1600 ? 621 : 1600;
-  const gy2 = gm > 2 ? gy + 1 : gy;
-  let days =
-    365 * gy +
-    div(gy2 + 3, 4) -
-    div(gy2 + 99, 100) +
-    div(gy2 + 399, 400) -
-    80 +
-    gd +
-    gdm[gm - 1];
-  jy += 33 * div(days, 12053);
-  days %= 12053;
-  jy += 4 * div(days, 1461);
-  days %= 1461;
-  jy += div(days - 1, 365);
-  if (days > 365) days = (days - 1) % 365;
-  const jm = days < 186 ? 1 + div(days, 31) : 7 + div(days - 186, 30);
-  const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
-  return { jy, jm, jd };
+  return persianPartsFromDate(new Date(gy, gm - 1, gd, 12, 0, 0, 0));
 }
 
 export function jalaliToGregorian(jy: number, jm: number, jd: number): { gy: number; gm: number; gd: number } {
-  let gy = jy <= 979 ? 621 : 1600;
-  jy -= jy <= 979 ? 0 : 979;
-  let days =
-    365 * jy +
-    div(jy, 33) * 8 +
-    div((jy % 33) + 3, 4) +
-    78 +
-    jd +
-    (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
-  gy += 400 * div(days, 146097);
-  days %= 146097;
-  if (days > 36524) {
-    gy += 100 * div(--days, 36524);
-    days %= 36524;
-    if (days >= 365) days++;
-  }
-  gy += 4 * div(days, 1461);
-  days %= 1461;
-  gy += div(days - 1, 365);
-  if (days > 365) days = (days - 1) % 365;
-  const gd = days + 1;
-  const sal_a = [0, 31, (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  let gm = 0;
-  let v = gd;
-  for (gm = 1; gm <= 12; gm += 1) {
-    v -= sal_a[gm];
-    if (v <= 0) break;
-  }
-  return { gy, gm, gd: gd - sal_a[gm - 1] };
+  const iso = jalaliPartsToIso({ jy, jm, jd, hour: 12, minute: 0 });
+  const d = new Date(iso);
+  return { gy: d.getFullYear(), gm: d.getMonth() + 1, gd: d.getDate() };
 }
 
 export function dateToJalaliParts(date: Date): JalaliParts {
-  const { jy, jm, jd } = gregorianToJalali(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  const { jy, jm, jd } = persianPartsFromDate(date);
   return { jy, jm, jd, hour: date.getHours(), minute: date.getMinutes() };
 }
 
 export function jalaliPartsToIso(parts: JalaliParts): string {
-  const { gy, gm, gd } = jalaliToGregorian(parts.jy, parts.jm, parts.jd);
-  const d = new Date(gy, gm - 1, gd, parts.hour, parts.minute, 0, 0);
-  return d.toISOString();
+  const approx = new Date(parts.jy + 621, 2, 21, parts.hour, parts.minute, 0, 0);
+  for (let delta = -500; delta <= 500; delta += 1) {
+    const d = new Date(approx.getTime() + delta * 86_400_000);
+    const p = persianPartsFromDate(d);
+    if (p.jy === parts.jy && p.jm === parts.jm && p.jd === parts.jd) {
+      d.setHours(parts.hour, parts.minute, 0, 0);
+      return d.toISOString();
+    }
+  }
+  approx.setHours(parts.hour, parts.minute, 0, 0);
+  return approx.toISOString();
 }
 
-export function formatJalaliDateTime(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  const { jy, jm, jd } = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  const time = d.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
-  return `${faNum(jd)} ${JALALI_MONTHS[jm - 1]} ${faNum(jy)} — ${time}`;
+export function jalaliMonthLength(jy: number, jm: number): number {
+  if (jm <= 6) return 31;
+  if (jm <= 11) return 30;
+  const p30 = persianPartsFromDate(new Date(jalaliPartsToIso({ jy, jm: 12, jd: 30, hour: 12, minute: 0 })));
+  return p30.jm === 12 && p30.jd === 30 ? 30 : 29;
 }
 
 /** Saturday = 0 … Friday = 6 */
@@ -110,18 +83,20 @@ export function jalaliWeekday(jy: number, jm: number, jd: number): number {
   return (js + 1) % 7;
 }
 
-export function jalaliMonthLength(jy: number, jm: number): number {
-  if (jm <= 6) return 31;
-  if (jm <= 11) return 30;
-  const isLeap = [1, 5, 9, 13, 17, 22, 26, 30].includes(jy % 33);
-  return isLeap ? 30 : 29;
-}
-
 export const JALALI_WEEKDAYS_SHORT = ["ش", "ی", "د", "س", "چ", "پ", "ج"] as const;
+
+export function formatJalaliDateTime(iso: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const { jy, jm, jd } = persianPartsFromDate(d);
+  const time = d.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+  return `${faNum(jd)} ${JALALI_MONTHS[jm - 1]} ${faNum(jy)} — ${time}`;
+}
 
 export function formatJalaliDayHeader(iso: string): string {
   const d = new Date(iso);
-  const { jy, jm, jd } = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  const { jy, jm, jd } = persianPartsFromDate(d);
   const weekday = new Intl.DateTimeFormat("fa-IR-u-ca-persian", { weekday: "long" }).format(d);
   return `${weekday} ${faNum(jd)} ${JALALI_MONTHS[jm - 1]} ${faNum(jy)}`;
 }

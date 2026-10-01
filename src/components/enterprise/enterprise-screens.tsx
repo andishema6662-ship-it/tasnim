@@ -458,7 +458,29 @@ export function EventMapScreen() {
         </Select>
       </Field>
       {project ? (
-        <>
+        <div className="rounded-2xl border border-line bg-sheet p-4 shadow-sm" data-testid="event-map-card">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-bold">نقشه رویداد</h2>
+            <Field label="سبک نقشه">
+              <Select
+                value={project.mapStyle ?? "light"}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    eventMaps: current.eventMaps.map((item) =>
+                      item.id === project.id ? { ...item, mapStyle: event.target.value as "light" | "dark" | "brand" } : item,
+                    ),
+                  }))
+                }
+                data-testid="event-map-style"
+              >
+                <option value="light">نقشه استاندارد روشن</option>
+                <option value="dark">نقشه تیره</option>
+                <option value="brand">تم سازمانی</option>
+              </Select>
+            </Field>
+          </div>
+          <p className="mb-2 text-xs text-muted">ایستگاه جمع، نقاط عبور و مسیر راهپیمایی — کلیک برای ایستگاه جدید</p>
           <EventMapCanvas
             project={{ ...project, routeOrder: project.routeOrder ?? project.points.map((p) => p.id) }}
             onChange={(next) =>
@@ -476,7 +498,7 @@ export function EventMapScreen() {
           <Button type="button" tone="ghost" onClick={() => { navigator.clipboard?.writeText(project.embedCode); setFlash("کد ابزارک کپی شد."); }}>
             کپی کد
           </Button>
-        </>
+        </div>
       ) : (
         <Empty>پروژه‌ای تعریف نشده است.</Empty>
       )}
