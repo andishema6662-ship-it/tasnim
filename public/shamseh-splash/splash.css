@@ -1,77 +1,42 @@
-@import "tailwindcss";
-
-@theme {
-  /* HexaDash-style admin palette (portal /site uses inline theme where needed) */
-  --color-paper: #f4f5f7;
-  --color-sheet: #ffffff;
-  --color-ink: #272b41;
-  --color-muted: #8c90a4;
-  --color-line: #e3e6ef;
-  --color-rule: #8231d3;
-  --color-mast: #ffffff;
-  --color-sand: #edeef3;
-  --color-pine: #5f63f2;
-  --color-primary: #8231d3;
-  --color-primary-light: #f4e8ff;
-  --color-accent-blue: #5f63f2;
-  --font-sans: var(--font-vazir), sans-serif;
+* {
+  box-sizing: border-box;
 }
-
 body {
-  background: var(--color-paper);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  line-height: 1.7;
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 32%, #faf8f5 0%, #f0eeea 55%, #e8e4de 100%);
+  font-family: Tahoma, sans-serif;
 }
-
-::selection {
-  background: #e8daf9;
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
 }
-
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+.emblem {
+  position: relative;
+  width: min(78vw, 20rem);
+  aspect-ratio: 1;
 }
-
-.admin-nav-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: #c5c9d6 transparent;
+.emblem img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
 }
-
-.admin-nav-scroll::-webkit-scrollbar {
-  width: 5px;
+.text-band {
+  width: min(92vw, 32rem);
+  max-width: 100%;
+  height: auto;
 }
-
-.admin-nav-scroll::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: #c5c9d6;
-}
-
-@keyframes ticker-move {
-  from {
-    transform: translateX(40%);
-  }
-  to {
-    transform: translateX(-70%);
-  }
-}
-
-.ticker-track {
-  display: inline-block;
-  min-width: 100%;
-  animation: ticker-move 22s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
-  }
-}
-
-/* Shamseh splash — real artwork layers (GPU transforms) */
 .shamseh-wedge {
   opacity: 0;
-  transform: scale(0.35) rotate(calc(var(--wedge-rot, 18deg) * -1));
+  transform: scale(0.35) rotate(-18deg);
   transform-origin: 50% 50%;
   animation: shamseh-wedge-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform, opacity;
@@ -92,7 +57,6 @@ body {
   transform: scale(0.2);
   transform-origin: 50% 50%;
   animation: shamseh-layer-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) 0.62s forwards;
-  will-change: transform, opacity;
 }
 .shamseh-layer-sun {
   opacity: 0;
@@ -123,7 +87,6 @@ body {
   transform: translateY(18px) scale(0.96);
   animation: shamseh-text-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards;
   filter: drop-shadow(0 4px 12px rgba(39, 43, 65, 0.08));
-  will-change: transform, opacity;
 }
 @keyframes shamseh-text-in {
   to {

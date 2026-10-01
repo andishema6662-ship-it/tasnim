@@ -9,5 +9,6 @@ test("shamseh splash plays then dashboard appears", async ({ page }) => {
 test("standalone loader HTML is served", async ({ page }) => {
   const response = await page.goto("/shamseh-intro.html", { waitUntil: "domcontentloaded" });
   expect(response?.status()).toBe(200);
-  await expect(page.locator("h1")).toContainText("سامانه جامع تحریریه خبر شمسه");
+  await expect(page.locator('img[src*="text-band.png"]')).toBeVisible();
+  await expect(page.locator(".emblem img")).toHaveCount(15);
 });
