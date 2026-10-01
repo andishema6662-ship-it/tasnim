@@ -7,7 +7,7 @@ body {
   display: grid;
   place-items: center;
   background: radial-gradient(ellipse at 50% 32%, #faf8f5 0%, #f0eeea 55%, #e8e4de 100%);
-  font-family: Tahoma, sans-serif;
+  font-family: "Vazirmatn", Tahoma, sans-serif;
 }
 .stage {
   display: flex;
@@ -28,11 +28,6 @@ body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
-}
-.text-band {
-  width: min(92vw, 32rem);
-  max-width: 100%;
-  height: auto;
 }
 .shamseh-wedge {
   opacity: 0;
@@ -82,16 +77,33 @@ body {
     transform: translateY(0) scale(1);
   }
 }
-.shamseh-text-band {
+.shamseh-tagline {
+  margin: 0;
+  max-width: 22rem;
+  text-align: center;
+  font-size: clamp(1.05rem, 4.2vw, 1.4rem);
+  font-weight: 700;
+  line-height: 1.75;
+  letter-spacing: 0.03em;
+  color: #1e293b;
   opacity: 0;
-  transform: translateY(18px) scale(0.96);
-  animation: shamseh-text-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards;
-  filter: drop-shadow(0 4px 12px rgba(39, 43, 65, 0.08));
+  transform: translateY(20px);
+  animation: shamseh-tagline-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1.12s forwards;
+  text-shadow: 0 0 24px rgba(30, 58, 138, 0.12);
 }
-@keyframes shamseh-text-in {
-  to {
+@keyframes shamseh-tagline-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+    text-shadow: 0 0 0 rgba(30, 58, 138, 0);
+  }
+  70% {
+    text-shadow: 0 0 28px rgba(30, 58, 138, 0.22);
+  }
+  100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
+    text-shadow: 0 2px 16px rgba(30, 58, 138, 0.1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -99,7 +111,7 @@ body {
   .shamseh-layer-ring,
   .shamseh-layer-sun,
   .shamseh-layer-core-img,
-  .shamseh-text-band {
+  .shamseh-tagline {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
