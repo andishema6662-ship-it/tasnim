@@ -1,5 +1,9 @@
 import type { Settings } from "./types";
 
+/** Crisp emblem only (transparent), not the full paper mockup */
+export const SHAMSEH_MARK_PATH = "/shamseh-mark.png";
+
+/** Legacy path; kept in sync with the mark for older saved settings */
 export const SHAMSEH_LOGO_PATH = "/shamseh-logo.png";
 
 export const SHAMSEH_MEDIA_NAME = "شمسه";
@@ -23,13 +27,14 @@ export function defaultBrandingSettings(): Pick<Settings, "newsroomName" | "tagl
     tagline: SHAMSEH_TAGLINE,
     mediaName: SHAMSEH_MEDIA_NAME,
     mediaDisplayTitle: SHAMSEH_FULL_TITLE,
-    brandMark: SHAMSEH_LOGO_PATH,
+    brandMark: SHAMSEH_MARK_PATH,
   };
 }
 
 export function resolveBrandMark(mark?: string): string {
   const trimmed = (mark ?? "").trim();
-  return trimmed || SHAMSEH_LOGO_PATH;
+  if (!trimmed || trimmed === SHAMSEH_LOGO_PATH) return SHAMSEH_MARK_PATH;
+  return trimmed;
 }
 
 export function applyBrandingDefaults(settings: Settings): Settings {
@@ -41,7 +46,7 @@ export function applyBrandingDefaults(settings: Settings): Settings {
     tagline: settings.tagline?.trim() ? settings.tagline : defaults.tagline,
     mediaName: settings.mediaName?.trim() ? settings.mediaName : defaults.mediaName,
     mediaDisplayTitle: settings.mediaDisplayTitle?.trim() ? settings.mediaDisplayTitle : defaults.mediaDisplayTitle,
-    brandMark: settings.brandMark?.trim() ? settings.brandMark : defaults.brandMark,
+    brandMark: resolveBrandMark(settings.brandMark?.trim() ? settings.brandMark : defaults.brandMark),
   };
 }
 

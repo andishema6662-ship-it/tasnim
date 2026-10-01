@@ -87,7 +87,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-[#ddd] bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
           <Link href="/site" className="flex items-center gap-3" data-testid="portal-site-brand">
-            <img src={mark} alt={SHAMSEH_MEDIA_NAME} className="h-16 w-16 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]" />
+            <img src={mark} alt={SHAMSEH_MEDIA_NAME} className="h-14 w-14 shrink-0 object-contain drop-shadow-sm sm:h-16 sm:w-16" />
             <div>
               <p className="text-xs text-muted">{subtitle}</p>
               <p className="text-2xl font-black tracking-tight text-[var(--portal-primary)]">{title}</p>

@@ -360,10 +360,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <img
             src={panelMark}
             alt={SHAMSEH_MEDIA_NAME}
-            className={cn(
-              "shrink-0 rounded-xl border border-line object-contain bg-paper",
-              sidebarCollapsed ? "h-11 w-11" : "h-14 w-14",
-            )}
+            className={cn("shrink-0 object-contain drop-shadow-sm", sidebarCollapsed ? "h-11 w-11" : "h-14 w-14")}
           />
           {!sidebarCollapsed ? (
             <div className="min-w-0">
@@ -426,7 +423,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <IconMenu className="h-5 w-5" />
             </button>
             <Link href="/" className="flex min-w-0 items-center gap-2 lg:gap-2.5" data-testid="admin-header-brand">
-              <img src={panelMark} alt={SHAMSEH_MEDIA_NAME} className="h-9 w-9 shrink-0 rounded-lg border border-line object-contain bg-paper sm:h-10 sm:w-10" />
+              <img src={panelMark} alt={SHAMSEH_MEDIA_NAME} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
               <div className="min-w-0 max-w-[11rem] sm:max-w-xs lg:max-w-sm">
                 <p className="truncate text-xs font-bold leading-5 text-ink sm:text-sm">{headerBrandTitle}</p>
                 <p className="hidden truncate text-[10px] text-muted sm:block">{panelTitle}</p>
