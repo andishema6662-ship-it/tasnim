@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
+import { SHAMSEH_APP_TITLE, SHAMSEH_TAGLINE } from "@/lib/branding";
 import { Shell } from "@/components/shell";
 import { NewsroomProvider } from "@/lib/store";
 import "./globals.css";
@@ -11,8 +12,12 @@ const vazir = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "اتاق خبر",
-  description: "پنل تحریریه برای تولید، ویرایش و انتشار خبر",
+  title: {
+    default: SHAMSEH_APP_TITLE,
+    template: `%s · ${SHAMSEH_APP_TITLE}`,
+  },
+  description: `${SHAMSEH_APP_TITLE} — ${SHAMSEH_TAGLINE}`,
+  applicationName: SHAMSEH_APP_TITLE,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

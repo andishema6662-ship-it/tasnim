@@ -1,0 +1,50 @@
+import type { Settings } from "./types";
+
+export const SHAMSEH_LOGO_PATH = "/shamseh-logo.png";
+
+export const SHAMSEH_MEDIA_NAME = "شمسه";
+
+export const SHAMSEH_FULL_TITLE = "سامانه جامع تحریریه خبر شمسه";
+
+/** عنوان رسمی در نوار بالای پنل مدیریت */
+export const SHAMSEH_ADMIN_HEADER = "سامانه تحریریه خبر شمسه";
+
+export const SHAMSEH_NEWSROOM_NAME = "تحریریه خبر شمسه";
+
+export const SHAMSEH_TAGLINE = "میز یکپارچه تولید و انتشار";
+
+export const SHAMSEH_APP_TITLE = SHAMSEH_FULL_TITLE;
+
+export const LEGACY_NEWSROOM_NAME = "اتاق خبر";
+
+export function defaultBrandingSettings(): Pick<Settings, "newsroomName" | "tagline" | "mediaName" | "mediaDisplayTitle" | "brandMark"> {
+  return {
+    newsroomName: SHAMSEH_NEWSROOM_NAME,
+    tagline: SHAMSEH_TAGLINE,
+    mediaName: SHAMSEH_MEDIA_NAME,
+    mediaDisplayTitle: SHAMSEH_FULL_TITLE,
+    brandMark: SHAMSEH_LOGO_PATH,
+  };
+}
+
+export function resolveBrandMark(mark?: string): string {
+  const trimmed = (mark ?? "").trim();
+  return trimmed || SHAMSEH_LOGO_PATH;
+}
+
+export function applyBrandingDefaults(settings: Settings): Settings {
+  const defaults = defaultBrandingSettings();
+  const legacyRoom = settings.newsroomName?.trim() === LEGACY_NEWSROOM_NAME;
+  return {
+    ...settings,
+    newsroomName: legacyRoom ? defaults.newsroomName : settings.newsroomName?.trim() || defaults.newsroomName,
+    tagline: settings.tagline?.trim() ? settings.tagline : defaults.tagline,
+    mediaName: settings.mediaName?.trim() ? settings.mediaName : defaults.mediaName,
+    mediaDisplayTitle: settings.mediaDisplayTitle?.trim() ? settings.mediaDisplayTitle : defaults.mediaDisplayTitle,
+    brandMark: settings.brandMark?.trim() ? settings.brandMark : defaults.brandMark,
+  };
+}
+
+export function documentTitleSuffix(): string {
+  return SHAMSEH_APP_TITLE;
+}

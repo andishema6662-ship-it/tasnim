@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { documentTitleSuffix } from "@/lib/branding";
 import { groups, moduleBySlug } from "@/lib/modules";
 import type { Status } from "@/lib/types";
 
@@ -96,7 +97,7 @@ export function Page({
   children?: ReactNode;
 }) {
   useEffect(() => {
-    document.title = `${title} · اتاق خبر`;
+    document.title = `${title} · ${documentTitleSuffix()}`;
   }, [title]);
 
   return (

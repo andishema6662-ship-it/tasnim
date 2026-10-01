@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { defaultBrandingSettings } from "./branding";
 import { defaultHomepageSlots } from "./homepage-slots";
 import type { NewsroomData, TemplateSettings } from "./types";
 
@@ -23,6 +24,7 @@ export const FONT_OPTIONS: { id: TemplateSettings["fontFamily"]; label: string; 
 ];
 
 export function defaultTemplateSettings(): TemplateSettings {
+  const brand = defaultBrandingSettings();
   return {
     palette: "ordibehesht",
     customPrimary: "#8e1e2d",
@@ -41,9 +43,9 @@ export function defaultTemplateSettings(): TemplateSettings {
     fontFamily: "vazirmatn",
     fontScale: "md",
     portalBranding: {
-      mediaName: "",
-      mediaDisplayTitle: "",
-      brandMark: "",
+      mediaName: brand.mediaName,
+      mediaDisplayTitle: brand.mediaDisplayTitle,
+      brandMark: brand.brandMark,
     },
     portalHeaderBanner: {
       enabled: true,

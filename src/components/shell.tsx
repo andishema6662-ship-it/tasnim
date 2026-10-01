@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { resolveBrandMark, SHAMSEH_ADMIN_HEADER, SHAMSEH_MEDIA_NAME } from "@/lib/branding";
 import { norm, todayTriCalendar } from "@/lib/format";
 import { canAccessPath, DASHBOARD_MODULE_KEY, effectiveModuleKeys } from "@/lib/module-access";
 import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules";
@@ -303,7 +304,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const dates = useMemo(() => todayTriCalendar(), []);
   const panelTitle = (data.settings.mediaName ?? "").trim() || data.settings.newsroomName;
   const panelSubtitle = (data.settings.mediaDisplayTitle ?? "").trim() || data.settings.tagline;
-  const panelMark = data.settings.brandMark ?? "";
+  const panelMark = resolveBrandMark(data.settings.brandMark);
+  const headerBrandTitle = SHAMSEH_ADMIN_HEADER;
 
   useEffect(() => {
     if (!userOpen) return;
@@ -355,15 +357,18 @@ export function Shell({ children }: { children: ReactNode }) {
         )}
       >
         <div className={cn("flex items-center gap-3 border-b border-line px-3 py-4", sidebarCollapsed && "justify-center px-2")}>
-          {panelMark ? (
-            <img src={panelMark} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-line object-contain bg-paper" />
-          ) : (
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">ت</span>
-          )}
+          <img
+            src={panelMark}
+            alt={SHAMSEH_MEDIA_NAME}
+            className={cn(
+              "shrink-0 rounded-xl border border-line object-contain bg-paper",
+              sidebarCollapsed ? "h-11 w-11" : "h-14 w-14",
+            )}
+          />
           {!sidebarCollapsed ? (
             <div className="min-w-0">
-              <p className="truncate text-[11px] text-muted">{panelSubtitle}</p>
-              <p className="truncate text-lg font-bold leading-7">{panelTitle}</p>
+              <p className="truncate text-lg font-bold leading-7 text-primary">{panelTitle}</p>
+              <p className="truncate text-[11px] leading-5 text-muted">{panelSubtitle}</p>
             </div>
           ) : null}
         </div>
@@ -420,9 +425,13 @@ export function Shell({ children }: { children: ReactNode }) {
             <button type="button" className="rounded-lg px-2 py-2 text-sm lg:hidden hover:bg-sand" onClick={() => setOpen(true)} aria-label="بخش‌ها">
               <IconMenu className="h-5 w-5" />
             </button>
-            <div className="min-w-0 lg:hidden">
-              <p className="truncate text-sm font-bold">{panelTitle}</p>
-            </div>
+            <Link href="/" className="flex min-w-0 items-center gap-2 lg:gap-2.5" data-testid="admin-header-brand">
+              <img src={panelMark} alt={SHAMSEH_MEDIA_NAME} className="h-9 w-9 shrink-0 rounded-lg border border-line object-contain bg-paper sm:h-10 sm:w-10" />
+              <div className="min-w-0 max-w-[11rem] sm:max-w-xs lg:max-w-sm">
+                <p className="truncate text-xs font-bold leading-5 text-ink sm:text-sm">{headerBrandTitle}</p>
+                <p className="hidden truncate text-[10px] text-muted sm:block">{panelTitle}</p>
+              </div>
+            </Link>
             <form
               className="order-3 w-full min-w-0 flex-1 sm:order-none sm:max-w-md"
               onSubmit={(event) => {

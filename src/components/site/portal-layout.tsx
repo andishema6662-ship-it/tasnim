@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CoverThumb } from "@/components/cover-thumb";
+import { resolveBrandMark, SHAMSEH_MEDIA_NAME } from "@/lib/branding";
 import { faNum, todayTriCalendar } from "@/lib/format";
 import { portalSubtitleFromData, portalTitleFromData, resolvePortalBranding, resolvePortalHeaderBanner } from "@/lib/portal-branding";
 import { PORTAL_NAV } from "@/lib/site-portal";
@@ -33,7 +34,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const branding = resolvePortalBranding(data);
   const title = portalTitleFromData(data);
   const subtitle = portalSubtitleFromData(data);
-  const mark = branding.brandMark;
+  const mark = resolveBrandMark(branding.brandMark);
   const theme = resolveTemplateSettings(data);
   const themeStyle = portalThemeStyle(theme);
   const topAd = resolvePortalHeaderBanner(data);
@@ -86,7 +87,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-[#ddd] bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
           <Link href="/site" className="flex items-center gap-3" data-testid="portal-site-brand">
-            {mark ? <img src={mark} alt="" className="h-14 w-14 object-contain" /> : null}
+            <img src={mark} alt={SHAMSEH_MEDIA_NAME} className="h-16 w-16 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]" />
             <div>
               <p className="text-xs text-muted">{subtitle}</p>
               <p className="text-2xl font-black tracking-tight text-[var(--portal-primary)]">{title}</p>

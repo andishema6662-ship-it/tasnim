@@ -69,7 +69,7 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
   if (!value) {
     return (
       <div className="grid min-h-screen place-items-center bg-paper text-ink">
-        <p>در حال گشودن اتاق خبر…</p>
+        <p>در حال گشودن سامانه شمسه…</p>
       </div>
     );
   }
@@ -79,6 +79,6 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
 
 export function useNewsroom(): StoreValue {
   const value = useContext(StoreContext);
-  if (!value) throw new Error("useNewsroom باید داخل اتاق خبر باشد");
+  if (!value) throw new Error("useNewsroom باید داخل سامانه شمسه باشد");
   return value;
 }

@@ -1,3 +1,4 @@
+import { applyBrandingDefaults, defaultBrandingSettings, LEGACY_NEWSROOM_NAME } from "./branding";
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
 import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
@@ -78,12 +79,8 @@ export function createSeed(): NewsroomData {
     currentRoleId: "reporter",
     sessionStartedAt: new Date().toISOString(),
     settings: {
-      newsroomName: "اتاق خبر",
-      tagline: "میز یکپارچه تولید و انتشار",
+      ...defaultBrandingSettings(),
       pageSize: 20,
-      mediaName: "",
-      mediaDisplayTitle: "",
-      brandMark: "",
     },
     templateSettings: defaultTemplateSettings(),
     roles: [
@@ -888,12 +885,17 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
 }
 
 export function normalizeSettings(settings: Partial<Settings> & Pick<Settings, "newsroomName" | "tagline" | "pageSize">): Settings {
-  return {
-    newsroomName: settings.newsroomName?.trim() || "اتاق خبر",
-    tagline: settings.tagline ?? "",
+  const defaults = defaultBrandingSettings();
+  const normalized: Settings = {
+    newsroomName: settings.newsroomName?.trim() || defaults.newsroomName,
+    tagline: settings.tagline ?? defaults.tagline,
     pageSize: settings.pageSize ?? 20,
-    mediaName: settings.mediaName ?? "",
-    mediaDisplayTitle: settings.mediaDisplayTitle ?? "",
-    brandMark: settings.brandMark ?? "",
+    mediaName: settings.mediaName ?? defaults.mediaName,
+    mediaDisplayTitle: settings.mediaDisplayTitle ?? defaults.mediaDisplayTitle,
+    brandMark: settings.brandMark ?? defaults.brandMark,
   };
+  if (normalized.newsroomName === LEGACY_NEWSROOM_NAME && !settings.mediaName?.trim()) {
+    return applyBrandingDefaults(normalized);
+  }
+  return applyBrandingDefaults(normalized);
 }

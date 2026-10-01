@@ -456,7 +456,7 @@ export function SettingsScreen() {
         onSubmit={(event) => {
           event.preventDefault();
           const pageSize = Math.min(100, Math.max(5, Number(form.pageSize) || 20));
-          update((current) => ({ ...current, settings: { ...form, newsroomName: form.newsroomName.trim() || "اتاق خبر", pageSize } }));
+          update((current) => ({ ...current, settings: { ...form, newsroomName: form.newsroomName.trim() || current.settings.newsroomName, pageSize } }));
           setFlash("تنظیم‌ها ذخیره شد و نام بالای صفحه عوض می‌شود.");
         }}
       >
