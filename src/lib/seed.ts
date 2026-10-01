@@ -535,11 +535,66 @@ export function createSeed(): NewsroomData {
       },
     ],
     people: [
-      { id: "p-leila", name: "لیلا نوری", title: "مدیر مسئول", bio: "مسئول انتشار نهایی و پاسخ‌گویی محتوای خروجی.", kind: "مدیر مسئول", visible: true },
-      { id: "p-kamran", name: "کامران شفیعی", title: "سردبیر", bio: "چینش خروجی و تأیید نسخه پیش از انتشار.", kind: "سردبیر", visible: true },
-      { id: "p-sara", name: "سارا محمدی", title: "خبرنگار اقتصاد و جامعه", bio: "پوشش انرژی، شهر و خدمات شهری.", kind: "خبرنگار", visible: true },
-      { id: "p-ali", name: "علی رضایی", title: "خبرنگار فرهنگ و علم", bio: "سینما، نمایشگاه و خبرهای علمی.", kind: "خبرنگار", visible: true },
-      { id: "p-pouya", name: "پویا کرمی", title: "عکاس", bio: "عکاس میدانی میز جامعه و ورزش.", kind: "عکاس", visible: true },
+      {
+        id: "p-shamsaei",
+        name: "محمدحسین شمسایی",
+        title: "مدیر مسئول",
+        bio: "مسئولیت انتشار، خط‌مشی تحریریه و پاسخ‌گویی محتوای خبرگزاری شمسه.",
+        kind: "مدیر مسئول",
+        visible: true,
+        editorialRank: "الف",
+        joinedAt: iso("2020-03-21T08:00:00Z"),
+      },
+      {
+        id: "p-rezaei",
+        name: "علیرضا رضایی",
+        title: "سردبیر",
+        bio: "هماهنگی میز تحریریه، صف سردبیری و تأیید نسخه‌های حساس.",
+        kind: "سردبیر",
+        visible: true,
+        editorialRank: "الف",
+        joinedAt: iso("2021-01-15T08:00:00Z"),
+      },
+      {
+        id: "p-kazemi",
+        name: "نرگس کاظمی",
+        title: "دبیر سرویس سیاسی",
+        bio: "برنامه‌ریزی پوشش مجلس، دولت و تحولات منطقه‌ای.",
+        kind: "دبیر سرویس",
+        visible: true,
+        editorialRank: "ب",
+        joinedAt: iso("2022-06-01T08:00:00Z"),
+      },
+      {
+        id: "p-sara",
+        name: "سارا محمدی",
+        title: "خبرنگار ارشد",
+        bio: "گزارش‌های تحلیلی اقتصاد و جامعه؛ تمرکز بر معیشت و خدمات شهری.",
+        kind: "خبرنگار ارشد",
+        visible: true,
+        editorialRank: "ب",
+        joinedAt: iso("2023-02-10T08:00:00Z"),
+      },
+      {
+        id: "p-pouria",
+        name: "مهدی پوریا",
+        title: "عکاس خبری",
+        bio: "پوشش تصویری میدانی، راهپیمایی‌ها و رویدادهای ورزشی.",
+        kind: "عکاس خبری",
+        visible: true,
+        editorialRank: "ج",
+        joinedAt: iso("2023-09-01T08:00:00Z"),
+      },
+      {
+        id: "p-graphic",
+        name: "پریسا انصاری",
+        title: "طراح گرافیک و چندرسانه‌ای",
+        bio: "اینفوگرافیک، قالب خبر و بسته‌های چندرسانه‌ای برای خروجی دیجیتال.",
+        kind: "طراح گرافیک و چندرسانه‌ای",
+        visible: true,
+        editorialRank: "ج",
+        joinedAt: iso("2024-01-20T08:00:00Z"),
+      },
     ],
     pages: [
       {
@@ -888,6 +943,13 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   next.userModuleAccess = Object.fromEntries(
     Object.entries(next.userModuleAccess).map(([userId, keys]) => [userId, migrateModuleAccessList(keys)]),
   );
+  const legacyPeople = next.people.some((person) => person.id === "p-leila" || person.id === "p-kamran");
+  if (legacyPeople || next.people.length === 0) next.people = base.people;
+  next.people = next.people.map((person) => ({
+    ...person,
+    joinedAt: person.joinedAt ?? base.people.find((item) => item.id === person.id)?.joinedAt,
+    editorialRank: person.editorialRank ?? "",
+  }));
   return next;
 }
 

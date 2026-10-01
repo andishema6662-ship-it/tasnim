@@ -321,6 +321,9 @@ export interface Person {
   bio: string;
   kind: string;
   visible: boolean;
+  avatarUrl?: string;
+  joinedAt?: string;
+  editorialRank?: string;
 }
 
 export interface Block {

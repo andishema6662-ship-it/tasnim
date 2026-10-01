@@ -11,7 +11,8 @@ import { PitchesScreen } from "./editorial/pitches-screen";
 import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audience/audience-screens";
 import { MediaLibraryScreen } from "./media/media-library-screen";
 import { AlbumsScreen } from "./media/albums-screen";
-import { EmailScreen, NewsletterScreen, PeopleScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
+import { PeopleScreen } from "./media/people-screen";
+import { EmailScreen, NewsletterScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import {
   AdminAffairsScreen,
   DossiersScreen,

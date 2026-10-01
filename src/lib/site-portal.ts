@@ -16,6 +16,7 @@ export const PORTAL_NAV: PortalNavItem[] = [
   { id: "tech", label: "فناوری", categoryId: "cat-science" },
   { id: "media", label: "فیلم و صوت", href: "/site#multimedia" },
   { id: "photo", label: "گزارش تصویری", href: "/site#photos" },
+  { id: "people", label: "معرفی عوامل", href: "/site/people" },
 ];
 
 export function featuredStory(data: NewsroomData): Story | undefined {
