@@ -53,9 +53,10 @@ export function ShamsehSplash({ className }: { className?: string }) {
       aria-label="در حال بارگذاری سامانه شمسه"
     >
       <EmblemAssembly />
-      <p className="shamseh-tagline" data-testid="shamseh-tagline">
-        سامانه جامع تحریریه خبر
-      </p>
+      <div className="shamseh-titles text-center">
+        <p className="shamseh-brand-title" data-testid="shamseh-brand-title">شمسه</p>
+        <p className="shamseh-tagline" data-testid="shamseh-tagline">سامانه جامع تحریریه خبر</p>
+      </div>
     </div>
   );
 }
