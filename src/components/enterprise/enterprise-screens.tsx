@@ -88,7 +88,7 @@ export function PitchPerformanceScreen() {
   );
 }
 
-export function PayrollScreen() {
+export function PayrollScreen({ moduleSlug = "payroll" }: { moduleSlug?: string } = {}) {
   const { data, update } = useNewsroom();
   const reporters = data.users.filter((user) => data.roles.find((role) => role.id === user.roleId)?.base === "reporter");
   const now = new Date();
@@ -99,7 +99,7 @@ export function PayrollScreen() {
   const payroll = author ? monthlyPayrollForAuthor(data, author, year, month) : null;
 
   return (
-    <ModulePage slug="payroll">
+    <ModulePage slug={moduleSlug}>
       <Notice>تعرفه‌ها و فیش بر اساس اخبار منتشرشده در ماه انتخابی محاسبه می‌شود.</Notice>
       <Flash>{flash}</Flash>
       <section className="rounded-lg border border-line bg-sheet p-4">
@@ -211,7 +211,7 @@ export function ReporterPeriodScreen() {
   );
 }
 
-export function AdminAffairsScreen() {
+export function AdminAffairsScreen({ moduleSlug = "admin-affairs" }: { moduleSlug?: string } = {}) {
   const { data, update } = useNewsroom();
   const [selectedUserId, setSelectedUserId] = useState(data.users[0]?.id ?? "");
   const [org, setOrg] = useState("سازمان نمونه");
@@ -240,7 +240,7 @@ export function AdminAffairsScreen() {
   }
 
   return (
-    <ModulePage slug="admin-affairs">
+    <ModulePage slug={moduleSlug}>
       <Notice>خروجی‌ها برای چاپ محلی آماده می‌شوند؛ QR و تصویر در نسخه بعدی به پرونده کاربر وصل می‌شود.</Notice>
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-lg border border-line bg-sheet p-4 space-y-3">

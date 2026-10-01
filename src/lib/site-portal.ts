@@ -16,7 +16,8 @@ export const PORTAL_NAV: PortalNavItem[] = [
   { id: "tech", label: "فناوری", categoryId: "cat-science" },
   { id: "media", label: "فیلم و صوت", href: "/site#multimedia" },
   { id: "photo", label: "گزارش تصویری", href: "/site#photos" },
-  { id: "people", label: "معرفی عوامل", href: "/site/people" },
+  { id: "people", label: "همکاران رسانه‌ای", href: "/site/people" },
+  { id: "contact", label: "تماس با ما", href: "/site/contact" },
 ];
 
 export function featuredStory(data: NewsroomData): Story | undefined {

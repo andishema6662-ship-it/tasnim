@@ -5,6 +5,7 @@ import { faDate, faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import { canPerm } from "@/lib/workflow";
+import { ContactForm } from "../contact/contact-form";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, TextArea } from "../ui";
 
 export function CommentsScreen() {
@@ -172,30 +173,48 @@ export function PollsScreen() {
 export function ContactScreen() {
   const { data, update } = useNewsroom();
   const labels = { new: "جدید", seen: "دیده‌شده", closed: "بسته" } as const;
+  const page = data.contactPage;
   return (
     <ModulePage slug="contact">
-      {data.contacts.length === 0 ? <Empty>پیامی نرسیده است.</Empty> : null}
-      {data.contacts.map((message) => (
-        <article key={message.id} className="rounded-lg border border-line bg-sheet p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-bold">{message.name}</h2>
-            <span className="text-xs text-muted">{labels[message.status]} · {faDate(message.createdAt)}</span>
-          </div>
-          <p className="text-xs text-muted" dir="ltr">{message.email}</p>
-          <p className="mt-2 text-sm leading-7">{message.body}</p>
-          <div className="mt-3 flex gap-2">
-            {(["seen", "closed"] as const).map((status) => (
-              <Button
-                key={status}
-                tone="ghost"
-                onClick={() => update((current) => ({ ...current, contacts: current.contacts.map((item) => (item.id === message.id ? { ...item, status } : item)) }))}
-              >
-                {labels[status]}
-              </Button>
-            ))}
-          </div>
-        </article>
-      ))}
+      <header className="mb-5 space-y-2 rounded-2xl border border-line bg-sheet p-4 shadow-sm" data-testid="contact-intro">
+        <p className="text-xs font-semibold text-primary">تماس با تحریریه</p>
+        <h2 className="text-lg font-bold">راه ارتباطی با تحریریه خبر شمسه</h2>
+        <p className="max-w-2xl text-sm leading-7 text-muted">{page.intro}</p>
+        <ul className="text-sm text-slate-600">
+          <li>تلفن: {page.phones}</li>
+          <li>آدرس: {page.address}</li>
+          <li dir="ltr" className="text-right">ایمیل: {page.email}</li>
+        </ul>
+      </header>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ContactForm testId="admin-contact-form" />
+        <div className="space-y-3">
+          <h3 className="font-bold">پیام‌های رسیده</h3>
+          {data.contacts.length === 0 ? <Empty>پیامی نرسیده است.</Empty> : null}
+          {data.contacts.map((message) => (
+            <article key={message.id} className="rounded-lg border border-line bg-sheet p-4" data-testid="contact-inbox-item">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-bold">{message.name}</h2>
+                <span className="text-xs text-muted">{labels[message.status]} · {faDate(message.createdAt)}</span>
+              </div>
+              <p className="text-sm font-medium">{message.subject}</p>
+              <p className="text-xs text-muted" dir="ltr">{message.email}</p>
+              <p className="mt-2 text-sm leading-7">{message.body}</p>
+              <div className="mt-3 flex gap-2">
+                {(["seen", "closed"] as const).map((status) => (
+                  <Button
+                    key={status}
+                    tone="ghost"
+                    onClick={() => update((current) => ({ ...current, contacts: current.contacts.map((item) => (item.id === message.id ? { ...item, status } : item)) }))}
+                  >
+                    {labels[status]}
+                  </Button>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
     </ModulePage>
   );
 }

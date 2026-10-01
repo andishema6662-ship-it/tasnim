@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { PersonHexaCard, PersonProfileModal } from "@/components/people/person-ui";
+import { PersonHexaCard } from "@/components/people/person-ui";
 import { uid } from "@/lib/id";
 import { PERSON_KINDS, filterPeople, visiblePeople } from "@/lib/people";
 import { useNewsroom } from "@/lib/store";
@@ -19,6 +19,9 @@ const emptyForm = (): Omit<Person, "id"> => ({
   editorialRank: "",
   joinedAt: new Date().toISOString(),
   avatarUrl: "",
+  phone: "",
+  email: "",
+  desk: "",
 });
 
 export function PeopleScreen() {
@@ -28,14 +31,12 @@ export function PeopleScreen() {
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState("all");
   const [flash, setFlash] = useState("");
-  const [profileId, setProfileId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [showForm, setShowForm] = useState(false);
 
   const visible = visiblePeople(data);
   const filtered = useMemo(() => filterPeople(visible, query, kindFilter), [visible, query, kindFilter]);
-  const profilePerson = data.people.find((p) => p.id === profileId) ?? null;
   const kinds = useMemo(() => [...new Set(data.people.map((p) => p.kind))].sort(), [data.people]);
 
   function startAdd() {
@@ -55,6 +56,13 @@ export function PeopleScreen() {
       editorialRank: person.editorialRank ?? "",
       joinedAt: person.joinedAt ?? new Date().toISOString(),
       avatarUrl: person.avatarUrl ?? "",
+      phone: person.phone ?? "",
+      email: person.email ?? "",
+      desk: person.desk ?? "",
+      userId: person.userId,
+      reporterTier: person.reporterTier,
+      tierNote: person.tierNote,
+      interviewCount: person.interviewCount,
     });
     setShowForm(true);
   }
@@ -62,6 +70,7 @@ export function PeopleScreen() {
   function savePerson(event: React.FormEvent) {
     event.preventDefault();
     if (!form.name.trim()) return;
+    const existing = editingId ? data.people.find((item) => item.id === editingId) : undefined;
     const payload: Person = {
       id: editingId ?? uid("p"),
       name: form.name.trim(),
@@ -72,6 +81,13 @@ export function PeopleScreen() {
       editorialRank: form.editorialRank?.trim() || undefined,
       joinedAt: form.joinedAt,
       avatarUrl: form.avatarUrl?.trim() || undefined,
+      phone: form.phone?.trim() || undefined,
+      email: form.email?.trim() || undefined,
+      desk: form.desk?.trim() || undefined,
+      userId: form.userId ?? existing?.userId,
+      reporterTier: form.reporterTier ?? existing?.reporterTier,
+      tierNote: form.tierNote ?? existing?.tierNote,
+      interviewCount: form.interviewCount ?? existing?.interviewCount,
     };
     update((current) => ({
       ...current,
@@ -80,11 +96,11 @@ export function PeopleScreen() {
         : [...current.people, payload],
     }));
     setShowForm(false);
-    setFlash(editingId ? "اطلاعات عضو به‌روز شد." : "عضو جدید به معرفی افراد اضافه شد.");
+    setFlash(editingId ? "اطلاعات عضو به‌روز شد." : "عضو جدید به همکاران رسانه‌ای اضافه شد.");
   }
 
   function deletePerson(id: string) {
-    if (!window.confirm("این فرد از فهرست معرفی حذف شود؟")) return;
+    if (!window.confirm("این فرد از فهرست حذف شود؟")) return;
     update((current) => ({ ...current, people: current.people.filter((item) => item.id !== id) }));
     setFlash("فرد حذف شد.");
   }
@@ -94,11 +110,11 @@ export function PeopleScreen() {
       <header className="mb-5 space-y-3 rounded-2xl border border-line bg-sheet p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold text-primary">معرفی افراد</p>
-            <h1 className="text-xl font-bold text-slate-800">معرفی افراد و دست‌اندرکاران</h1>
+            <p className="text-xs font-semibold text-primary">همکاران رسانه‌ای</p>
+            <h1 className="text-xl font-bold text-slate-800">همکاران رسانه‌ای و دست‌اندرکاران</h1>
             <p className="mt-1 max-w-2xl text-sm leading-7 text-muted">
-              مدیر مسئول، سردبیر، دبیران، خبرنگاران، عکاسان و عوامل تحریریه — در پنل و{" "}
-              <Link href="/site/people" className="font-medium text-primary hover:underline">صفحه عمومی سایت</Link> نمایش داده می‌شوند.
+              کارت تماس HexaDash برای مدیر مسئول، سردبیر، خبرنگاران و عکاسان — در پنل و{" "}
+              <Link href="/site/people" className="font-medium text-primary hover:underline">صفحه عمومی سایت</Link>.
             </p>
           </div>
           {canManage ? (
@@ -127,7 +143,7 @@ export function PeopleScreen() {
       <Flash>{flash}</Flash>
 
       {filtered.length ? (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-x-6 md:grid-cols-2 xl:grid-cols-4" data-testid="people-card-grid">
           {filtered.map((person) => (
             <PersonHexaCard
               key={person.id}
@@ -135,7 +151,6 @@ export function PeopleScreen() {
               person={person}
               mode="admin"
               canManage={canManage}
-              onProfile={() => setProfileId(person.id)}
               onEdit={() => startEdit(person)}
               onDelete={() => deletePerson(person.id)}
             />
@@ -168,6 +183,15 @@ export function PeopleScreen() {
           <Field label="رتبه تحریریه (اختیاری)">
             <Input value={form.editorialRank ?? ""} onChange={(event) => setForm({ ...form, editorialRank: event.target.value })} />
           </Field>
+          <Field label="تلفن">
+            <Input value={form.phone ?? ""} onChange={(event) => setForm({ ...form, phone: event.target.value })} dir="ltr" />
+          </Field>
+          <Field label="ایمیل">
+            <Input value={form.email ?? ""} onChange={(event) => setForm({ ...form, email: event.target.value })} dir="ltr" />
+          </Field>
+          <Field label="میز / محل">
+            <Input value={form.desk ?? ""} onChange={(event) => setForm({ ...form, desk: event.target.value })} />
+          </Field>
           <div className="md:col-span-2">
             <Field label="معرفی کوتاه">
               <TextArea value={form.bio} onChange={(event) => setForm({ ...form, bio: event.target.value })} rows={3} />
@@ -182,8 +206,6 @@ export function PeopleScreen() {
           </div>
         </form>
       ) : null}
-
-      <PersonProfileModal data={data} person={profilePerson} onClose={() => setProfileId(null)} />
     </ModulePage>
   );
 }

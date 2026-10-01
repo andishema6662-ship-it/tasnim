@@ -211,7 +211,7 @@ const emptyAgenda = (reporterUserId: string): Omit<ReporterAgendaItem, "id" | "c
   linkedStoryId: "",
 });
 
-export function ReporterAgendaScreen() {
+export function ReporterAgendaScreen({ moduleSlug = "agenda" }: { moduleSlug?: string } = {}) {
   const { data, update } = useNewsroom();
   const user = currentUser(data);
   const reporters = data.users.filter((u) => data.roles.find((r) => r.id === u.roleId)?.base === "reporter" && u.active);
@@ -319,7 +319,7 @@ export function ReporterAgendaScreen() {
   }
 
   return (
-    <ModulePage slug="agenda">
+    <ModulePage slug={moduleSlug}>
       <Flash>{flash}</Flash>
       <p className="text-sm font-semibold text-muted" data-testid="agenda-jalali-header">تقویم شمسی — {formatJalaliDayHeader(new Date().toISOString())}</p>
       <form

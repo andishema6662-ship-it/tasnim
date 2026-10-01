@@ -12,6 +12,14 @@ import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audie
 import { MediaLibraryScreen } from "./media/media-library-screen";
 import { AlbumsScreen } from "./media/albums-screen";
 import { PeopleScreen } from "./media/people-screen";
+import {
+  ReporterAdminAffairsScreen,
+  ReporterMyAgendaScreen,
+  ReporterMyNewsScreen,
+  ReporterMyPitchesScreen,
+  ReporterMyProfileScreen,
+  ReporterPayrollScreen,
+} from "./reporters/reporter-screens";
 import { EmailScreen, NewsletterScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import {
   AdminAffairsScreen,
@@ -58,6 +66,12 @@ const screens: Record<string, () => ReactElement> = {
   "editorial/ai": AiScreen,
   "editorial/ai-hub": AiHubScreen,
   "editorial/cartable": CartableScreen,
+  "reporters/my-profile": ReporterMyProfileScreen,
+  "reporters/my-news": ReporterMyNewsScreen,
+  "reporters/my-payroll": ReporterPayrollScreen,
+  "reporters/my-admin-affairs": ReporterAdminAffairsScreen,
+  "reporters/my-pitches": ReporterMyPitchesScreen,
+  "reporters/my-agenda": ReporterMyAgendaScreen,
   "editorial/pitches": PitchesScreen,
   "editorial/agenda": ReporterAgendaScreen,
   "editorial/process": ProcessScreen,

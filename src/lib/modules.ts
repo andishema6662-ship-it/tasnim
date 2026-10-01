@@ -1,4 +1,13 @@
-export type GroupId = "editorial" | "media" | "audience" | "reports" | "structure" | "template" | "admin" | "infra";
+export type GroupId =
+  | "editorial"
+  | "reporters"
+  | "media"
+  | "audience"
+  | "reports"
+  | "structure"
+  | "template"
+  | "admin"
+  | "infra";
 
 export interface GroupInfo {
   id: GroupId;
@@ -15,6 +24,7 @@ export interface ModuleInfo {
 
 export const groups: GroupInfo[] = [
   { id: "editorial", title: "تحریریه و تولید محتوا", priority: "deep" },
+  { id: "reporters", title: "خبرنگاران", priority: "deep" },
   { id: "media", title: "رسانه‌های مکمل و چندکاناله", priority: "deep" },
   { id: "audience", title: "تعامل با مخاطب و ارتباطات", priority: "light" },
   { id: "reports", title: "تحلیل، گزارش و پایش", priority: "light" },
@@ -60,10 +70,17 @@ export const modules: ModuleInfo[] = [
   { group: "editorial", slug: "order", title: "ترتیب اخبار", description: "چیدمان اخبار منتشرشده؛ ردیف اول تیتر یک است." },
   { group: "editorial", slug: "suggestions", title: "اخبار پیشنهادی", description: "پیشنهاد خبر منتشرشده برای سرویس دیگر." },
 
+  { group: "reporters", slug: "my-profile", title: "پروفایل من", description: "اطلاعات شخصی، آمار کار و رتبه خبرنگاری شما." },
+  { group: "reporters", slug: "my-news", title: "اخبار من", description: "کارتابل محدود به خبرهای نوشته‌شده توسط شما." },
+  { group: "reporters", slug: "my-payroll", title: "حق‌الزحمه و فیش", description: "تعرفه، کارکرد و پیش‌نمایش فیش حقوقی خبرنگار." },
+  { group: "reporters", slug: "my-admin-affairs", title: "نامه‌های اداری", description: "کارت خبرنگاری، معرفی‌نامه و گواهی‌ها." },
+  { group: "reporters", slug: "my-pitches", title: "سوژه‌های من", description: "سوژه‌های محول‌شده یا در دست اقدام شما." },
+  { group: "reporters", slug: "my-agenda", title: "برنامه‌ها و مصاحبه‌ها", description: "مصاحبه‌ها و برنامه‌های پیش‌روی شما." },
+
   { group: "media", slug: "library", title: "کتابخانه رسانه", description: "بارگذاری، برش، کپی پیوند و گالری پرونده‌های چندرسانه‌ای." },
   { group: "media", slug: "albums", title: "آلبوم تصاویر", description: "گزارش تصویری با تیتر، عکاس، بارگذاری چندتایی و محل انتشار." },
   { group: "media", slug: "videos", title: "محتوای ویدئویی", description: "ثبت مشخصات ویدئو. فایل روی سرور بارگذاری نمی‌شود." },
-  { group: "media", slug: "people", title: "معرفی افراد", description: "صفحه معرفی مدیر مسئول، سردبیر، خبرنگاران و عکاسان." },
+  { group: "media", slug: "people", title: "همکاران رسانه‌ای", description: "کارت همکاران تحریریه — مدیر مسئول، سردبیر، خبرنگاران و عکاسان." },
   { group: "media", slug: "event-map", title: "نقشه رویداد و مسیر", description: "ترسیم مسیر راهپیمایی و دریافت کد ابزارک برای بدنه خبر." },
 
   { group: "audience", slug: "comments", title: "مدیریت نظرات", description: "بازبینی، تأیید و رد نظر مخاطبان." },

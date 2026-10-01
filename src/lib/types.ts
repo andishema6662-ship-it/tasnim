@@ -324,6 +324,14 @@ export interface Person {
   avatarUrl?: string;
   joinedAt?: string;
   editorialRank?: string;
+  phone?: string;
+  email?: string;
+  desk?: string;
+  /** رتبه ۱ تا ۵ — اعطا توسط سردبیر */
+  reporterTier?: number;
+  tierNote?: string;
+  interviewCount?: number;
+  userId?: string;
 }
 
 export interface Block {
@@ -471,9 +479,17 @@ export interface ContactMsg {
   id: string;
   name: string;
   email: string;
+  subject: string;
   body: string;
   status: "new" | "seen" | "closed";
   createdAt: string;
+}
+
+export interface ContactPageSettings {
+  intro: string;
+  phones: string;
+  address: string;
+  email: string;
 }
 
 export interface ForumPost {
@@ -641,6 +657,7 @@ export interface NewsroomData {
   comments: Comment[];
   polls: Poll[];
   contacts: ContactMsg[];
+  contactPage: ContactPageSettings;
   threads: Thread[];
   activity: Activity[];
   aiTaskLogs: AiTaskLogEntry[];

@@ -8,9 +8,21 @@ export function allNavModuleKeys(): string[] {
   return [DASHBOARD_MODULE_KEY, ...allModuleKeys()];
 }
 
+function reporterHubKeys(): string[] {
+  return [
+    "reporters/my-profile",
+    "reporters/my-news",
+    "reporters/my-payroll",
+    "reporters/my-admin-affairs",
+    "reporters/my-pitches",
+    "reporters/my-agenda",
+  ];
+}
+
 function reporterPreset(): string[] {
   return [
     DASHBOARD_MODULE_KEY,
+    ...reporterHubKeys(),
     "editorial/ai",
     "editorial/ai-hub",
     "editorial/cartable",
@@ -111,8 +123,10 @@ export function moduleKeyFromPath(path: string): string | null {
 }
 
 export function canAccessPath(data: NewsroomData, path: string): boolean {
+  if (path === "/people" || path.startsWith("/people/")) return true;
   const key = moduleKeyFromPath(path);
   if (!key) return true;
+  if (!modules.some((item) => moduleKeyFromParts(item.group, item.slug) === key)) return true;
   return canAccessModuleKey(data, key);
 }
 

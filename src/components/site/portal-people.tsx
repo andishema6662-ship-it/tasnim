@@ -20,12 +20,12 @@ export function SitePeopleView() {
       <nav className="text-sm text-muted">
         <Link href="/site" className="hover:text-[var(--portal-primary)]">خانه</Link>
         <span className="mx-2">›</span>
-        <span>معرفی عوامل</span>
+        <span>همکاران رسانه‌ای</span>
       </nav>
       <header className="mt-4 rounded-2xl border border-line bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-black text-slate-800">معرفی افراد و دست‌اندرکاران</h1>
+        <h1 className="text-2xl font-black text-slate-800">همکاران رسانه‌ای</h1>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-          هیئت تحریریه و عوامل خبرگزاری شمسه — مدیر مسئول، سردبیر، دبیران، خبرنگاران، عکاسان و تیم چندرسانه‌ای.
+          هیئت تحریریه خبر شمسه — کارت تماس همکاران با تلفن، ایمیل و پروفایل اختصاصی هر فرد.
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <input
@@ -48,7 +48,7 @@ export function SitePeopleView() {
           </select>
         </div>
       </header>
-      <div className="mt-6 grid gap-6 md:grid-cols-2" data-testid="site-people-grid">
+      <div className="mt-6 grid gap-x-6 md:grid-cols-2 xl:grid-cols-4" data-testid="site-people-grid">
         {filtered.map((person) => (
           <PersonHexaCard key={person.id} data={data} person={person} mode="portal" />
         ))}

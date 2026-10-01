@@ -544,6 +544,11 @@ export function createSeed(): NewsroomData {
         visible: true,
         editorialRank: "الف",
         joinedAt: iso("2020-03-21T08:00:00Z"),
+        phone: "021-88776655",
+        email: "desk@shamseh.news",
+        desk: "اتاق ۱۰۱ — مدیریت",
+        reporterTier: 5,
+        tierNote: "رهبری تحریریه و خط‌مشی انتشار.",
       },
       {
         id: "p-rezaei",
@@ -554,6 +559,10 @@ export function createSeed(): NewsroomData {
         visible: true,
         editorialRank: "الف",
         joinedAt: iso("2021-01-15T08:00:00Z"),
+        phone: "021-88776656",
+        email: "chief@shamseh.news",
+        desk: "میز سردبیری",
+        reporterTier: 5,
       },
       {
         id: "p-kazemi",
@@ -564,6 +573,12 @@ export function createSeed(): NewsroomData {
         visible: true,
         editorialRank: "ب",
         joinedAt: iso("2022-06-01T08:00:00Z"),
+        userId: "u-narges",
+        phone: "09121234567",
+        email: "narges@shamseh.news",
+        desk: "میز سیاسی — طبقه ۲",
+        reporterTier: 4,
+        interviewCount: 3,
       },
       {
         id: "p-sara",
@@ -574,6 +589,13 @@ export function createSeed(): NewsroomData {
         visible: true,
         editorialRank: "ب",
         joinedAt: iso("2023-02-10T08:00:00Z"),
+        userId: "u-sara",
+        phone: "09129876543",
+        email: "sara@shamseh.news",
+        desk: "میز اقتصاد",
+        reporterTier: 4,
+        tierNote: "عملکرد قوی در گزارش‌های میدانی و تحلیل.",
+        interviewCount: 5,
       },
       {
         id: "p-pouria",
@@ -584,6 +606,10 @@ export function createSeed(): NewsroomData {
         visible: true,
         editorialRank: "ج",
         joinedAt: iso("2023-09-01T08:00:00Z"),
+        phone: "021-88776658",
+        email: "photo@shamseh.news",
+        desk: "اتاق عکاسی",
+        reporterTier: 3,
       },
       {
         id: "p-graphic",
@@ -594,8 +620,19 @@ export function createSeed(): NewsroomData {
         visible: true,
         editorialRank: "ج",
         joinedAt: iso("2024-01-20T08:00:00Z"),
+        phone: "021-88776659",
+        email: "design@shamseh.news",
+        desk: "استودیو گرافیک",
+        reporterTier: 3,
       },
     ],
+    contactPage: {
+      intro:
+        "راه ارتباطی با تحریریه خبر شمسه: تلفن‌های دفتر، آدرس پستی و ایمیل تحریریه. پیام شما پس از بررسی کپچا در صندوق تماس ذخیره می‌شود.",
+      phones: "۰۲۱-۸۸۷۷۶۶۵۵ (داخلی ۱۰۱)",
+      address: "تهران، خیابان مطهری، ساختمان شمسه، طبقه ۳ — تحریریه",
+      email: "contact@shamseh.news",
+    },
     pages: [
       {
         id: "page-home",
@@ -725,9 +762,33 @@ export function createSeed(): NewsroomData {
       },
     ],
     contacts: [
-      { id: "ct-1", name: "شهرام نیک‌پی", email: "shahram@example.com", body: "برای مصاحبه درباره پیاده‌رو تجریش وقت می‌خواهم.", status: "new", createdAt: iso("2026-09-24T15:00:00Z") },
-      { id: "ct-2", name: "کتابخانه محله", email: "lib@example.com", body: "پوستر هفته فیلم را برای تابلو می‌خواهیم.", status: "seen", createdAt: iso("2026-09-22T10:00:00Z") },
-      { id: "ct-3", name: "فرهاد", email: "farhad@example.com", body: "خبر آرشیو باران را پیدا نمی‌کنم.", status: "closed", createdAt: iso("2026-09-12T10:00:00Z") },
+      {
+        id: "ct-1",
+        name: "شهرام نیک‌پی",
+        email: "shahram@example.com",
+        subject: "درخواست مصاحبه",
+        body: "برای مصاحبه درباره پیاده‌رو تجریش وقت می‌خواهم.",
+        status: "new",
+        createdAt: iso("2026-09-24T15:00:00Z"),
+      },
+      {
+        id: "ct-2",
+        name: "کتابخانه محله",
+        email: "lib@example.com",
+        subject: "درخواست پوستر",
+        body: "پوستر هفته فیلم را برای تابلو می‌خواهیم.",
+        status: "seen",
+        createdAt: iso("2026-09-22T10:00:00Z"),
+      },
+      {
+        id: "ct-3",
+        name: "فرهاد",
+        email: "farhad@example.com",
+        subject: "اشکال در آرشیو",
+        body: "خبر آرشیو باران را پیدا نمی‌کنم.",
+        status: "closed",
+        createdAt: iso("2026-09-12T10:00:00Z"),
+      },
     ],
     threads: [
       {
@@ -945,11 +1006,43 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   );
   const legacyPeople = next.people.some((person) => person.id === "p-leila" || person.id === "p-kamran");
   if (legacyPeople || next.people.length === 0) next.people = base.people;
-  next.people = next.people.map((person) => ({
-    ...person,
-    joinedAt: person.joinedAt ?? base.people.find((item) => item.id === person.id)?.joinedAt,
-    editorialRank: person.editorialRank ?? "",
+  next.people = next.people.map((person) => {
+    const seedPerson = base.people.find((item) => item.id === person.id);
+    return {
+      ...person,
+      joinedAt: person.joinedAt ?? seedPerson?.joinedAt,
+      editorialRank: person.editorialRank ?? seedPerson?.editorialRank ?? "",
+      phone: person.phone ?? seedPerson?.phone,
+      email: person.email ?? seedPerson?.email,
+      desk: person.desk ?? seedPerson?.desk,
+      userId: person.userId ?? seedPerson?.userId,
+      reporterTier: person.reporterTier ?? seedPerson?.reporterTier,
+      tierNote: person.tierNote ?? seedPerson?.tierNote,
+      interviewCount: person.interviewCount ?? seedPerson?.interviewCount,
+    };
+  });
+  if (!next.contactPage?.intro) next.contactPage = base.contactPage;
+  next.contacts = (next.contacts ?? []).map((message) => ({
+    ...message,
+    subject: message.subject?.trim() || "بدون عنوان",
   }));
+  const reporterHubKeys = [
+    "reporters/my-profile",
+    "reporters/my-news",
+    "reporters/my-payroll",
+    "reporters/my-admin-affairs",
+    "reporters/my-pitches",
+    "reporters/my-agenda",
+  ];
+  next.roles.forEach((role) => {
+    if (role.base !== "reporter" && role.base !== "chief" && role.base !== "publisher") return;
+    const list = next.roleModuleAccess[role.id] ?? [];
+    let merged = list;
+    reporterHubKeys.forEach((key) => {
+      if (!merged.includes(key)) merged = [...merged, key];
+    });
+    next.roleModuleAccess[role.id] = merged;
+  });
   return next;
 }
 

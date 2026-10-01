@@ -6,20 +6,27 @@ import { useMemo, useState } from "react";
 import { faDate, faNum, htmlToPlainText, norm } from "@/lib/format";
 import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
-import { applyStatus, canPublishCategory, categoryName, currentRole, STATUSES, statusLabel, transitionsFrom } from "@/lib/workflow";
+import { applyStatus, canPublishCategory, categoryName, currentRole, currentUser, STATUSES, statusLabel, transitionsFrom } from "@/lib/workflow";
 import { SocialPublishModal } from "./social-publish-modal";
 import { Button, Empty, Flash, Input, ModulePage, Select, StatusBadge } from "../ui";
 
 const queueStatuses: Status[] = ["editing", "review", "ready"];
 
-export function CartableScreen() {
+type CartableScreenProps = {
+  lockAuthorToCurrentUser?: boolean;
+  moduleSlug?: string;
+};
+
+export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable" }: CartableScreenProps = {}) {
   const params = useSearchParams();
   const { data, commitStory } = useNewsroom();
   const role = currentRole(data);
+  const user = currentUser(data);
   const [view, setView] = useState(params.get("view") === "queue" ? "queue" : "list");
   const [status, setStatus] = useState(params.get("status") ?? "all");
   const [categoryId, setCategoryId] = useState("all");
-  const [author, setAuthor] = useState("all");
+  const initialAuthor = lockAuthorToCurrentUser && user ? user.name : params.get("author") ?? "all";
+  const [author, setAuthor] = useState(initialAuthor);
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [flash, setFlash] = useState("");
@@ -49,14 +56,16 @@ export function CartableScreen() {
 
   return (
     <ModulePage
-      slug="cartable"
+      slug={moduleSlug}
       actions={
         <Link href="/editorial/cartable/new" className="rounded-md bg-ink px-3 py-2 text-sm text-sheet">
           خبر جدید
         </Link>
       }
     >
-      <p className="text-sm text-muted">نقش فعلی: {role.name}. دکمه‌های هر خبر به همین نقش وابسته‌اند.</p>
+      <p className="text-sm text-muted">
+        {lockAuthorToCurrentUser ? `فقط خبرهای ${user?.name ?? "شما"}.` : `نقش فعلی: ${role.name}. دکمه‌های هر خبر به همین نقش وابسته‌اند.`}
+      </p>
       <div className="flex gap-2">
         <Button tone={view === "list" ? "primary" : "ghost"} onClick={() => setView("list")}>
           فهرست
@@ -88,7 +97,12 @@ export function CartableScreen() {
                 </option>
               ))}
             </Select>
-            <Select value={author} onChange={(event) => setAuthor(event.target.value)} aria-label="نویسنده">
+            <Select
+              value={author}
+              onChange={(event) => setAuthor(event.target.value)}
+              aria-label="نویسنده"
+              disabled={lockAuthorToCurrentUser}
+            >
               <option value="all">همه نویسندگان</option>
               {authors.map((name) => (
                 <option key={name} value={name}>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
@@ -31,21 +32,24 @@ const emptyForm = (categoryId: string): Omit<NewsPitch, "id" | "createdAt" | "up
   status: "active",
 });
 
-export function PitchesScreen() {
+export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string } = {}) {
+  const path = usePathname();
+  const mineOnly = moduleSlug === "my-pitches" || path.includes("/reporters/my-pitches");
   const { data, update } = useNewsroom();
   const role = currentRole(data);
   const user = currentUser(data);
-  const manage = canManagePitches(data);
+  const manage = canManagePitches(data) && !mineOnly;
   const reporters = reporterUsers(data);
   const defaultCategory = data.categories[0]?.id ?? "";
   const [flash, setFlash] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(() => emptyForm(defaultCategory));
 
-  const visiblePitches = useMemo(
-    () => data.pitches.filter((pitch) => pitchVisibleToUser(data, pitch)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-    [data],
-  );
+  const visiblePitches = useMemo(() => {
+    let list = data.pitches.filter((pitch) => pitchVisibleToUser(data, pitch));
+    if (mineOnly && user) list = list.filter((pitch) => pitch.assigneeUserId === user.id);
+    return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }, [data, mineOnly, user]);
 
   function loadPitch(pitch: NewsPitch) {
     setEditingId(pitch.id);
@@ -114,7 +118,7 @@ export function PitchesScreen() {
   }
 
   return (
-    <ModulePage slug="pitches">
+    <ModulePage slug={moduleSlug}>
       <Flash>{flash}</Flash>
       {!manage ? (
         <Notice>سوژه‌هایی که به شما یا به همه خبرنگاران خطاب شده‌اند اینجا دیده می‌شوند. برای ثبت خبر روی دکمه «ثبت خبر بر اساس این سوژه» بزنید.</Notice>

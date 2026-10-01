@@ -99,6 +99,7 @@ function IconHome({ className }: { className?: string }) {
 
 const groupAccent: Record<GroupId, string> = {
   editorial: "text-accent-blue bg-indigo-50",
+  reporters: "text-orange-600 bg-orange-50",
   media: "text-emerald-600 bg-emerald-50",
   audience: "text-amber-600 bg-amber-50",
   reports: "text-sky-600 bg-sky-50",
