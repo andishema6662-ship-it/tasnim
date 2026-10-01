@@ -8,7 +8,7 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-const inputClass = "w-full rounded-md border border-line bg-sheet px-3 py-2 text-sm text-ink";
+const inputClass = "w-full rounded-lg border border-line bg-sheet px-3 py-2 text-sm text-ink shadow-sm";
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(inputClass, props.className)} />;
@@ -32,9 +32,9 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 const tones = {
-  primary: "bg-ink text-sheet hover:bg-ink/90",
-  accent: "bg-rule text-white hover:bg-rule/90",
-  ghost: "border border-line bg-sheet hover:bg-sand",
+  primary: "bg-primary text-white shadow-sm hover:bg-primary/90",
+  accent: "bg-rule text-white shadow-sm hover:bg-rule/90",
+  ghost: "border border-line bg-sheet shadow-sm hover:bg-sand",
   quiet: "text-muted hover:text-ink",
 };
 
@@ -49,7 +49,7 @@ export function Button({
       type={type}
       {...props}
       className={cn(
-        "inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium disabled:pointer-events-none disabled:opacity-40",
+        "inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium disabled:pointer-events-none disabled:opacity-40",
         tones[tone],
         className,
       )}
@@ -66,7 +66,7 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export function Sheet({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={cn("rounded-lg border border-line bg-sheet", className)}>{children}</section>;
+  return <section className={cn("rounded-xl border border-line bg-sheet shadow-sm", className)}>{children}</section>;
 }
 
 const statusTone: Record<Status, string> = {

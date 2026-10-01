@@ -6,9 +6,9 @@ import { hrefFor } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
 import { categoryName, currentRole, STATUSES, statusLabel } from "@/lib/workflow";
 import { DashboardAgendaWidget } from "./editorial/contacts-agenda-screens";
-import { StatusBadge } from "./ui";
+import { cn, StatusBadge } from "./ui";
 
-const chartColors = ["#8e1e2d", "#1e3a5f", "#d97706", "#7c3aed", "#0891b2", "#059669", "#db2777", "#4d7c0f"];
+const chartColors = ["#8231d3", "#5f63f2", "#d97706", "#0891b2", "#059669", "#db2777", "#4d7c0f", "#272b41"];
 
 const shortcuts = [
   { href: "/editorial/cartable", label: "کارتابل" },
@@ -18,6 +18,40 @@ const shortcuts = [
   { href: "/media/albums", label: "آلبوم‌ها" },
   { href: "/structure/categories", label: "دسته‌ها" },
 ];
+
+function KpiCard({
+  label,
+  value,
+  hint,
+  href,
+  iconBg,
+  icon,
+  trend,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  href?: string;
+  iconBg: string;
+  icon: import("react").ReactNode;
+  trend?: string;
+}) {
+  const body = (
+    <div className="flex items-start justify-between gap-3 rounded-2xl border border-line bg-sheet p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div>
+        <p className="text-xs font-medium text-muted">{label}</p>
+        <p className="mt-1 text-2xl font-bold tabular-nums text-ink">{faNum(value)}</p>
+        <p className="mt-1 text-[11px] text-muted">{hint}</p>
+        {trend ? <p className="mt-2 text-xs font-semibold text-emerald-600">{trend}</p> : null}
+      </div>
+      <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-full", iconBg)}>{icon}</span>
+    </div>
+  );
+  if (href) {
+    return <Link href={href} className="block">{body}</Link>;
+  }
+  return body;
+}
 
 export function Dashboard() {
   const { data } = useNewsroom();
@@ -35,6 +69,10 @@ export function Dashboard() {
     return userRole?.base === "reporter";
   }).length;
 
+  const publishedCount = data.stories.filter((s) => s.status === "published").length;
+  const reviewCount = data.stories.filter((s) => s.status === "review" || s.status === "editing").length;
+  const openTickets = data.tickets.filter((t) => t.status === "open" || t.status === "pending").length;
+
   const pipelineStatuses = STATUSES;
   const chartItems = [
     { label: "تعداد خبرنگاران", value: reporterCount },
@@ -47,30 +85,86 @@ export function Dashboard() {
   const chartMax = Math.max(...chartItems.map((item) => item.value), 1);
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6">
-      <header>
-        <p className="text-xs font-semibold text-rule">پیشخوان</p>
-        <h1 className="text-2xl font-bold">خط تولید خبر</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-7 text-muted">
-          نقش فعلی {role.name} است. خبرنگار پیش‌نویس را می‌فرستد، سردبیر بازبینی می‌کند و مدیر مسئول منتشر می‌کند.
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <header className="rounded-2xl border border-line bg-sheet p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">پیشخوان</p>
+        <h1 className="mt-1 text-2xl font-bold text-ink">خط تولید خبر</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-7 text-muted">
+          نقش فعلی <span className="font-semibold text-ink">{role.name}</span> است. خبرنگار پیش‌نویس را می‌فرستد، سردبیر بازبینی می‌کند و مدیر مسئول منتشر می‌کند.
         </p>
       </header>
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="اخبار در خط"
+          value={data.stories.length}
+          hint="همه وضعیت‌ها در کارتابل"
+          href="/editorial/cartable"
+          iconBg="bg-primary-light text-primary"
+          trend={reviewCount > 0 ? `${faNum(reviewCount)} در بازبینی/ویرایش` : undefined}
+          icon={
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path strokeLinecap="round" d="M4 6h16M4 12h10M4 18h14" />
+            </svg>
+          }
+        />
+        <KpiCard
+          label="منتشرشده"
+          value={publishedCount}
+          hint="خروجی عمومی سایت"
+          href="/editorial/cartable?status=published"
+          iconBg="bg-emerald-50 text-emerald-600"
+          icon={
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7 20h10a2 2 0 0 0 2-2V6l-4-4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z" />
+            </svg>
+          }
+        />
+        <KpiCard
+          label="خبرنگاران فعال"
+          value={reporterCount}
+          hint="بر اساس نقش کاربران"
+          href="/core/users"
+          iconBg="bg-indigo-50 text-accent-blue"
+          icon={
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path strokeLinecap="round" d="M16 11c1.7 0 3-1.3 3-3S17.7 5 16 5s-3 1.3-3 3 1.3 3 3 3zM8 11c1.7 0 3-1.3 3-3S9.7 5 8 5 5 6.3 5 8s1.3 3 3 3zM3 20c0-2.8 2.2-5 5-5h8c2.8 0 5 2.2 5 5" />
+            </svg>
+          }
+        />
+        <KpiCard
+          label="تیکت باز"
+          value={openTickets}
+          hint="پشتیبانی و درخواست داخلی"
+          href="/core/tickets"
+          iconBg="bg-amber-50 text-amber-600"
+          icon={
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16v3a2 2 0 0 1 0 4V19H4v-4a2 2 0 0 0 0-4V8z" />
+            </svg>
+          }
+        />
+      </div>
+
       <DashboardAgendaWidget />
 
-      <section className="rounded-lg border border-line bg-sheet p-4" aria-label="نمودار آمار تحریریه">
-        <h2 className="font-bold">نمودار آمار</h2>
-        <p className="mt-1 text-xs text-muted">بر پایه داده همین مرورگر؛ با تغییر کارتابل به‌روز می‌شود.</p>
+      <section className="rounded-2xl border border-line bg-sheet p-5 shadow-sm" aria-label="نمودار آمار تحریریه">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="font-bold text-ink">نمودار آمار</h2>
+            <p className="mt-1 text-xs text-muted">بر پایه داده همین مرورگر؛ با تغییر کارتابل به‌روز می‌شود.</p>
+          </div>
+        </div>
         <div className="mt-4 overflow-x-auto pb-1">
           <div className="flex min-w-[36rem] items-end justify-between gap-2 sm:min-w-0 sm:gap-3">
             {chartItems.map((item, index) => {
               const height = `${Math.round(Math.max(12, (item.value / chartMax) * 100))}%`;
               return (
                 <div key={item.label} className="flex min-w-[4.25rem] flex-1 flex-col items-center gap-1.5">
-                  <span className="text-xs font-bold tabular-nums">{faNum(item.value)}</span>
+                  <span className="text-xs font-bold tabular-nums text-ink">{faNum(item.value)}</span>
                   <div className="flex h-36 w-full items-end justify-center sm:h-40">
                     <div
-                      className="w-full max-w-[2.75rem] rounded-t-md shadow-sm transition-[height] sm:max-w-[3.25rem]"
+                      className="w-full max-w-[2.75rem] rounded-t-lg shadow-sm transition-[height] sm:max-w-[3.25rem]"
                       style={{ height, backgroundColor: chartColors[index % chartColors.length] }}
                       title={`${item.label}: ${faNum(item.value)}`}
                     />
@@ -87,8 +181,12 @@ export function Dashboard() {
         {STATUSES.map((status) => {
           const count = data.stories.filter((story) => story.status === status).length;
           return (
-            <Link key={status} href={`/editorial/cartable?status=${status}`} className="rounded-lg border border-line bg-sheet px-3 py-3 hover:border-ink">
-              <p className="text-2xl font-bold">{faNum(count)}</p>
+            <Link
+              key={status}
+              href={`/editorial/cartable?status=${status}`}
+              className="rounded-xl border border-line bg-sheet px-3 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
+            >
+              <p className="text-2xl font-bold tabular-nums">{faNum(count)}</p>
               <p className="text-xs text-muted">{statusLabel(data, status)}</p>
             </Link>
           );
@@ -96,23 +194,23 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
-        <section className="rounded-lg border border-line bg-sheet">
+        <section className="overflow-hidden rounded-2xl border border-line bg-sheet shadow-sm">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="font-bold">آخرین خبرها</h2>
-            <Link href="/editorial/cartable" className="text-sm text-rule">
+            <Link href="/editorial/cartable" className="text-sm font-medium text-primary hover:underline">
               همه خبرها
             </Link>
           </div>
           <ul>
             {recent.map((story) => (
-              <li key={story.id} className="border-b border-line px-4 py-3 last:border-0">
+              <li key={story.id} className="border-b border-line px-4 py-3 last:border-0 hover:bg-paper/80">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <StatusBadge status={story.status} label={statusLabel(data, story.status)} />
                   <span>{categoryName(data, story.categoryId)}</span>
                   <span>{story.author}</span>
                   <span>{faDate(story.updatedAt)}</span>
                 </div>
-                <Link href={`/editorial/cartable/${story.id}`} className="mt-1 block font-semibold leading-7 hover:text-rule">
+                <Link href={`/editorial/cartable/${story.id}`} className="mt-1 block font-semibold leading-7 hover:text-primary">
                   {story.title}
                 </Link>
               </li>
@@ -120,32 +218,32 @@ export function Dashboard() {
           </ul>
         </section>
         <aside className="space-y-3">
-          <section className="rounded-lg border border-line bg-sheet p-4">
+          <section className="rounded-2xl border border-line bg-sheet p-4 shadow-sm">
             <h2 className="font-bold">در انتظار میز</h2>
             <ul className="mt-2 space-y-2 text-sm">
               {waiting.map((item) => (
                 <li key={item.href} className="flex items-center justify-between gap-3">
-                  <Link href={item.href} className="hover:text-rule">
+                  <Link href={item.href} className="hover:text-primary">
                     {item.label}
                   </Link>
-                  <span className="font-semibold">{faNum(item.value)}</span>
+                  <span className="rounded-full bg-primary-light px-2 py-0.5 text-xs font-semibold text-primary">{faNum(item.value)}</span>
                 </li>
               ))}
             </ul>
           </section>
-          <section className="rounded-lg border border-line bg-sheet p-4">
+          <section className="rounded-2xl border border-line bg-sheet p-4 shadow-sm">
             <h2 className="font-bold">میانبر</h2>
             <ul className="mt-2 space-y-1 text-sm">
               {shortcuts.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="hover:text-rule">
+                  <Link href={item.href} className="hover:text-primary">
                     {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </section>
-          <section className="rounded-lg border border-line bg-sheet p-4 text-sm leading-7">
+          <section className="rounded-2xl border border-line bg-sheet p-4 text-sm leading-7 shadow-sm">
             <h2 className="font-bold">شش گروه منو</h2>
             <ul className="mt-2 space-y-1">
               {[
@@ -157,7 +255,7 @@ export function Dashboard() {
                 ["structure", "categories"],
               ].map(([group, slug]) => (
                 <li key={group}>
-                  <Link href={hrefFor(group, slug)} className="hover:text-rule">
+                  <Link href={hrefFor(group, slug)} className="hover:text-primary">
                     {group === "core" && "هسته مدیریتی"}
                     {group === "editorial" && "تحریریه و تولید"}
                     {group === "media" && "رسانه‌های مکمل"}

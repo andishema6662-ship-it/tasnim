@@ -221,6 +221,12 @@ export function AdminAffairsScreen() {
   const [tplDraft, setTplDraft] = useState({ title: "", body: "" });
   const user = data.users.find((item) => item.id === selectedUserId);
   const template = data.adminTemplates.find((item) => item.id === templateId);
+  const letterNumber = useMemo(() => {
+    const seed = `${templateId}-${selectedUserId}-${letterBody.length}`;
+    let n = 0;
+    for (let i = 0; i < seed.length; i += 1) n = (n + seed.charCodeAt(i) * (i + 1)) % 1_000_000;
+    return faNum(n).padStart(6, "0").slice(-6);
+  }, [templateId, selectedUserId, letterBody.length]);
 
   function renderTemplate(tpl: AdminLetterTemplate) {
     if (!user) return "";
@@ -273,7 +279,7 @@ export function AdminAffairsScreen() {
                 </header>
                 <div className="mt-4 flex items-center justify-between text-xs">
                   <span>تاریخ: {faDate(new Date().toISOString())}</span>
-                  <span>شماره: ADM-{faNum(Date.now()).slice(-6)}</span>
+                  <span>شماره: ADM-{letterNumber}</span>
                 </div>
                 <div className="mt-6 whitespace-pre-wrap">{letterBody}</div>
                 <div className="mt-10 flex justify-between text-xs text-muted">

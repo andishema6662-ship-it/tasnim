@@ -5,7 +5,12 @@ import { faNum } from "@/lib/format";
 import type { MonthlyPayroll } from "@/lib/payroll-calc";
 
 export function PayrollSlipView({ payroll, newsroomName }: { payroll: MonthlyPayroll; newsroomName: string }) {
-  const tracking = useMemo(() => `RH-${payroll.author.slice(0, 2)}-${Date.now().toString(36).toUpperCase()}`, [payroll.author]);
+  const tracking = useMemo(() => {
+    const seed = `${payroll.author}-${payroll.monthLabel}-${payroll.net}`;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) % 1_000_000_000;
+    return `RH-${payroll.author.slice(0, 2)}-${hash.toString(36).toUpperCase()}`;
+  }, [payroll.author, payroll.monthLabel, payroll.net]);
 
   return (
     <article
