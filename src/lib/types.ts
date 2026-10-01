@@ -586,6 +586,80 @@ export interface OfficialContact {
   tags: string[];
 }
 
+export type TodoPriority = "low" | "normal" | "high";
+
+export interface ReporterTodo {
+  id: string;
+  userId: string;
+  title: string;
+  done: boolean;
+  favorite: boolean;
+  priority: TodoPriority;
+  sortOrder: number;
+  dueAt: string;
+  createdAt: string;
+}
+
+export type StickyNoteLabel = "personal" | "work" | "important" | "urgent";
+
+export interface ReporterStickyNote {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  label: StickyNoteLabel;
+  color: string;
+  favorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FileShareScope = "user" | "management" | "all_reporters" | "editorial_group";
+
+export interface ReporterFileShare {
+  scope: FileShareScope;
+  userId?: string;
+  editorialGroup?: string;
+  canDownload: boolean;
+}
+
+export interface ReporterFileEntry {
+  id: string;
+  ownerUserId: string;
+  parentId: string | null;
+  name: string;
+  kind: "folder" | "file";
+  sizeBytes: number;
+  mime: string;
+  sharedWith: ReporterFileShare[];
+  createdAt: string;
+}
+
+export interface ReporterStorageQuota {
+  userId: string;
+  quotaBytes: number;
+}
+
+export type AnnouncementPriority = "normal" | "important" | "urgent";
+
+export type AnnouncementTarget =
+  | { type: "all_reporters" }
+  | { type: "editorial_group"; group: string }
+  | { type: "user"; userId: string };
+
+export interface EditorialAnnouncement {
+  id: string;
+  authorUserId: string;
+  authorName: string;
+  authorRole: "publisher" | "chief";
+  title: string;
+  body: string;
+  priority: AnnouncementPriority;
+  target: AnnouncementTarget;
+  pinnedUntil: string | null;
+  createdAt: string;
+}
+
 export interface ReporterAgendaItem {
   id: string;
   title: string;
@@ -669,5 +743,10 @@ export interface NewsroomData {
   eventMaps: EventMapProject[];
   officialContacts: OfficialContact[];
   reporterAgenda: ReporterAgendaItem[];
+  reporterTodos: ReporterTodo[];
+  reporterStickyNotes: ReporterStickyNote[];
+  reporterFiles: ReporterFileEntry[];
+  reporterStorageQuotas: ReporterStorageQuota[];
+  editorialAnnouncements: EditorialAnnouncement[];
   sessionStartedAt: string;
 }

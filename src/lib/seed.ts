@@ -905,6 +905,96 @@ export function createSeed(): NewsroomData {
       },
     ],
     reporterAgenda: seedReporterAgenda(),
+    reporterTodos: [
+      {
+        id: "todo-1",
+        userId: "u-sara",
+        title: "تکمیل لید گزارش معیشت",
+        done: false,
+        favorite: true,
+        priority: "high",
+        sortOrder: 0,
+        dueAt: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+        createdAt: iso("2026-09-30T08:00:00Z"),
+      },
+      {
+        id: "todo-2",
+        userId: "u-sara",
+        title: "آپلود عکس‌های میدانی",
+        done: true,
+        favorite: false,
+        priority: "normal",
+        sortOrder: 1,
+        dueAt: iso("2026-09-28T18:00:00Z"),
+        createdAt: iso("2026-09-27T08:00:00Z"),
+      },
+    ],
+    reporterStickyNotes: [
+      {
+        id: "sn-1",
+        userId: "u-sara",
+        title: "تماس با منبع شهرداری",
+        body: "پیگیری آمار ناوگان اتوبوسرانی تا فردا.",
+        label: "work",
+        color: "work",
+        favorite: true,
+        createdAt: iso("2026-09-29T10:00:00Z"),
+        updatedAt: iso("2026-09-29T10:00:00Z"),
+      },
+      {
+        id: "sn-2",
+        userId: "u-sara",
+        title: "یادآوری شخصی",
+        body: "کلاس خبر نویسی پیشرفته چهارشنبه.",
+        label: "personal",
+        color: "personal",
+        favorite: false,
+        createdAt: iso("2026-09-25T10:00:00Z"),
+        updatedAt: iso("2026-09-25T10:00:00Z"),
+      },
+    ],
+    reporterFiles: [
+      {
+        id: "fld-root-sara",
+        ownerUserId: "u-sara",
+        parentId: null,
+        name: "گزارش‌های میدانی",
+        kind: "folder",
+        sizeBytes: 0,
+        mime: "",
+        sharedWith: [],
+        createdAt: iso("2026-09-01T08:00:00Z"),
+      },
+      {
+        id: "fil-draft-1",
+        ownerUserId: "u-sara",
+        parentId: "fld-root-sara",
+        name: "پیش‌نویس-معیشت.docx",
+        kind: "file",
+        sizeBytes: 450 * 1024 * 1024,
+        mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sharedWith: [],
+        createdAt: iso("2026-09-24T12:00:00Z"),
+      },
+    ],
+    reporterStorageQuotas: [
+      { userId: "u-sara", quotaBytes: 2 * 1024 * 1024 * 1024 },
+      { userId: "u-ali", quotaBytes: 1 * 1024 * 1024 * 1024 },
+    ],
+    editorialAnnouncements: [
+      {
+        id: "ann-1",
+        authorUserId: "u-kamran",
+        authorName: "کامران شفیعی",
+        authorRole: "chief",
+        title: "اولویت پوشش جلسه علنی مجلس",
+        body: "تیم سیاسی تا پایان هفته گزارش تحلیلی آماده کند. تیترها با دبیر سرویس هماهنگ شود.",
+        priority: "urgent",
+        target: { type: "all_reporters" },
+        pinnedUntil: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: iso("2026-09-30T07:00:00Z"),
+      },
+    ],
     activity: [
       { id: "act-1", at: iso("2026-09-25T06:40:00Z"), text: "پیش‌نویس خورشیدی یزد به‌روز شد" },
       { id: "act-2", at: iso("2026-09-25T04:10:00Z"), text: "خبر ماهواره به بازبینی رفت" },
@@ -985,6 +1075,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     "structure/dossiers",
     "media/event-map",
     "admin/official-contacts",
+    "admin/announcements",
     "editorial/agenda",
   ];
   next.roles.forEach((role) => {
@@ -1026,6 +1117,11 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     ...message,
     subject: message.subject?.trim() || "بدون عنوان",
   }));
+  if (!Array.isArray(next.reporterTodos)) next.reporterTodos = base.reporterTodos;
+  if (!Array.isArray(next.reporterStickyNotes)) next.reporterStickyNotes = base.reporterStickyNotes;
+  if (!Array.isArray(next.reporterFiles)) next.reporterFiles = base.reporterFiles;
+  if (!Array.isArray(next.reporterStorageQuotas)) next.reporterStorageQuotas = base.reporterStorageQuotas;
+  if (!Array.isArray(next.editorialAnnouncements)) next.editorialAnnouncements = base.editorialAnnouncements;
   const reporterHubKeys = [
     "reporters/my-profile",
     "reporters/my-news",
@@ -1033,6 +1129,9 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     "reporters/my-admin-affairs",
     "reporters/my-pitches",
     "reporters/my-agenda",
+    "reporters/my-tasks",
+    "reporters/my-notes",
+    "reporters/file-manager",
   ];
   next.roles.forEach((role) => {
     if (role.base !== "reporter" && role.base !== "chief" && role.base !== "publisher") return;

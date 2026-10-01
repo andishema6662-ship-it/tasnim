@@ -8,6 +8,7 @@ import { useNewsroom } from "@/lib/store";
 import type { Status, Story } from "@/lib/types";
 import { applyStatus, canPublishCategory, categoryName, currentRole, currentUser, STATUSES, statusLabel, transitionsFrom } from "@/lib/workflow";
 import { SocialPublishModal } from "./social-publish-modal";
+import { Blog3StoryCard } from "@/components/stories/blog3-story-card";
 import { Button, Empty, Flash, Input, ModulePage, Select, StatusBadge } from "../ui";
 
 const queueStatuses: Status[] = ["editing", "review", "ready"];
@@ -43,6 +44,7 @@ export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable
     return hay.includes(norm(query));
   });
   const visible = showAll ? filtered : filtered.slice(0, Math.max(1, data.settings.pageSize));
+  const blogLayout = moduleSlug === "my-news";
 
   function act(story: Story, to: Status) {
     if (to === "published" && !canPublishCategory(data, story.categoryId)) {
@@ -112,27 +114,35 @@ export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable
             </Select>
           </div>
           {visible.length === 0 ? <Empty>خبری با این مشخصات پیدا نشد.</Empty> : null}
-          <div className="divide-y divide-line rounded-lg border border-line bg-sheet">
-            {visible.map((story) => (
-              <article key={story.id} className="px-4 py-4">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                  <StatusBadge status={story.status} label={statusLabel(data, story.status)} />
-                  <span>{categoryName(data, story.categoryId)}</span>
-                  <span>{story.author}</span>
-                  <span>{faDate(story.updatedAt)}</span>
-                </div>
-                <Link href={`/editorial/cartable/${story.id}`} className="mt-1 block text-lg font-bold leading-8 hover:text-rule">
-                  {story.title}
-                </Link>
-                <p className="line-clamp-2 text-sm text-muted">{story.lead}</p>
-                <div className="mt-2">
-                  <Button type="button" tone="ghost" data-testid="cartable-social-publish" onClick={() => setSocialStory(story)}>
-                    انتشار در شبکه‌ها
-                  </Button>
-                </div>
-              </article>
-            ))}
-          </div>
+          {blogLayout ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3" data-testid="my-news-blog-grid">
+              {visible.map((story) => (
+                <Blog3StoryCard key={story.id} data={data} story={story} href={`/editorial/cartable/${story.id}`} />
+              ))}
+            </div>
+          ) : (
+            <div className="divide-y divide-line rounded-lg border border-line bg-sheet">
+              {visible.map((story) => (
+                <article key={story.id} className="px-4 py-4">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                    <StatusBadge status={story.status} label={statusLabel(data, story.status)} />
+                    <span>{categoryName(data, story.categoryId)}</span>
+                    <span>{story.author}</span>
+                    <span>{faDate(story.updatedAt)}</span>
+                  </div>
+                  <Link href={`/editorial/cartable/${story.id}`} className="mt-1 block text-lg font-bold leading-8 hover:text-rule">
+                    {story.title}
+                  </Link>
+                  <p className="line-clamp-2 text-sm text-muted">{story.lead}</p>
+                  <div className="mt-2">
+                    <Button type="button" tone="ghost" data-testid="cartable-social-publish" onClick={() => setSocialStory(story)}>
+                      انتشار در شبکه‌ها
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
           {filtered.length > visible.length ? (
             <Button tone="ghost" onClick={() => setShowAll(true)}>
               نمایش همه ({faNum(filtered.length)})

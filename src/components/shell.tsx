@@ -10,6 +10,8 @@ import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules
 import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
 import { useNewsroom } from "@/lib/store";
 import { currentRole, currentUser } from "@/lib/workflow";
+import { NotificationPreviewList } from "./dashboard/dashboard-alerts";
+import { dashboardAlertCount } from "@/lib/reporter-workspace";
 import { UnauthorizedPanel } from "./unauthorized-panel";
 import { cn } from "./ui";
 
@@ -298,6 +300,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => loadSidebarCollapsed());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [notifyOpen, setNotifyOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [lang, setLang] = useState<"fa" | "en">("fa");
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -343,7 +346,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const notifyCount =
     data.submissions.filter((item) => item.status === "new").length +
     data.suggestions.filter((item) => item.status === "pending").length +
-    data.comments.filter((item) => item.status === "pending").length;
+    data.comments.filter((item) => item.status === "pending").length +
+    dashboardAlertCount(data);
   const ticketCount = data.tickets.filter((item) => item.status === "open" || item.status === "pending").length;
 
   const isPublicSite = path === "/site" || path.startsWith("/site/");
@@ -458,9 +462,17 @@ export function Shell({ children }: { children: ReactNode }) {
               <HeaderIconButton href="/admin/tickets" label="تیکت‌ها" badge={ticketCount}>
                 <IconTicket className="h-5 w-5" />
               </HeaderIconButton>
-              <HeaderIconButton href="/editorial/submissions" label="اعلان‌ها" badge={notifyCount}>
-                <IconBell className="h-5 w-5" />
-              </HeaderIconButton>
+              <div className="relative">
+                <HeaderIconButton label="اعلان‌ها" badge={notifyCount} onClick={() => setNotifyOpen((v) => !v)}>
+                  <IconBell className="h-5 w-5" />
+                </HeaderIconButton>
+                {notifyOpen ? (
+                  <div className="absolute left-0 top-full z-40 mt-2 w-72 rounded-xl border border-line bg-sheet shadow-lg">
+                    <p className="border-b border-line px-3 py-2 text-xs font-bold text-muted">اعلان‌های هوشمند</p>
+                    <NotificationPreviewList />
+                  </div>
+                ) : null}
+              </div>
               <div className="relative">
                 <HeaderIconButton label="تقویم" onClick={() => setCalendarOpen((v) => !v)}>
                   <IconCalendar className="h-5 w-5" />

@@ -12,6 +12,7 @@ import { CommentsScreen, ContactScreen, ForumScreen, PollsScreen } from "./audie
 import { MediaLibraryScreen } from "./media/media-library-screen";
 import { AlbumsScreen } from "./media/albums-screen";
 import { PeopleScreen } from "./media/people-screen";
+import { AnnouncementsScreen } from "./admin/announcements-screen";
 import {
   ReporterAdminAffairsScreen,
   ReporterMyAgendaScreen,
@@ -20,6 +21,7 @@ import {
   ReporterMyProfileScreen,
   ReporterPayrollScreen,
 } from "./reporters/reporter-screens";
+import { ReporterFileManagerScreen, ReporterNotesScreen, ReporterTodoScreen } from "./reporters/reporter-workspace-screens";
 import { EmailScreen, NewsletterScreen, RssScreen, SocialScreen, VideosScreen } from "./media/media-screens";
 import {
   AdminAffairsScreen,
@@ -52,6 +54,7 @@ const screens: Record<string, () => ReactElement> = {
   "admin/official-contacts": OfficialContactsScreen,
   "admin/roles": RolesScreen,
   "admin/admin-affairs": AdminAffairsScreen,
+  "admin/announcements": AnnouncementsScreen,
   "template/subsites": SubsitesScreen,
   "structure/links": LinksScreen,
   "template/logos": LogosScreen,
@@ -72,6 +75,9 @@ const screens: Record<string, () => ReactElement> = {
   "reporters/my-admin-affairs": ReporterAdminAffairsScreen,
   "reporters/my-pitches": ReporterMyPitchesScreen,
   "reporters/my-agenda": ReporterMyAgendaScreen,
+  "reporters/my-tasks": ReporterTodoScreen,
+  "reporters/my-notes": ReporterNotesScreen,
+  "reporters/file-manager": ReporterFileManagerScreen,
   "editorial/pitches": PitchesScreen,
   "editorial/agenda": ReporterAgendaScreen,
   "editorial/process": ProcessScreen,

@@ -5,6 +5,7 @@ import { faDate, faNum } from "@/lib/format";
 import { groups, hrefFor, modules } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
 import { categoryName, currentRole, STATUSES, statusLabel } from "@/lib/workflow";
+import { DashboardDeadlineAlerts, DashboardPinnedAnnouncements } from "./dashboard/dashboard-alerts";
 import { DashboardAgendaWidget } from "./editorial/contacts-agenda-screens";
 import { cn, StatusBadge } from "./ui";
 
@@ -93,6 +94,9 @@ export function Dashboard() {
           نقش فعلی <span className="font-semibold text-ink">{role.name}</span> است. خبرنگار پیش‌نویس را می‌فرستد، سردبیر بازبینی می‌کند و مدیر مسئول منتشر می‌کند.
         </p>
       </header>
+
+      <DashboardPinnedAnnouncements />
+      <DashboardDeadlineAlerts />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard

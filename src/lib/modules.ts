@@ -48,6 +48,7 @@ export const modules: ModuleInfo[] = [
   { group: "admin", slug: "comms", title: "میز ارتباطات ویژه", description: "پیام‌های داخلی بین اعضای تحریریه." },
   { group: "admin", slug: "official-contacts", title: "دفترچه تلفن مسئولین", description: "مخاطبین رسمی، سمت، تماس و یادداشت‌های تحریریه." },
   { group: "admin", slug: "admin-affairs", title: "امور اداری خبرنگاران", description: "کارت خبرنگاری، معرفی‌نامه، گواهی و الگونامه." },
+  { group: "admin", slug: "announcements", title: "اطلاعیه و سنجاق پیام", description: "پیام مدیر یا سردبیر به خبرنگاران با زمان سنجاق." },
 
   { group: "template", slug: "theme", title: "مدیریت قالب", description: "رنگ، چیدمان صفحه اصلی، هدر، فوتر و تایپوگرافی پورتال عمومی." },
   { group: "template", slug: "menus", title: "مدیریت منو", description: "چینش منوی اصلی سایت." },
@@ -76,6 +77,9 @@ export const modules: ModuleInfo[] = [
   { group: "reporters", slug: "my-admin-affairs", title: "نامه‌های اداری", description: "کارت خبرنگاری، معرفی‌نامه و گواهی‌ها." },
   { group: "reporters", slug: "my-pitches", title: "سوژه‌های من", description: "سوژه‌های محول‌شده یا در دست اقدام شما." },
   { group: "reporters", slug: "my-agenda", title: "برنامه‌ها و مصاحبه‌ها", description: "مصاحبه‌ها و برنامه‌های پیش‌روی شما." },
+  { group: "reporters", slug: "my-tasks", title: "کارهای من", description: "فهرست کار شخصی با سررسید و اولویت." },
+  { group: "reporters", slug: "my-notes", title: "یادداشت‌های من", description: "یادداشت‌های رنگی با برچسب شخصی، کاری، مهم و فوری." },
+  { group: "reporters", slug: "file-manager", title: "مدیریت فایل", description: "پوشه‌ها، سهمیه فضا و اشتراک فایل با تحریریه." },
 
   { group: "media", slug: "library", title: "کتابخانه رسانه", description: "بارگذاری، برش، کپی پیوند و گالری پرونده‌های چندرسانه‌ای." },
   { group: "media", slug: "albums", title: "آلبوم تصاویر", description: "گزارش تصویری با تیتر، عکاس، بارگذاری چندتایی و محل انتشار." },

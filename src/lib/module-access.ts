@@ -16,6 +16,9 @@ function reporterHubKeys(): string[] {
     "reporters/my-admin-affairs",
     "reporters/my-pitches",
     "reporters/my-agenda",
+    "reporters/my-tasks",
+    "reporters/my-notes",
+    "reporters/file-manager",
   ];
 }
 
@@ -61,6 +64,7 @@ function chiefPreset(): string[] {
     "reports/reporter-period",
     "reports/traffic",
     "admin/admin-affairs",
+    "admin/announcements",
     "structure/dossiers",
     "media/event-map",
     "structure/categories",
