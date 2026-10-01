@@ -110,6 +110,7 @@ export function blankStory(data: NewsroomData): Story {
     views: 0,
     createdAt: ts,
     updatedAt: ts,
+    grade: 2,
   };
 }
 

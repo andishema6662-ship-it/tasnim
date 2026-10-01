@@ -8,7 +8,9 @@ import { faNum, htmlToPlainText, wordCountFromHtml } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { pitchVisibleToUser } from "@/lib/pitches";
 import { useNewsroom } from "@/lib/store";
-import type { Status, Story } from "@/lib/types";
+import { PITCH_CONTENT_LABELS, serviceIdForPitchContent } from "@/lib/pitch-content";
+import { canSetStoryGrade, STORY_GRADE_LABELS } from "@/lib/story-grade";
+import type { Status, Story, StoryGrade } from "@/lib/types";
 import {
   actorLabel,
   blankStory,
@@ -50,11 +52,13 @@ export function Editor({ id }: { id: string }) {
       const pitch = data.pitches.find((item) => item.id === pitchFromUrl);
       if (pitch && pitchVisibleToUser(data, pitch)) {
         const base = blankStory(data);
+        const serviceId = pitch.contentType ? serviceIdForPitchContent(pitch.contentType) : base.serviceId;
         return {
           ...base,
           pitchId: pitch.id,
           title: pitch.title,
           categoryId: pitch.categoryId,
+          serviceId,
           lead: pitch.description.slice(0, 240),
           tags: pitch.topic ? [pitch.topic] : base.tags,
         };
@@ -176,6 +180,7 @@ export function Editor({ id }: { id: string }) {
   const desk = categoryName(data, form.categoryId);
   const linkedPitch = form.pitchId ? data.pitches.find((item) => item.id === form.pitchId) : undefined;
   const pitchOptions = data.pitches.filter((pitch) => pitchVisibleToUser(data, pitch) || pitch.id === form.pitchId);
+  const gradeEditable = editable && (canSetStoryGrade(data) || form.status === "draft" || form.status === "editing");
 
   return (
     <div className="mx-auto w-full max-w-5xl pb-24">
@@ -259,6 +264,21 @@ export function Editor({ id }: { id: string }) {
                 <option key={service.id} value={service.id}>
                   {service.name}
                 </option>
+              ))}
+            </Select>
+          </Field>
+          {linkedPitch?.contentType ? (
+            <p className="text-xs text-muted">نوع محتوای سوژه: {PITCH_CONTENT_LABELS[linkedPitch.contentType]}</p>
+          ) : null}
+          <Field label="درجه خبر / کیفیت محتوا">
+            <Select
+              value={String(form.grade ?? 2)}
+              disabled={!gradeEditable}
+              data-testid="story-grade-select"
+              onChange={(event) => patch({ grade: Number(event.target.value) as StoryGrade })}
+            >
+              {([1, 2, 3] as StoryGrade[]).map((grade) => (
+                <option key={grade} value={grade}>{STORY_GRADE_LABELS[grade]}</option>
               ))}
             </Select>
           </Field>

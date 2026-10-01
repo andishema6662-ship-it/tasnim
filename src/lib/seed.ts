@@ -4,6 +4,7 @@ import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-a
 import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
 import { createSeedMediaLibrary } from "./media-seed";
+import { seedPendingApprovals } from "./payroll-approval";
 import type { Album, NewsroomData, ReporterAgendaItem, Settings, Story } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
@@ -76,7 +77,7 @@ export function createSeed(): NewsroomData {
     })),
   );
 
-  return {
+  const seed: NewsroomData = {
     currentRoleId: "reporter",
     sessionStartedAt: new Date().toISOString(),
     settings: {
@@ -337,6 +338,7 @@ export function createSeed(): NewsroomData {
         deadline: iso("2026-10-05T12:00:00Z"),
         priority: "high",
         status: "active",
+        contentType: "field-report",
         createdBy: "کامران شفیعی",
         createdAt: iso("2026-09-24T08:00:00Z"),
         updatedAt: iso("2026-09-25T06:15:00Z"),
@@ -352,6 +354,7 @@ export function createSeed(): NewsroomData {
         deadline: iso("2026-09-30T12:00:00Z"),
         priority: "normal",
         status: "active",
+        contentType: "photo-report",
         createdBy: "کامران شفیعی",
         createdAt: iso("2026-09-23T10:00:00Z"),
         updatedAt: iso("2026-09-24T08:30:00Z"),
@@ -698,6 +701,50 @@ export function createSeed(): NewsroomData {
       { id: "ev-3", title: "جلسه علنی شورا", date: "2026-10-02", place: "شورای شهر", note: "پیگیری لایحه حمل‌ونقل" },
       { id: "ev-4", title: "افتتاح سایت خورشیدی", date: "2026-10-06", place: "مهریز", note: "هماهنگی با برق منطقه‌ای" },
     ],
+    upcomingEvents: [
+      {
+        id: "uev-1",
+        title: "نشست خبری وزارت آموزش",
+        kind: "press-brief",
+        organizer: "وزارت آموزش و پرورش",
+        place: "سالن همایش‌های وزارت",
+        startsAt: iso("2026-10-03T09:00:00Z"),
+        status: "approved",
+        createdByUserId: "u-kamran",
+        createdByName: "کامران شفیعی",
+        approvedByUserId: "u-kamran",
+        approvedAt: iso("2026-09-28T10:00:00Z"),
+        createdAt: iso("2026-09-27T08:00:00Z"),
+      },
+      {
+        id: "uev-2",
+        title: "نمایشگاه انرژی‌های تجدیدپذیر",
+        kind: "exhibition",
+        organizer: "سازمان انرژی‌های نو",
+        place: "نمایشگاه بین‌المللی تهران",
+        startsAt: iso("2026-10-08T07:30:00Z"),
+        status: "approved",
+        createdByUserId: "u-leila",
+        createdByName: "لیلا نوری",
+        approvedByUserId: "u-leila",
+        approvedAt: iso("2026-09-29T11:00:00Z"),
+        createdAt: iso("2026-09-28T12:00:00Z"),
+      },
+      {
+        id: "uev-3",
+        title: "همایش شهر هوشمند",
+        kind: "conference",
+        organizer: "شهرداری تهران",
+        place: "مرکز همایش‌های بین‌المللی",
+        startsAt: iso("2026-11-15T10:00:00Z"),
+        status: "approved",
+        createdByUserId: "u-kamran",
+        createdByName: "کامران شفیعی",
+        approvedByUserId: "u-kamran",
+        approvedAt: iso("2026-10-01T08:00:00Z"),
+        createdAt: iso("2026-09-30T09:00:00Z"),
+      },
+    ],
     tickets: [
       { id: "tk-photo", title: "دسترسی آلبوم شهر برای خبرنگار تازه‌کار", body: "لازم است علی رضایی هم آلبوم تجریش را ببیند.", status: "open", author: "سارا محمدی", recipient: "chief", createdAt: iso("2026-09-24T09:00:00Z") },
       { id: "tk-font", title: "فاصله تیتر در پیش‌نمایش صفحه", body: "در صفحه‌ساز، تیتر به متن چسبیده دیده می‌شود.", status: "pending", author: "کامران شفیعی", recipient: "it-support", createdAt: iso("2026-09-23T11:20:00Z") },
@@ -809,12 +856,16 @@ export function createSeed(): NewsroomData {
     ],
     aiTaskLogs: [],
     payrollRates: [
-      { id: "rate-news", contentType: "news", label: "خبر عادی", amount: 850_000 },
+      { id: "rate-grade-1", contentType: "grade-1", label: "خبر درجه ۱ (تحلیلی / اختصاصی)", amount: 700_000 },
+      { id: "rate-grade-2", contentType: "grade-2", label: "خبر درجه ۲ (تولیدی / پوششی)", amount: 450_000 },
+      { id: "rate-grade-3", contentType: "grade-3", label: "خبر درجه ۳ (تنظیمی / کوتاه)", amount: 250_000 },
+      { id: "rate-news", contentType: "news", label: "خبر عادی (مرجع)", amount: 850_000 },
       { id: "rate-note", contentType: "note", label: "یادداشت", amount: 1_200_000 },
       { id: "rate-exclusive", contentType: "exclusive-report", label: "گزارش اختصاصی", amount: 2_500_000 },
       { id: "rate-interview", contentType: "interview", label: "مصاحبه و گفتگو", amount: 1_800_000 },
       { id: "rate-photo", contentType: "photo-report", label: "گزارش تصویری", amount: 1_100_000 },
     ],
+    payrollApprovals: [],
     socialChannels: [
       { id: "sch-tg", channel: "telegram", enabled: true, template: "{title}\n{lead}\n{hashtags}\n{link}" },
       { id: "sch-bale", channel: "bale", enabled: true, template: "{title}\n{lead}\n{link}" },
@@ -1044,6 +1095,8 @@ export function createSeed(): NewsroomData {
       { id: "act-4", at: iso("2026-09-20T10:00:00Z"), text: "خبر مجموعه کرج منتشر شد" },
     ],
   };
+  seed.payrollApprovals = seedPendingApprovals(seed);
+  return seed;
 }
 
 export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
@@ -1073,6 +1126,20 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   next.templateSettings = resolveTemplateSettings({ ...next, templateSettings: raw.templateSettings ?? next.templateSettings });
   if (!Array.isArray(next.aiTaskLogs)) next.aiTaskLogs = base.aiTaskLogs;
   if (!Array.isArray(next.payrollRates) || next.payrollRates.length === 0) next.payrollRates = base.payrollRates;
+  else if (!next.payrollRates.some((rate) => rate.contentType === "grade-1")) {
+    next.payrollRates = [...base.payrollRates.filter((rate) => rate.contentType.startsWith("grade-")), ...next.payrollRates];
+  }
+  if (!Array.isArray(next.payrollApprovals) || next.payrollApprovals.length === 0) {
+    next.payrollApprovals = seedPendingApprovals(next);
+  }
+  next.stories = next.stories.map((story, index) => ({
+    ...story,
+    grade: story.grade ?? ((index % 3) + 1) as 1 | 2 | 3,
+  }));
+  next.pitches = (next.pitches ?? []).map((pitch) => ({
+    ...pitch,
+    contentType: pitch.contentType ?? "field-report",
+  }));
   if (!Array.isArray(next.socialChannels) || next.socialChannels.length === 0) next.socialChannels = base.socialChannels;
   if (!Array.isArray(next.versionHistory) || next.versionHistory.length === 0) next.versionHistory = base.versionHistory;
   if (!Array.isArray(next.adminTemplates) || next.adminTemplates.length === 0) next.adminTemplates = base.adminTemplates;
@@ -1166,6 +1233,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   if (!Array.isArray(next.editorialAnnouncements)) next.editorialAnnouncements = base.editorialAnnouncements;
   if (!Array.isArray(next.chatThreads)) next.chatThreads = base.chatThreads;
   if (!Array.isArray(next.chatMessages)) next.chatMessages = base.chatMessages;
+  if (!Array.isArray(next.upcomingEvents) || next.upcomingEvents.length === 0) next.upcomingEvents = base.upcomingEvents;
   if (!Array.isArray(next.chatReadCursors)) next.chatReadCursors = base.chatReadCursors;
   if (!next.socialBots?.messageTemplate) next.socialBots = base.socialBots;
   const reporterHubKeys = [

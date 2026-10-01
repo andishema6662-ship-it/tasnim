@@ -135,6 +135,15 @@ export type PitchStatus = "active" | "completed" | "cancelled";
 export type PitchPriority = "low" | "normal" | "high";
 export type PitchAudience = "all_reporters" | "specific";
 
+export type PitchContentType =
+  | "photo-report"
+  | "analytical-note"
+  | "interview"
+  | "field-report"
+  | "press-coverage";
+
+export type StoryGrade = 1 | 2 | 3;
+
 export interface NewsPitch {
   id: string;
   title: string;
@@ -146,6 +155,7 @@ export interface NewsPitch {
   deadline?: string;
   priority: PitchPriority;
   status: PitchStatus;
+  contentType?: PitchContentType;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -169,6 +179,7 @@ export interface Story {
   updatedAt: string;
   publishedAt?: string;
   pitchId?: string;
+  grade?: StoryGrade;
 }
 
 export interface Step {
@@ -388,6 +399,25 @@ export interface CalEvent {
   date: string;
   place: string;
   note: string;
+}
+
+export type UpcomingEventKind = "press-brief" | "exhibition" | "conference" | "other";
+export type UpcomingEventRange = "week" | "month" | "year";
+export type UpcomingEventStatus = "pending" | "approved";
+
+export interface EditorialUpcomingEvent {
+  id: string;
+  title: string;
+  kind: UpcomingEventKind;
+  organizer: string;
+  place: string;
+  startsAt: string;
+  status: UpcomingEventStatus;
+  createdByUserId: string;
+  createdByName: string;
+  approvedByUserId?: string;
+  approvedAt?: string;
+  createdAt: string;
 }
 
 export interface Ticket {
@@ -699,10 +729,23 @@ export interface EditorialAnnouncement {
   authorRole: "publisher" | "chief";
   title: string;
   body: string;
+  imageUrl?: string;
   priority: AnnouncementPriority;
   target: AnnouncementTarget;
   pinnedUntil: string | null;
   createdAt: string;
+}
+
+export type PayrollApprovalStatus = "pending" | "approved";
+
+export interface PayrollApproval {
+  id: string;
+  userId: string;
+  year: number;
+  month: number;
+  status: PayrollApprovalStatus;
+  approvedAt?: string;
+  approvedByUserId?: string;
 }
 
 export interface ReporterAgendaItem {
@@ -765,6 +808,7 @@ export interface NewsroomData {
   ads: Ad[];
   tickers: TickerItem[];
   events: CalEvent[];
+  upcomingEvents: EditorialUpcomingEvent[];
   tickets: Ticket[];
   notes: Note[];
   subsites: Subsite[];
@@ -781,6 +825,7 @@ export interface NewsroomData {
   activity: Activity[];
   aiTaskLogs: AiTaskLogEntry[];
   payrollRates: PayrollRate[];
+  payrollApprovals: PayrollApproval[];
   socialChannels: SocialChannelConfig[];
   versionHistory: VersionEntry[];
   adminTemplates: AdminLetterTemplate[];

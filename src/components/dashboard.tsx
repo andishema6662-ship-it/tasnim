@@ -5,7 +5,10 @@ import { faDate, faNum } from "@/lib/format";
 import { groups, hrefFor, modules } from "@/lib/modules";
 import { useNewsroom } from "@/lib/store";
 import { categoryName, currentRole, STATUSES, statusLabel } from "@/lib/workflow";
+import { dashboardStatusBars, dashboardWeeklyProduction } from "@/lib/reporter-performance";
+import { DualAreaLineChart, HexaChartCard, HorizontalBarChart } from "./charts/hexadash-charts";
 import { DashboardDeadlineAlerts, DashboardPinnedAnnouncements } from "./dashboard/dashboard-alerts";
+import { DashboardUpcomingEventsWidget } from "./dashboard/upcoming-events-widget";
 import { DashboardAgendaWidget } from "./editorial/contacts-agenda-screens";
 import { cn, StatusBadge } from "./ui";
 
@@ -88,6 +91,8 @@ export function Dashboard() {
     })),
   ];
   const chartMax = Math.max(...chartItems.map((item) => item.value), 1);
+  const weeklyTrend = dashboardWeeklyProduction(data);
+  const statusBars = dashboardStatusBars(data);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -156,10 +161,27 @@ export function Dashboard() {
 
       <DashboardAgendaWidget />
 
+      <DashboardUpcomingEventsWidget />
+
+      <div className="grid gap-4 lg:grid-cols-2" data-testid="dashboard-hexa-charts">
+        <HexaChartCard title="روند هفتگی تولید و انتشار" subtitle="Area / Line — HexaDash">
+          <DualAreaLineChart
+            labels={weeklyTrend.map((point) => point.label)}
+            primary={weeklyTrend.map((point) => point.worked)}
+            secondary={weeklyTrend.map((point) => point.published)}
+            primaryName="کارشده"
+            secondaryName="منتشرشده"
+          />
+        </HexaChartCard>
+        <HexaChartCard title="خط تولید بر اساس وضعیت" subtitle="میله‌ای افقی">
+          <HorizontalBarChart items={statusBars.map((item, index) => ({ ...item, color: chartColors[index % chartColors.length] }))} />
+        </HexaChartCard>
+      </div>
+
       <section className="rounded-2xl border border-line bg-sheet p-5 shadow-sm" aria-label="نمودار آمار تحریریه">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="font-bold text-ink">نمودار آمار</h2>
+            <h2 className="font-bold text-ink">نمودار آمار کلی</h2>
             <p className="mt-1 text-xs text-muted">بر پایه داده همین مرورگر؛ با تغییر کارتابل به‌روز می‌شود.</p>
           </div>
         </div>

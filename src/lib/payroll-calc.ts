@@ -1,3 +1,4 @@
+import { gradeTariff, storyGrade } from "./story-grade";
 import type { NewsroomData, PayrollRate, Story } from "./types";
 
 export function storyContentType(story: Story): string {
@@ -15,6 +16,7 @@ export interface PayrollLine {
   label: string;
   amount: number;
   publishedAt: string;
+  grade?: number;
 }
 
 export interface MonthlyPayroll {
@@ -43,14 +45,17 @@ export function monthlyPayrollForAuthor(data: NewsroomData, authorName: string, 
       return t >= start && t <= end;
     })
     .map((story) => {
+      const grade = storyGrade(story);
+      const amount = gradeTariff(data, grade);
       const rate = rateFor(story, rates);
       return {
         storyId: story.id,
         title: story.title,
         contentType: rate.contentType,
-        label: rate.label,
-        amount: rate.amount,
+        label: `خبر درجه ${grade}`,
+        amount,
         publishedAt: story.publishedAt ?? story.updatedAt,
+        grade,
       };
     });
   const gross = lines.reduce((sum, line) => sum + line.amount, 0);

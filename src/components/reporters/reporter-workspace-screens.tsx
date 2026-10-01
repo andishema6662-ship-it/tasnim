@@ -276,6 +276,7 @@ export function ReporterFileManagerScreen() {
   const [shareUserId, setShareUserId] = useState("");
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadFolderId, setUploadFolderId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userId = user?.id ?? "";
@@ -306,6 +307,7 @@ export function ReporterFileManagerScreen() {
 
   function ingestFiles(fileList: FileList | File[]) {
     if (!user) return;
+    const targetParentId = folders.length > 0 ? uploadFolderId : folderId;
     const files = Array.from(fileList);
     let added = 0;
     files.forEach((file) => {
@@ -320,7 +322,7 @@ export function ReporterFileManagerScreen() {
         const entry: ReporterFileEntry = {
           id: uid("fil"),
           ownerUserId: user.id,
-          parentId: folderId,
+          parentId: targetParentId,
           name: file.name,
           kind: "file",
           sizeBytes: size,
@@ -394,13 +396,29 @@ export function ReporterFileManagerScreen() {
       <div className="mt-4 grid gap-4 lg:grid-cols-[14rem_1fr]">
         <aside className="rounded-xl border border-line bg-sheet p-3 text-sm">
           <p className="font-bold">پوشه‌ها</p>
-          <button type="button" className="mt-2 block w-full text-right text-primary hover:underline" onClick={() => setFolderId(null)}>
+          <button
+            type="button"
+            className="mt-2 block w-full text-right text-primary hover:underline"
+            onClick={() => {
+              setFolderId(null);
+              setUploadFolderId(null);
+            }}
+          >
             ریشه
           </button>
           <ul className="mt-1 space-y-1">
             {folders.map((folder) => (
               <li key={folder.id}>
-                <button type="button" className="hover:text-primary" onClick={() => setFolderId(folder.id)}>{folder.name}</button>
+                <button
+                  type="button"
+                  className="hover:text-primary"
+                  onClick={() => {
+                    setFolderId(folder.id);
+                    setUploadFolderId(folder.id);
+                  }}
+                >
+                  {folder.name}
+                </button>
               </li>
             ))}
           </ul>
@@ -439,6 +457,22 @@ export function ReporterFileManagerScreen() {
               }}
             />
             <p className="text-sm text-muted">فایل را اینجا بکشید و رها کنید یا از رایانه انتخاب کنید.</p>
+            {folders.length > 0 ? (
+              <div className="mx-auto mt-3 max-w-sm text-right">
+                <Field label="پوشه مقصد برای بارگذاری">
+                  <Select
+                    value={uploadFolderId ?? ""}
+                    data-testid="file-upload-folder-select"
+                    onChange={(event) => setUploadFolderId(event.target.value ? event.target.value : null)}
+                  >
+                    <option value="">پوشه اصلی / ریشه</option>
+                    {folders.map((folder) => (
+                      <option key={folder.id} value={folder.id}>{folder.name}</option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+            ) : null}
             <Button type="button" className="mt-3" onClick={() => fileInputRef.current?.click()} data-testid="file-upload-btn">
               انتخاب فایل از رایانه
             </Button>

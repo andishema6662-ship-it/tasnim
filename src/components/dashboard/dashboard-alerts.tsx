@@ -31,6 +31,9 @@ export function DashboardPinnedAnnouncements() {
             <span className="text-[11px] text-muted">{pinExpiryLabel(item.pinnedUntil)}</span>
           </div>
           <h2 className="mt-1 font-bold">{item.title}</h2>
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt="" className="mt-2 max-h-44 w-full rounded-xl object-cover" data-testid="dashboard-announcement-image" />
+          ) : null}
           <p className="mt-1 text-sm leading-7">{item.body}</p>
         </div>
       ))}

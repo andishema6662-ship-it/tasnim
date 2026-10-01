@@ -9,6 +9,7 @@ import { PersonProfileView } from "@/components/people/person-ui";
 import { personForUser } from "@/lib/people";
 import { useNewsroom } from "@/lib/store";
 import { currentUser } from "@/lib/workflow";
+import { ReporterPerformancePanel } from "./reporter-performance-panel";
 import { ModulePage, Notice } from "../ui";
 
 export function ReporterMyProfileScreen() {
@@ -28,6 +29,7 @@ export function ReporterMyProfileScreen() {
   return (
     <ModulePage slug="my-profile">
       <PersonProfileView data={data} person={person} mode="admin" />
+      {user ? <ReporterPerformancePanel data={data} user={user} /> : null}
     </ModulePage>
   );
 }

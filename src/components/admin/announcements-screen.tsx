@@ -9,6 +9,7 @@ import { canPerm, currentUser } from "@/lib/workflow";
 import { faDate } from "@/lib/format";
 import { PERSON_KINDS } from "@/lib/people";
 import { JalaliDateTimePicker } from "@/components/jalali-datetime-picker";
+import { MediaLibraryModal } from "../media/media-library-modal";
 import { Button, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
 function pinUntilFromPreset(preset: string): string | null {
@@ -31,6 +32,8 @@ export function AnnouncementsScreen() {
   const [targetGroup, setTargetGroup] = useState("خبرنگار");
   const [pinPreset, setPinPreset] = useState("3d");
   const [pinCustomIso, setPinCustomIso] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [mediaOpen, setMediaOpen] = useState(false);
 
   const reporters = data.users.filter((u) => data.roles.find((r) => r.id === u.roleId)?.base === "reporter");
 
@@ -54,6 +57,7 @@ export function AnnouncementsScreen() {
       authorRole: roleBase === "publisher" ? "publisher" : "chief",
       title: title.trim(),
       body: body.trim(),
+      imageUrl: imageUrl.trim() || undefined,
       priority,
       target,
       pinnedUntil,
@@ -62,6 +66,7 @@ export function AnnouncementsScreen() {
     update((current) => ({ ...current, editorialAnnouncements: [announcement, ...current.editorialAnnouncements] }));
     setTitle("");
     setBody("");
+    setImageUrl("");
     setFlash("اطلاعیه سنجاق‌شده منتشر شد.");
   }
 
@@ -83,6 +88,25 @@ export function AnnouncementsScreen() {
         <Field label="متن پیام">
           <TextArea value={body} onChange={(event) => setBody(event.target.value)} rows={4} disabled={!allowed} />
         </Field>
+        <Field label="تصویر پیام (اختیاری)">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" tone="ghost" disabled={!allowed} onClick={() => setMediaOpen(true)} data-testid="announcement-pick-image">
+              انتخاب از کتابخانه رسانه
+            </Button>
+            <Input value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="یا آدرس تصویر" disabled={!allowed} data-testid="announcement-image-url" />
+          </div>
+          {imageUrl ? <img src={imageUrl} alt="" className="mt-2 max-h-40 rounded-lg border border-line object-cover" /> : null}
+        </Field>
+        <MediaLibraryModal
+          open={mediaOpen}
+          title="انتخاب تصویر اعلان"
+          confirmLabel="استفاده در پیام"
+          onClose={() => setMediaOpen(false)}
+          onPick={(src) => {
+            setImageUrl(src);
+            setMediaOpen(false);
+          }}
+        />
         <Field label="درجه اهمیت">
           <Select value={priority} onChange={(event) => setPriority(event.target.value as AnnouncementPriority)} disabled={!allowed}>
             <option value="normal">عادی</option>
@@ -144,6 +168,7 @@ export function AnnouncementsScreen() {
               <h3 className="font-bold">{item.title}</h3>
               <span className="text-xs text-muted">{item.priority} · {pinExpiryLabel(item.pinnedUntil)}</span>
             </div>
+            {item.imageUrl ? <img src={item.imageUrl} alt="" className="mt-2 max-h-48 w-full rounded-lg object-cover" data-testid="announcement-item-image" /> : null}
             <p className="mt-2 leading-7">{item.body}</p>
             <p className="mt-2 text-xs text-muted">{item.authorName} · {faDate(item.createdAt)}</p>
           </article>

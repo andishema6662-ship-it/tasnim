@@ -16,7 +16,8 @@ import {
   reporterUsers,
 } from "@/lib/pitches";
 import { useNewsroom } from "@/lib/store";
-import type { NewsPitch, PitchAudience, PitchPriority, PitchStatus } from "@/lib/types";
+import { PITCH_CONTENT_LABELS } from "@/lib/pitch-content";
+import type { NewsPitch, PitchAudience, PitchContentType, PitchPriority, PitchStatus } from "@/lib/types";
 import { categoryName, currentRole, currentUser, statusLabel } from "@/lib/workflow";
 import { Button, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
@@ -30,6 +31,7 @@ const emptyForm = (categoryId: string): Omit<NewsPitch, "id" | "createdAt" | "up
   deadline: "",
   priority: "normal",
   status: "active",
+  contentType: "field-report",
 });
 
 export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string } = {}) {
@@ -63,6 +65,7 @@ export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string 
       deadline: pitch.deadline?.slice(0, 10) ?? "",
       priority: pitch.priority,
       status: pitch.status,
+      contentType: pitch.contentType ?? "field-report",
     });
   }
 
@@ -93,6 +96,7 @@ export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string 
       deadline: form.deadline ? new Date(`${form.deadline}T12:00:00`).toISOString() : undefined,
       priority: form.priority,
       status: form.status,
+      contentType: form.contentType,
       createdBy: editingId ? data.pitches.find((item) => item.id === editingId)?.createdBy ?? user?.name ?? role.name : user?.name ?? role.name,
       createdAt: editingId ? data.pitches.find((item) => item.id === editingId)?.createdAt ?? ts : ts,
       updatedAt: ts,
@@ -161,6 +165,17 @@ export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string 
           </div>
           <Field label="توضیحات / دستور کار">
             <TextArea rows={4} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="زاویه، منابع پیشنهادی و نکات تحریریه" />
+          </Field>
+          <Field label="نوع محتوای درخواستی">
+            <Select
+              value={form.contentType ?? "field-report"}
+              data-testid="pitch-content-type"
+              onChange={(event) => setForm({ ...form, contentType: event.target.value as PitchContentType })}
+            >
+              {(Object.keys(PITCH_CONTENT_LABELS) as PitchContentType[]).map((key) => (
+                <option key={key} value={key}>{PITCH_CONTENT_LABELS[key]}</option>
+              ))}
+            </Select>
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="مخاطب سوژه">
@@ -233,6 +248,11 @@ export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string 
                     </p>
                     <h3 className="mt-1 text-lg font-bold leading-8">{pitch.title}</h3>
                     {pitch.topic ? <p className="text-sm text-rule">موضوع: {pitch.topic}</p> : null}
+                    {pitch.contentType ? (
+                      <p className="text-sm font-medium text-primary" data-testid="pitch-content-label">
+                        نوع محتوا: {PITCH_CONTENT_LABELS[pitch.contentType]}
+                      </p>
+                    ) : null}
                     <p className="mt-1 text-sm text-muted">
                       دسته {categoryName(data, pitch.categoryId)}
                       {pitch.deadline ? ` · مهلت ${new Date(pitch.deadline).toLocaleDateString("fa-IR")}` : ""}

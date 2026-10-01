@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { faDate, faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { monthlyPayrollForAuthor } from "@/lib/payroll-calc";
+import { findPayrollApproval, isPayrollApprovedForReporter, upsertPayrollApproval } from "@/lib/payroll-approval";
 import {
   periodStart,
   producedStoriesForReporter,
@@ -17,6 +18,7 @@ import { EventMapCanvas } from "@/components/event-map-canvas";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
 import { useNewsroom } from "@/lib/store";
 import type { AdminLetterTemplate, SpecialDossier } from "@/lib/types";
+import { currentRole, currentUser } from "@/lib/workflow";
 import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
 
 export function PitchPerformanceScreen() {
@@ -90,20 +92,32 @@ export function PitchPerformanceScreen() {
 
 export function PayrollScreen({ moduleSlug = "payroll" }: { moduleSlug?: string } = {}) {
   const { data, update } = useNewsroom();
-  const reporters = data.users.filter((user) => data.roles.find((role) => role.id === user.roleId)?.base === "reporter");
+  const role = currentRole(data);
+  const me = currentUser(data);
+  const reporterView = moduleSlug === "my-payroll";
+  const canApprove = role.base === "chief" || role.base === "publisher";
+  const reporters = data.users.filter((user) => data.roles.find((item) => item.id === user.roleId)?.base === "reporter");
   const now = new Date();
   const [author, setAuthor] = useState(reporters[0]?.name ?? "");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [flash, setFlash] = useState("");
-  const payroll = author ? monthlyPayrollForAuthor(data, author, year, month) : null;
+  const activeAuthor = reporterView ? me?.name ?? "" : author;
+  const activeUser = reporterView ? me : reporters.find((user) => user.name === author);
+  const payroll = activeAuthor ? monthlyPayrollForAuthor(data, activeAuthor, year, month) : null;
+  const approval = activeUser ? findPayrollApproval(data, activeUser.id, year, month) : undefined;
+  const approved = activeUser ? isPayrollApprovedForReporter(data, activeUser, year, month) : false;
 
   return (
     <ModulePage slug={moduleSlug}>
-      <Notice>تعرفه‌ها و فیش بر اساس اخبار منتشرشده در ماه انتخابی محاسبه می‌شود.</Notice>
+      <Notice>
+        {reporterView
+          ? "فقط فیش‌های تأییدشده توسط سردبیر در این صفحه نمایش داده می‌شوند. مبلغ هر خبر بر اساس درجه کیفیت (۱ تا ۳) محاسبه می‌شود."
+          : "تعرفه‌ها و فیش بر اساس اخبار منتشرشده و درجه خبر در ماه انتخابی محاسبه می‌شود."}
+      </Notice>
       <Flash>{flash}</Flash>
       <section className="rounded-lg border border-line bg-sheet p-4">
-        <h2 className="font-bold">تعرفه پایه (به ریال)</h2>
+        <h2 className="font-bold">تعرفه بر اساس درجه خبر (تومان)</h2>
         <div className="mt-3 space-y-2">
           {(data.payrollRates ?? []).map((rate) => (
             <div key={rate.id} className="grid gap-2 sm:grid-cols-[1fr_8rem]">
@@ -124,13 +138,19 @@ export function PayrollScreen({ moduleSlug = "payroll" }: { moduleSlug?: string 
         </div>
       </section>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Field label="خبرنگار">
-          <Select value={author} onChange={(event) => setAuthor(event.target.value)}>
-            {reporters.map((user) => (
-              <option key={user.id} value={user.name}>{user.name}</option>
-            ))}
-          </Select>
-        </Field>
+        {!reporterView ? (
+          <Field label="خبرنگار">
+            <Select value={author} onChange={(event) => setAuthor(event.target.value)}>
+              {reporters.map((user) => (
+                <option key={user.id} value={user.name}>{user.name}</option>
+              ))}
+            </Select>
+          </Field>
+        ) : (
+          <Field label="خبرنگار">
+            <Input value={activeAuthor} readOnly />
+          </Field>
+        )}
         <Field label="سال">
           <Input type="number" value={year} onChange={(event) => setYear(Number(event.target.value) || year)} />
         </Field>
@@ -138,10 +158,36 @@ export function PayrollScreen({ moduleSlug = "payroll" }: { moduleSlug?: string 
           <Input type="number" min={1} max={12} value={month} onChange={(event) => setMonth(Number(event.target.value) || month)} />
         </Field>
       </div>
-      {payroll ? (
-        <div className="mt-4 space-y-3">
+      {approval ? (
+        <p className="mt-3 text-sm" data-testid="payroll-approval-status">
+          وضعیت فیش: {approval.status === "approved" ? "تأیید شده توسط سردبیر" : "پیش‌نویس / در انتظار تأیید سردبیر"}
+        </p>
+      ) : null}
+      {canApprove && !reporterView && activeUser ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            data-testid="payroll-approve-btn"
+            onClick={() => {
+              update((current) => ({
+                ...current,
+                payrollApprovals: upsertPayrollApproval(current, activeUser.id, year, month, "approved", me?.id),
+              }));
+              setFlash("فیش حقوقی برای خبرنگار تأیید شد.");
+            }}
+          >
+            تأیید فیش برای خبرنگار
+          </Button>
+        </div>
+      ) : null}
+      {payroll && (!reporterView || approved) ? (
+        <div className="mt-4 space-y-3" data-testid="payroll-slip-view">
           <PayrollSlipView payroll={payroll} newsroomName={data.settings.newsroomName} />
           <Button type="button" onClick={() => { window.print(); setFlash("پنجره چاپ / PDF باز شد."); }}>چاپ یا ذخیره PDF</Button>
+        </div>
+      ) : reporterView && payroll && !approved ? (
+        <div data-testid="payroll-pending-notice">
+          <Empty>فیش این ماه هنوز توسط سردبیر تأیید نشده است.</Empty>
         </div>
       ) : (
         <Empty>خبرنگاری انتخاب نشده است.</Empty>
