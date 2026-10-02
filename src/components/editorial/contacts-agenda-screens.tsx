@@ -449,7 +449,7 @@ export function DashboardAgendaWidget() {
   }
 
   return (
-    <section className="rounded-lg border-2 border-accent/30 bg-gradient-to-l from-accent/5 to-sheet p-4" data-testid="dashboard-agenda-reminders">
+    <section className="flex h-full min-h-[12rem] flex-col rounded-2xl border-2 border-accent/30 bg-gradient-to-l from-accent/5 to-sheet p-4 shadow-sm" data-testid="dashboard-agenda-reminders">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-bold">برنامه‌ها و مصاحبه‌های پیش‌رو</h2>
         <Link href="/editorial/agenda" className="text-sm text-accent">تقویم کاری</Link>

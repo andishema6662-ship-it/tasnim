@@ -104,8 +104,15 @@ export function Dashboard() {
         </p>
       </header>
 
-      <DashboardPinnedAnnouncements />
-      <DashboardDeadlineAlerts />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2" data-testid="dashboard-row-alerts">
+        <DashboardPinnedAnnouncements />
+        <DashboardDeadlineAlerts />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2" data-testid="dashboard-row-agenda-events">
+        <DashboardAgendaWidget />
+        <DashboardUpcomingEventsWidget />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
@@ -158,10 +165,6 @@ export function Dashboard() {
           }
         />
       </div>
-
-      <DashboardAgendaWidget />
-
-      <DashboardUpcomingEventsWidget />
 
       <div className="grid gap-4 lg:grid-cols-2" data-testid="dashboard-hexa-charts">
         <HexaChartCard title="روند هفتگی تولید و انتشار" subtitle="Area / Line — HexaDash">

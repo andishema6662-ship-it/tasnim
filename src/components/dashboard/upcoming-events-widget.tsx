@@ -75,7 +75,7 @@ export function DashboardUpcomingEventsWidget() {
   }
 
   return (
-    <section className="rounded-2xl border border-line bg-sheet p-5 shadow-sm" data-testid="dashboard-upcoming-events">
+    <section className="flex h-full min-h-[12rem] flex-col rounded-2xl border border-line bg-sheet p-5 shadow-sm" data-testid="dashboard-upcoming-events">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-bold text-ink">رویدادهای پیش‌رو</h2>

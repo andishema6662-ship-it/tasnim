@@ -12,11 +12,17 @@ export function DashboardPinnedAnnouncements() {
   const user = currentUser(data);
   if (!user) return null;
   const items = activeAnnouncementsForUser(data, user);
-  if (!items.length) return null;
 
   return (
-    <section className="space-y-2" data-testid="dashboard-pinned-announcements">
-      {items.map((item) => (
+    <section
+      className="flex h-full min-h-[12rem] flex-col rounded-2xl border border-line bg-sheet p-4 shadow-sm"
+      data-testid="dashboard-pinned-announcements"
+    >
+      <h2 className="font-bold text-ink">پیام‌های سنجاق‌شده مدیر</h2>
+      <p className="mt-1 text-xs text-muted">اطلاعیه‌های فعال از مدیر مسئول و سردبیر</p>
+      <div className="mt-3 flex flex-1 flex-col gap-2">
+        {items.length === 0 ? <p className="text-sm text-muted">پیام سنجاق‌شده‌ای نیست.</p> : null}
+        {items.map((item) => (
         <div
           key={item.id}
           className={cn(
@@ -36,7 +42,8 @@ export function DashboardPinnedAnnouncements() {
           ) : null}
           <p className="mt-1 text-sm leading-7">{item.body}</p>
         </div>
-      ))}
+        ))}
+      </div>
     </section>
   );
 }
@@ -48,15 +55,22 @@ export function DashboardDeadlineAlerts() {
   const todos = urgentTodosForUser(data, user.id);
   const urgentAnnouncements = activeAnnouncementsForUser(data, user).filter((a) => a.priority !== "normal");
 
-  if (!todos.length && !urgentAnnouncements.length) return null;
-
   return (
-    <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm" data-testid="dashboard-deadline-alerts">
+    <section
+      className="flex h-full min-h-[12rem] flex-col rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm"
+      data-testid="dashboard-deadline-alerts"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-amber-950">هشدارهای هوشمند</h2>
+        <div>
+          <h2 className="font-bold text-amber-950">هشدارهای هوشمند و ضرب‌الاجل‌ها</h2>
+          <p className="mt-0.5 text-xs text-amber-900/80">کارهای فوری و یادآوری‌های نزدیک</p>
+        </div>
         <Link href="/reporters/my-tasks" className="text-sm font-medium text-primary hover:underline">کارهای من</Link>
       </div>
-      <ul className="mt-3 space-y-2 text-sm">
+      <ul className="mt-3 flex-1 space-y-2 text-sm">
+        {!todos.length && !urgentAnnouncements.length ? (
+          <li className="text-muted">هشدار فعالی نیست.</li>
+        ) : null}
         {todos.map((todo) => {
           const badge = deadlineBadge(todo.dueAt, todo.done);
           return (
