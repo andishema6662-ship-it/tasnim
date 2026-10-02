@@ -13,6 +13,7 @@ import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sect
 import { useNewsroom } from "@/lib/store";
 import { avatarUrlForUser } from "@/lib/user-avatar";
 import { currentRole, currentUser } from "@/lib/workflow";
+import { SystemVersionFooter } from "./core/system-version-footer";
 import { NotificationPreviewList } from "./dashboard/dashboard-alerts";
 import { LiveClock } from "./live-clock";
 import { dashboardAlertCount } from "@/lib/reporter-workspace";
@@ -599,6 +600,9 @@ export function Shell({ children }: { children: ReactNode }) {
                     <Link href="/site" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       خروجی سایت
                     </Link>
+                    <Link href="/infra/changelog" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                      گزارش تغییرات سامانه
+                    </Link>
                     <Link href="/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       تنظیمات سیستم
                     </Link>
@@ -618,8 +622,9 @@ export function Shell({ children }: { children: ReactNode }) {
             </ul>
           </div>
         </header>
-        <main className="px-4 py-6 pb-16 lg:px-8">{canAccessPath(data, path) ? children : <UnauthorizedPanel />}</main>
-        <p className="px-4 pb-6 text-xs text-muted lg:px-8">داده‌ها در حافظه همین مرورگر می‌ماند و با تازه‌سازی از بین نمی‌رود.</p>
+        <main className="px-4 py-6 pb-8 lg:px-8">{canAccessPath(data, path) ? children : <UnauthorizedPanel />}</main>
+        <SystemVersionFooter />
+        <p className="px-4 pb-4 text-center text-[11px] text-muted lg:px-8">داده‌ها در حافظه همین مرورگر می‌ماند و با تازه‌سازی از بین نمی‌رود.</p>
       </div>
 
       {open ? (

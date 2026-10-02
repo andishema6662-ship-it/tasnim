@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import { useParams } from "next/navigation";
 import { ChatScreen } from "./admin/chat-screen";
+import { ChangelogScreen } from "./core/changelog-screen";
 import { AccessScreen, BackupScreen, CommsScreen, FormsScreen, LinksScreen, LogosScreen, MenusScreen, MonitoringScreen, PortalScreen, RolesScreen, SettingsScreen, SubsitesScreen, SystemScreen, UsersScreen } from "./core/core-screens";
 import { AiHubScreen } from "./editorial/ai-hub-screen";
 import { AiScreen, OrderScreen, ProcessScreen, SubmissionsScreen, SuggestionsScreen } from "./editorial/other-screens";
@@ -43,6 +44,7 @@ import { UnauthorizedPanel } from "./unauthorized-panel";
 import { Page } from "./ui";
 
 const screens: Record<string, () => ReactElement> = {
+  "infra/changelog": ChangelogScreen,
   "infra/system": SystemScreen,
   "infra/settings": SettingsScreen,
   "infra/monitoring": MonitoringScreen,

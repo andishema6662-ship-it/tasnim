@@ -35,6 +35,7 @@ export const groups: GroupInfo[] = [
 ];
 
 export const modules: ModuleInfo[] = [
+  { group: "infra", slug: "changelog", title: "تغییرات سامانه", description: "گزارش تغییرات و به‌روزرسانی‌های نسخه‌های سامانه شمسه." },
   { group: "infra", slug: "system", title: "اطلاعات سیستم", description: "وضعیت همین نسخه و داده ذخیره‌شده در مرورگر." },
   { group: "infra", slug: "settings", title: "تنظیمات سیستم", description: "نام اتاق خبر و اندازه فهرست‌ها." },
   { group: "infra", slug: "monitoring", title: "مانیتورینگ سرور", description: "سنجه‌های محیط محلی مرورگر، نه یک سرور سازمانی." },

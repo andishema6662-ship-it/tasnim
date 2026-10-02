@@ -40,6 +40,7 @@ function reporterPreset(): string[] {
     "media/people",
     "audience/comments",
     "audience/forum",
+    "infra/changelog",
     "admin/chat",
     "admin/comms",
     "admin/official-contacts",

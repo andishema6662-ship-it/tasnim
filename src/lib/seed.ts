@@ -1210,6 +1210,13 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     };
     return normalizeEventMapProject(withMeta);
   });
+  const changelogModuleKey = "infra/changelog";
+  next.roles.forEach((role) => {
+    const list = next.roleModuleAccess[role.id] ?? [];
+    if (!list.includes(changelogModuleKey)) {
+      next.roleModuleAccess[role.id] = [...list, changelogModuleKey];
+    }
+  });
   if (!next.chatThreads.some((thread) => thread.id === CHAT_THREAD_IT_SUPPORT)) {
     const support = base.chatThreads.find((thread) => thread.id === CHAT_THREAD_IT_SUPPORT);
     if (support) next.chatThreads = [support, ...next.chatThreads];
