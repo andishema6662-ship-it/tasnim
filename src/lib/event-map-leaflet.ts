@@ -5,7 +5,7 @@ export const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 export const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 export function createOsmTileLayer(L: typeof import("leaflet")) {
-  return L.tileLayer(OSM_TILE_URL, { maxZoom: 19, attribution: OSM_ATTRIBUTION });
+  return L.tileLayer(OSM_TILE_URL, { maxZoom: 19, attribution: OSM_ATTRIBUTION, crossOrigin: "anonymous" });
 }
 
 export function orderedRoutePoints(project: EventMapProject): EventMapPoint[] {
@@ -35,6 +35,7 @@ export type RouteLayerSyncOptions = {
   pulseMarkers?: boolean;
   polylineClassName?: string;
   onMarkerDoubleClick?: (pointId: string, currentLabel: string) => void;
+  onMarkerClick?: (pointId: string, currentLabel: string) => void;
 };
 
 export function syncRouteLayer(
@@ -73,6 +74,12 @@ export function syncRouteLayer(
       keyboard: false,
       alt: label,
     }).addTo(layer);
+    if (options.onMarkerClick) {
+      marker.on("click", (event) => {
+        L.DomEvent.stopPropagation(event);
+        options.onMarkerClick?.(point.id, point.label);
+      });
+    }
     if (options.onMarkerDoubleClick) {
       marker.on("dblclick", (event) => {
         L.DomEvent.stopPropagation(event);

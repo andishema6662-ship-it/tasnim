@@ -42,6 +42,9 @@ test("event map two-step workflow and route list", async ({ page }) => {
   await expect(page.getByTestId("event-map-region-label")).toContainText("نقشه تهران");
   await expect(page.getByTestId("event-map-osm-embed")).toBeVisible();
   await expect(page.getByTestId("event-map-phase-plot")).toBeVisible();
+  await expect(page.getByTestId("event-map-undo-point")).toBeVisible();
+  await expect(page.getByTestId("event-map-download-gif")).toBeEnabled();
+  await expect(page.getByTestId("event-map-points-list")).toBeVisible();
   await expect(page.getByTestId("event-map-canvas").getByText("میدان انقلاب")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("event-map-canvas").getByText("میدان آزادی")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("event-map-animated-preview")).toBeVisible();

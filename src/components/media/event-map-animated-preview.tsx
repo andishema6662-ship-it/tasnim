@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { LayerGroup, Map as LeafletMap } from "leaflet";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import type { CircleMarker, LayerGroup, Map as LeafletMap } from "leaflet";
 import { projectMapCenter } from "@/lib/event-map-geo";
 import {
   createOsmTileLayer,
+  interpolateLatLng,
   orderedRoutePoints,
   setMapInteraction,
   startRouteDotAnimation,
@@ -25,13 +26,67 @@ function viewFromProject(project: EventMapProject) {
   return { lat: c.lat, lng: c.lng, zoom: c.zoom };
 }
 
-export function EventMapAnimatedPreview({ project, className }: { project: EventMapProject; className?: string }) {
+import type { EventMapPreviewHandle } from "@/lib/event-map-preview-handle";
+
+export const EventMapAnimatedPreview = forwardRef<
+  EventMapPreviewHandle,
+  { project: EventMapProject; className?: string }
+>(function EventMapAnimatedPreview({ project, className }, ref) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const routeLayerRef = useRef<LayerGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const stopAnimRef = useRef<(() => void) | null>(null);
+  const travelDotRef = useRef<CircleMarker | null>(null);
+  const exportModeRef = useRef(false);
+  const projectRef = useRef(project);
   const [mapReady, setMapReady] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  projectRef.current = project;
+
+  function ensureTravelDot(t: number) {
+    const L = leafletRef.current;
+    const layer = routeLayerRef.current;
+    if (!L || !layer || !exportModeRef.current) return;
+    const points = orderedRoutePoints(projectRef.current);
+    const pos = interpolateLatLng(L, points, t);
+    if (!pos) return;
+    if (!travelDotRef.current) {
+      travelDotRef.current = L.circleMarker(pos, {
+        radius: 6,
+        className: "event-map-travel-dot-marker",
+        interactive: false,
+      }).addTo(layer);
+    } else {
+      travelDotRef.current.setLatLng(pos);
+    }
+  }
+
+  useImperativeHandle(ref, () => ({
+    getContainer: () => rootRef.current,
+    setAnimationProgress: (t: number) => ensureTravelDot(t),
+    setExportMode: (enabled: boolean) => {
+      exportModeRef.current = enabled;
+      setExporting(enabled);
+      if (enabled) {
+        stopAnimRef.current?.();
+        stopAnimRef.current = null;
+      }
+    },
+    waitForTiles: () =>
+      new Promise((resolve) => {
+        const map = mapRef.current;
+        if (!map) {
+          resolve();
+          return;
+        }
+        map.whenReady(() => {
+          window.setTimeout(resolve, 400);
+        });
+      }),
+  }));
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +114,10 @@ export function EventMapAnimatedPreview({ project, className }: { project: Event
       setMapInteraction(map, false);
       const view = viewFromProject(project);
       map.setView([view.lat, view.lng], view.zoom, { animate: false });
-      setMapReady(true);
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        setMapReady(true);
+      });
     });
 
     return () => {
@@ -67,6 +125,7 @@ export function EventMapAnimatedPreview({ project, className }: { project: Event
       setMapReady(false);
       stopAnimRef.current?.();
       stopAnimRef.current = null;
+      travelDotRef.current = null;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -90,6 +149,7 @@ export function EventMapAnimatedPreview({ project, className }: { project: Event
     if (!map || !L || !layer) return;
 
     stopAnimRef.current?.();
+    travelDotRef.current = null;
     const points = orderedRoutePoints(project);
     syncRouteLayer(L, layer, points, {
       polylineColor: "#fbbf24",
@@ -98,17 +158,18 @@ export function EventMapAnimatedPreview({ project, className }: { project: Event
       pulseMarkers: true,
       polylineClassName: "event-map-preview-route",
     });
-    if (points.length > 1) {
+    if (points.length > 1 && !exportModeRef.current) {
       stopAnimRef.current = startRouteDotAnimation(L, map, layer, points, 4000);
     }
     return () => {
       stopAnimRef.current?.();
       stopAnimRef.current = null;
     };
-  }, [project.points, project.routeOrder, mapReady]);
+  }, [project.points, project.routeOrder, mapReady, exporting]);
 
   return (
     <div
+      ref={rootRef}
       className={cn("relative h-56 w-full overflow-hidden rounded-xl border border-line bg-sheet", className)}
       data-testid="event-map-animated-preview"
     >
@@ -118,4 +179,4 @@ export function EventMapAnimatedPreview({ project, className }: { project: Event
       </p>
     </div>
   );
-}
+});

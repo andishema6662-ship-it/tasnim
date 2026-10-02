@@ -11,6 +11,7 @@ import {
   setMapInteraction,
   syncRouteLayer,
 } from "@/lib/event-map-leaflet";
+import { clearAllRoutePoints, removeRoutePoint, undoLastRoutePoint } from "@/lib/event-map-route-edit";
 import { regionById } from "@/lib/event-map-regions";
 import { uid } from "@/lib/id";
 import type { EventMapPoint, EventMapProject } from "@/lib/types";
@@ -63,6 +64,8 @@ export function EventMapInteractive({
   phaseRef.current = phase;
   onChangeRef.current = onChange;
 
+  const routePoints = orderedRoutePoints(project);
+
   const patch = useCallback((partial: Partial<EventMapProject>) => {
     const current = projectRef.current;
     onChangeRef.current({
@@ -71,6 +74,42 @@ export function EventMapInteractive({
       embedCode: `<div data-event-map="${current.id}" class="event-map-widget" data-animated="1"></div>`,
     });
   }, []);
+
+  const applyProject = useCallback((next: EventMapProject | null) => {
+    if (!next) return;
+    onChangeRef.current({
+      ...next,
+      embedCode: `<div data-event-map="${next.id}" class="event-map-widget" data-animated="1"></div>`,
+    });
+  }, []);
+
+  function undoLast() {
+    const next = undoLastRoutePoint(projectRef.current);
+    applyProject(next);
+  }
+
+  function clearAll() {
+    if (!window.confirm("همه نقاط مسیر پاک شوند؟")) return;
+    applyProject(clearAllRoutePoints(projectRef.current));
+  }
+
+  function removePoint(pointId: string) {
+    const next = removeRoutePoint(projectRef.current, pointId);
+    applyProject(next);
+  }
+
+  useEffect(() => {
+    if (phase !== "plot") return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Backspace" || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      event.preventDefault();
+      undoLast();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [phase, applyProject]);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,6 +192,11 @@ export function EventMapInteractive({
       polylineColor: "#8e1e2d",
       polylineWeight: 4,
       interactiveMarkers: true,
+      onMarkerClick: (pointId, label) => {
+        if (phaseRef.current !== "plot") return;
+        if (!window.confirm(`نقطه «${label}» حذف شود؟`)) return;
+        removePoint(pointId);
+      },
       onMarkerDoubleClick: (pointId, currentLabel) => {
         const label = window.prompt("نام نقطه", currentLabel);
         if (!label) return;
@@ -162,7 +206,7 @@ export function EventMapInteractive({
         });
       },
     });
-  }, [project.points, project.routeOrder, patch, mapReady]);
+  }, [project.points, project.routeOrder, patch, mapReady, applyProject]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -219,13 +263,37 @@ export function EventMapInteractive({
             بازگشت به تنظیم نما
           </Button>
         ) : null}
+        {phase === "plot" ? (
+          <>
+            <Button
+              type="button"
+              tone="ghost"
+              className="text-xs"
+              data-testid="event-map-undo-point"
+              disabled={!routePoints.length}
+              onClick={undoLast}
+            >
+              پاک کردن آخرین نقطه
+            </Button>
+            <Button
+              type="button"
+              tone="quiet"
+              className="text-xs"
+              data-testid="event-map-clear-points"
+              disabled={!routePoints.length}
+              onClick={clearAll}
+            >
+              پاک کردن همه نقاط
+            </Button>
+          </>
+        ) : null}
       </div>
       <p className="text-xs text-muted" data-testid="event-map-region-label">
         <span className="font-semibold text-ink">نقشه {regionById(project.regionId).name}</span>
         {" — "}
         {phase === "explore" && !project.viewLocked
           ? "نقشه را با درگ جابه‌جا کنید و با اسکرول زوم کنید."
-          : "روی نقشه کلیک کنید تا مبدا، ایستگاه‌های میانی و مقصد را اضافه کنید."}
+          : "روی نقشه کلیک کنید تا مبدا، ایستگاه‌های میانی و مقصد را اضافه کنید. برای حذف، روی مارکر کلیک کنید یا از لیست زیر استفاده کنید."}
       </p>
       <div
         className={cn(
@@ -241,6 +309,20 @@ export function EventMapInteractive({
           aria-label={`نقشه OpenStreetMap — ${OSM_ATTRIBUTION}`}
         />
       </div>
+      {phase === "plot" && routePoints.length > 0 ? (
+        <ul className="space-y-1 rounded-lg border border-line bg-paper/60 p-3 text-sm" data-testid="event-map-points-list">
+          {routePoints.map((point, index) => (
+            <li key={point.id} className="flex items-center justify-between gap-2">
+              <span>
+                <span className="font-semibold">{index + 1}.</span> {point.label}
+              </span>
+              <Button type="button" tone="quiet" className="text-xs" onClick={() => removePoint(point.id)}>
+                حذف
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

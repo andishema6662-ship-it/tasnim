@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { EventMapAnimatedPreview } from "@/components/media/event-map-animated-preview";
 import { EventMapInteractive } from "@/components/media/event-map-interactive";
+import { downloadBlob, exportRoutePreviewGif } from "@/lib/event-map-gif-export";
+import { orderedRoutePoints } from "@/lib/event-map-leaflet";
+import type { EventMapPreviewHandle } from "@/lib/event-map-preview-handle";
 import { normalizeEventMapProject } from "@/lib/event-map-geo";
 import { EVENT_MAP_REGIONS, regionById } from "@/lib/event-map-regions";
 import { uid } from "@/lib/id";
@@ -18,10 +21,14 @@ function embedFor(project: EventMapProject): string {
 
 export function EventMapScreen() {
   const { data, update } = useNewsroom();
-  const [activeId, setActiveId] = useState(data.eventMaps[0]?.id ?? "");
-  const [phase, setPhase] = useState<MapPhase>("explore");
+  const initialProject = data.eventMaps[0];
+  const [activeId, setActiveId] = useState(initialProject?.id ?? "");
+  const [phase, setPhase] = useState<MapPhase>(initialProject?.viewLocked ? "plot" : "explore");
   const [flash, setFlash] = useState("");
+  const [gifBusy, setGifBusy] = useState(false);
+  const previewRef = useRef<EventMapPreviewHandle>(null);
   const project = data.eventMaps.find((item) => item.id === activeId) ?? data.eventMaps[0];
+  const routePointCount = project ? orderedRoutePoints(project).length : 0;
   const defaultRegionId = data.eventMapDefaults?.defaultRegionId ?? "iran";
 
   const region = useMemo(() => regionById(project?.regionId ?? defaultRegionId), [project?.regionId, defaultRegionId]);
@@ -182,7 +189,63 @@ export function EventMapScreen() {
               }}
             />
 
-            <EventMapAnimatedPreview project={project} />
+            <EventMapAnimatedPreview ref={previewRef} project={project} />
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                tone="ghost"
+                className="text-xs"
+                data-testid="event-map-download-gif"
+                disabled={routePointCount < 2 || gifBusy}
+                onClick={async () => {
+                  const handle = previewRef.current;
+                  if (!handle) return;
+                  setGifBusy(true);
+                  setFlash("");
+                  try {
+                    const blob = await exportRoutePreviewGif(handle);
+                    const safeTitle = (project.title || "route").replace(/[^\w\u0600-\u06FF-]+/g, "-").slice(0, 40);
+                    downloadBlob(blob, `${safeTitle}-map.gif`);
+                    setFlash("فایل GIF دانلود شد.");
+                  } catch (error) {
+                    setFlash(error instanceof Error ? error.message : "ساخت گیف ناموفق بود.");
+                  } finally {
+                    setGifBusy(false);
+                  }
+                }}
+              >
+                {gifBusy ? "در حال ساخت گیف…" : "دریافت خروجی گیف (GIF)"}
+              </Button>
+              <Button
+                type="button"
+                tone="quiet"
+                className="text-xs"
+                data-testid="event-map-copy-gif-dataurl"
+                disabled={routePointCount < 2 || gifBusy}
+                onClick={async () => {
+                  const handle = previewRef.current;
+                  if (!handle) return;
+                  setGifBusy(true);
+                  try {
+                    const blob = await exportRoutePreviewGif(handle);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const dataUrl = String(reader.result ?? "");
+                      void navigator.clipboard?.writeText(dataUrl);
+                      setFlash("آدرس داده گیف در حافظه کپی شد (برای درج در خبر).");
+                    };
+                    reader.readAsDataURL(blob);
+                  } catch (error) {
+                    setFlash(error instanceof Error ? error.message : "ساخت گیف ناموفق بود.");
+                  } finally {
+                    setGifBusy(false);
+                  }
+                }}
+              >
+                کپی data URL گیف
+              </Button>
+            </div>
 
             <div className="mt-2 flex flex-wrap gap-2">
               <Button type="button" tone="quiet" onClick={() => deleteRoute(project.id)}>حذف این مسیر</Button>
