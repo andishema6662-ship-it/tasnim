@@ -1,6 +1,7 @@
 import { applyBrandingDefaults, defaultBrandingSettings, LEGACY_NEWSROOM_NAME } from "./branding";
 import { migrateModuleAccessList } from "./nav-migration";
 import { CHAT_THREAD_IT_SUPPORT } from "./chat-support";
+import { seedChangelogReleases } from "./changelog";
 import { IRAN_MAP_CENTER, normalizeEventMapProject, TEHRAN_MAP_CENTER } from "./event-map-geo";
 import { defaultUserIdForRole } from "./session-user";
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
@@ -881,6 +882,8 @@ export function createSeed(): NewsroomData {
       { id: "sch-rubika", channel: "rubika", enabled: false, template: "{title}\n{lead}" },
       { id: "sch-x", channel: "x", enabled: true, template: "{title}\n{link} {hashtags}" },
     ],
+    productChangelog: seedChangelogReleases(),
+    systemVersion: "2.4.0",
     versionHistory: [
       {
         id: "ver-1",
@@ -1179,6 +1182,12 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   }));
   if (!Array.isArray(next.socialChannels) || next.socialChannels.length === 0) next.socialChannels = base.socialChannels;
   if (!Array.isArray(next.versionHistory) || next.versionHistory.length === 0) next.versionHistory = base.versionHistory;
+  if (!Array.isArray(next.productChangelog) || next.productChangelog.length === 0) {
+    next.productChangelog = base.productChangelog;
+  }
+  if (!next.systemVersion) {
+    next.systemVersion = next.productChangelog[0]?.version ?? base.systemVersion;
+  }
   if (!Array.isArray(next.adminTemplates) || next.adminTemplates.length === 0) next.adminTemplates = base.adminTemplates;
   if (!Array.isArray(next.specialDossiers)) next.specialDossiers = base.specialDossiers;
   if (!Array.isArray(next.eventMaps)) next.eventMaps = base.eventMaps;

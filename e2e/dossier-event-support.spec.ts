@@ -42,10 +42,10 @@ test("event map two-step workflow and route list", async ({ page }) => {
   await expect(page.getByTestId("event-map-region-label")).toContainText("نقشه تهران");
   await expect(page.getByTestId("event-map-osm-embed")).toBeVisible();
   await expect(page.getByTestId("event-map-phase-plot")).toBeVisible();
-  const canvas = page.getByTestId("event-map-canvas");
-  await expect(canvas.getByRole("button", { name: "میدان انقلاب" })).toBeVisible();
-  await expect(canvas.getByRole("button", { name: "میدان آزادی" })).toBeVisible();
+  await expect(page.getByTestId("event-map-canvas").getByText("میدان انقلاب")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("event-map-canvas").getByText("میدان آزادی")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("event-map-animated-preview")).toBeVisible();
+  await expect(page.getByTestId("event-map-preview-tiles").locator(".leaflet-tile").first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("event-map-embed")).toHaveValue(/data-animated="1"/);
   await page.getByRole("button", { name: "بازگشت به تنظیم نما" }).click();
   await expect(page.getByTestId("event-map-lock-view")).toBeVisible();

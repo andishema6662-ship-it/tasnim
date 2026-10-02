@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @theme {
   /* HexaDash-style admin palette (portal /site uses inline theme where needed) */
@@ -169,6 +170,86 @@ body {
     transform: translateY(0);
   }
 }
+
+.event-map-leaflet-marker-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+.event-map-marker-label {
+  transform: translate(-50%, -100%);
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.event-map-marker-label--static {
+  pointer-events: none;
+}
+
+.event-map-pulse-ring {
+  animation: event-map-marker-pulse 1.6s ease-in-out infinite;
+}
+
+.event-map-pulse-origin path {
+  fill: #34d399;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.event-map-pulse-dest path {
+  fill: #fb7185;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.event-map-pulse-waypoint path {
+  fill: #38bdf8;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.event-map-travel-dot-marker path {
+  fill: #fcd34d;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+@keyframes event-map-marker-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.leaflet-overlay-pane .event-map-preview-route {
+  stroke-dasharray: 120;
+  animation: event-map-preview-draw 3s ease-in-out infinite;
+}
+
+@keyframes event-map-preview-draw {
+  0% {
+    stroke-dashoffset: 120;
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shamseh-wedge,
   .shamseh-layer-ring,

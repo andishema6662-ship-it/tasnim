@@ -1,3 +1,5 @@
+import type { ChangelogRelease } from "./changelog";
+
 export type Status = "draft" | "editing" | "review" | "ready" | "published" | "archived";
 
 export type RoleBase = "publisher" | "chief" | "reporter";
@@ -876,6 +878,9 @@ export interface NewsroomData {
   specialDossiers: SpecialDossier[];
   eventMaps: EventMapProject[];
   eventMapDefaults?: EventMapDefaults;
+  productChangelog?: ChangelogRelease[];
+  /** آخرین نسخه منتشرشده (فوتر و changelog) */
+  systemVersion?: string;
   officialContacts: OfficialContact[];
   reporterAgenda: ReporterAgendaItem[];
   reporterTodos: ReporterTodo[];

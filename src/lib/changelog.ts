@@ -13,12 +13,15 @@ export interface ChangelogChange {
 }
 
 export interface ChangelogRelease {
+  releaseId?: string;
   version: string;
   releasedAt: string;
   /** برچسب تاریخ شمسی برای نمایش (مثلاً مهر ۱۴۰۵) */
   jalaliPeriod: string;
   summary?: string;
   changes: ChangelogChange[];
+  /** نسخه‌های ثبت‌شده توسط سردبیر — قابل ویرایش و حذف */
+  editable?: boolean;
 }
 
 export const CHANGELOG_KIND_LABEL: Record<ChangelogChangeKind, string> = {
@@ -100,4 +103,26 @@ export function latestRelease(): ChangelogRelease {
 
 export function versionDisplay(version: string): string {
   return version.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)] ?? d);
+}
+
+export function seedChangelogReleases(): ChangelogRelease[] {
+  return PRODUCT_CHANGELOG.map((release) => ({
+    ...release,
+    releaseId: `rel-${release.version}`,
+    editable: false,
+  }));
+}
+
+export function resolveProductChangelog(data: { productChangelog?: ChangelogRelease[] }): ChangelogRelease[] {
+  if (data.productChangelog?.length) return data.productChangelog;
+  return seedChangelogReleases();
+}
+
+export function resolveSystemVersion(data: { productChangelog?: ChangelogRelease[]; systemVersion?: string }): string {
+  if (data.systemVersion) return data.systemVersion;
+  return resolveProductChangelog(data)[0]?.version ?? SYSTEM_VERSION;
+}
+
+export function sortChangelogReleases(releases: ChangelogRelease[]): ChangelogRelease[] {
+  return [...releases].sort((a, b) => new Date(b.releasedAt).getTime() - new Date(a.releasedAt).getTime());
 }

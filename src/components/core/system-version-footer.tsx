@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { CHANGELOG_HREF, SYSTEM_PRODUCT_NAME, SYSTEM_VERSION, versionDisplay } from "@/lib/changelog";
+import { CHANGELOG_HREF, SYSTEM_PRODUCT_NAME, resolveSystemVersion, versionDisplay } from "@/lib/changelog";
+import { useNewsroom } from "@/lib/store";
 import { cn } from "../ui";
 
 export function SystemVersionFooter({ className }: { className?: string }) {
+  const { data } = useNewsroom();
+  const version = resolveSystemVersion(data);
+
   return (
     <footer
       role="contentinfo"
@@ -16,7 +20,7 @@ export function SystemVersionFooter({ className }: { className?: string }) {
     >
       <span>
         {SYSTEM_PRODUCT_NAME} — نسخه{" "}
-        <span className="font-semibold text-ink" dir="ltr">{versionDisplay(SYSTEM_VERSION)}</span>
+        <span className="font-semibold text-ink" dir="ltr">{versionDisplay(version)}</span>
       </span>
       <span className="hidden text-line sm:inline" aria-hidden>·</span>
       <Link href={CHANGELOG_HREF} className="font-semibold text-primary hover:underline" data-testid="system-changelog-link">

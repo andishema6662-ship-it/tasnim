@@ -83,10 +83,13 @@ export function EventMapCanvas({
     checkpoint: "bg-accent",
     gather: "bg-emerald-600",
     rally: "bg-violet-700",
+    origin: "bg-primary",
+    destination: "bg-rose-600",
+    waypoint: "bg-sky-600",
   };
 
   function cycleKind(kind?: EventMapPointKind): EventMapPointKind {
-    const order: EventMapPointKind[] = ["checkpoint", "gather", "rally"];
+    const order: EventMapPointKind[] = ["origin", "waypoint", "destination", "checkpoint", "gather", "rally"];
     const index = order.indexOf(kind ?? "checkpoint");
     return order[(index + 1) % order.length];
   }

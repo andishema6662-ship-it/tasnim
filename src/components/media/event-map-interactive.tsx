@@ -1,7 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { bboxFromCenter, osmEmbedUrl, percentToLatLngInBbox, pointDisplayPercent, projectMapCenter } from "@/lib/event-map-geo";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap, LayerGroup } from "leaflet";
+import { projectMapCenter } from "@/lib/event-map-geo";
+import {
+  createOsmTileLayer,
+  orderedRoutePoints,
+  OSM_ATTRIBUTION,
+  readMapView,
+  setMapInteraction,
+  syncRouteLayer,
+} from "@/lib/event-map-leaflet";
 import { regionById } from "@/lib/event-map-regions";
 import { uid } from "@/lib/id";
 import type { EventMapPoint, EventMapProject } from "@/lib/types";
@@ -21,9 +30,8 @@ function viewFromProject(project: EventMapProject) {
   return { lat: c.lat, lng: c.lng, zoom: c.zoom };
 }
 
-function pointLabel(index: number, total: number): string {
+function pointLabel(index: number): string {
   if (index === 0) return "مبدا";
-  if (index === total) return "مقصد نهایی";
   return `ایستگاه ${index}`;
 }
 
@@ -40,93 +48,145 @@ export function EventMapInteractive({
   onChange: (next: EventMapProject) => void;
   onLockView: (view: { lat: number; lng: number; zoom: number }) => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ x: number; y: number } | null>(null);
-  const [view, setView] = useState(() => viewFromProject(project));
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const routeLayerRef = useRef<LayerGroup | null>(null);
+  const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const projectRef = useRef(project);
+  const phaseRef = useRef(phase);
+  const onChangeRef = useRef(onChange);
+  const regionIdRef = useRef(project.regionId);
+  const skipNextRegionFlyRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
-  const activeView = project.viewLocked ? viewFromProject(project) : view;
-  const bbox = useMemo(
-    () => bboxFromCenter(activeView.lat, activeView.lng, activeView.zoom),
-    [activeView.lat, activeView.lng, activeView.zoom],
-  );
-  const embedUrl = useMemo(() => osmEmbedUrl(bbox), [bbox]);
+  projectRef.current = project;
+  phaseRef.current = phase;
+  onChangeRef.current = onChange;
 
-  const patch = useCallback(
-    (partial: Partial<EventMapProject>) => {
-      onChange({
-        ...project,
-        ...partial,
-        embedCode: `<div data-event-map="${project.id}" class="event-map-widget" data-animated="1"></div>`,
-      });
-    },
-    [onChange, project],
-  );
-
-  function addPointAt(clientX: number, clientY: number) {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = Math.min(98, Math.max(2, ((clientX - rect.left) / rect.width) * 100));
-    const y = Math.min(98, Math.max(2, ((clientY - rect.top) / rect.height) * 100));
-    const { lat, lng } = percentToLatLngInBbox(x, y, bbox);
-    const id = uid("pt");
-    const order = project.routeOrder ?? [];
-    const nextIndex = order.length;
-    const point: EventMapPoint = {
-      id,
-      x,
-      y,
-      lat,
-      lng,
-      label: pointLabel(nextIndex, nextIndex),
-      kind: nextIndex === 0 ? "origin" : "waypoint",
-    };
-    patch({
-      points: [...project.points, point],
-      routeOrder: [...order, id],
+  const patch = useCallback((partial: Partial<EventMapProject>) => {
+    const current = projectRef.current;
+    onChangeRef.current({
+      ...current,
+      ...partial,
+      embedCode: `<div data-event-map="${current.id}" class="event-map-widget" data-animated="1"></div>`,
     });
-  }
+  }, []);
 
-  function onPointerDown(event: React.PointerEvent) {
-    if (phase !== "explore" || project.viewLocked) return;
-    dragRef.current = { x: event.clientX, y: event.clientY };
-    (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
-  }
+  useEffect(() => {
+    let cancelled = false;
+    const container = containerRef.current;
+    if (!container) return;
 
-  function onPointerMove(event: React.PointerEvent) {
-    if (!dragRef.current || phase !== "explore" || project.viewLocked) return;
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const dx = event.clientX - dragRef.current.x;
-    const dy = event.clientY - dragRef.current.y;
-    dragRef.current = { x: event.clientX, y: event.clientY };
-    const lngSpan = bbox.east - bbox.west;
-    const latSpan = bbox.north - bbox.south;
-    setView((current) => ({
-      ...current,
-      lng: current.lng - (dx / rect.width) * lngSpan,
-      lat: current.lat + (dy / rect.height) * latSpan,
-    }));
-  }
+    void import("leaflet").then((L) => {
+      if (cancelled || mapRef.current) return;
+      leafletRef.current = L;
+      const map = L.map(container, {
+        zoomControl: true,
+        attributionControl: true,
+        scrollWheelZoom: true,
+        preferCanvas: true,
+      });
+      createOsmTileLayer(L).addTo(map);
+      const routeLayer = L.layerGroup().addTo(map);
+      mapRef.current = map;
+      routeLayerRef.current = routeLayer;
 
-  function onPointerUp() {
-    dragRef.current = null;
-  }
+      const initial = viewFromProject(projectRef.current);
+      map.setView([initial.lat, initial.lng], initial.zoom, { animate: false });
 
-  function onWheel(event: React.WheelEvent) {
-    if (phase !== "explore" || project.viewLocked) return;
-    event.preventDefault();
-    const delta = event.deltaY > 0 ? -1 : 1;
-    setView((current) => ({
-      ...current,
-      zoom: Math.min(18, Math.max(5, current.zoom + delta)),
-    }));
-  }
+      map.on("click", (event) => {
+        const current = projectRef.current;
+        const currentPhase = phaseRef.current;
+        if (currentPhase !== "plot") return;
+        const order = current.routeOrder ?? [];
+        const nextIndex = order.length;
+        const id = uid("pt");
+        const { lat, lng } = event.latlng;
+        const point: EventMapPoint = {
+          id,
+          x: 0,
+          y: 0,
+          lat,
+          lng,
+          label: pointLabel(nextIndex),
+          kind: nextIndex === 0 ? "origin" : "waypoint",
+        };
+        patch({
+          points: [...current.points, point],
+          routeOrder: [...order, id],
+        });
+      });
 
-  const routePoints = (project.routeOrder ?? [])
-    .map((id) => project.points.find((p) => p.id === id))
-    .filter(Boolean) as EventMapPoint[];
+      setMapInteraction(map, phaseRef.current === "explore" && !projectRef.current.viewLocked);
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        setMapReady(true);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      setMapReady(false);
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        routeLayerRef.current = null;
+        leafletRef.current = null;
+      }
+    };
+  }, [patch, project.id]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    setMapInteraction(map, phase === "explore" && !project.viewLocked);
+  }, [phase, project.viewLocked]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    const layer = routeLayerRef.current;
+    if (!map || !L || !layer) return;
+
+    const points = orderedRoutePoints(project);
+    syncRouteLayer(L, layer, points, {
+      polylineColor: "#8e1e2d",
+      polylineWeight: 4,
+      interactiveMarkers: true,
+      onMarkerDoubleClick: (pointId, currentLabel) => {
+        const label = window.prompt("نام نقطه", currentLabel);
+        if (!label) return;
+        const current = projectRef.current;
+        patch({
+          points: current.points.map((p) => (p.id === pointId ? { ...p, label } : p)),
+        });
+      },
+    });
+  }, [project.points, project.routeOrder, patch, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (skipNextRegionFlyRef.current) {
+      skipNextRegionFlyRef.current = false;
+      return;
+    }
+    if (regionIdRef.current === project.regionId) return;
+    regionIdRef.current = project.regionId;
+    if (project.viewLocked) return;
+    const region = regionById(project.regionId);
+    map.flyTo([region.lat, region.lng], region.zoom, { duration: 1.2 });
+  }, [project.regionId, project.viewLocked]);
+
+  useEffect(() => {
+    regionIdRef.current = project.regionId;
+  }, [project.regionId]);
+
+  function handleLockView() {
+    const map = mapRef.current;
+    if (!map) return;
+    onLockView(readMapView(map));
+  }
 
   return (
     <div className="space-y-3">
@@ -150,12 +210,7 @@ export function EventMapInteractive({
           ۲. نقطه‌گذاری مسیر
         </span>
         {phase === "explore" && !project.viewLocked ? (
-          <Button
-            type="button"
-            className="text-xs"
-            data-testid="event-map-lock-view"
-            onClick={() => onLockView(activeView)}
-          >
+          <Button type="button" className="text-xs" data-testid="event-map-lock-view" onClick={handleLockView}>
             تأیید نما و شروع نقطه‌گذاری / رسم مسیر
           </Button>
         ) : null}
@@ -173,62 +228,18 @@ export function EventMapInteractive({
           : "روی نقشه کلیک کنید تا مبدا، ایستگاه‌های میانی و مقصد را اضافه کنید."}
       </p>
       <div
-        ref={ref}
         className={cn(
           "relative h-[min(28rem,60vh)] min-h-80 w-full overflow-hidden rounded-xl border border-line shadow-inner",
-          phase === "plot" ? "cursor-crosshair" : project.viewLocked ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing",
+          phase === "plot" ? "cursor-crosshair" : project.viewLocked ? "cursor-crosshair" : "",
         )}
         data-testid="event-map-canvas"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
-        onWheel={onWheel}
-        onClick={(event) => {
-          if (phase !== "plot" && !project.viewLocked) return;
-          if (dragRef.current) return;
-          addPointAt(event.clientX, event.clientY);
-        }}
       >
-        <iframe title="نقشه" src={embedUrl} className="pointer-events-none absolute inset-0 h-full w-full border-0" data-testid="event-map-osm-embed" />
-        <svg className="pointer-events-none absolute inset-0 h-full w-full">
-          {routePoints.length > 1 ? (
-            <polyline
-              fill="none"
-              stroke="#8e1e2d"
-              strokeWidth="0.6"
-              strokeDasharray="2 1"
-              points={routePoints
-                .map((p) => {
-                  const pos = pointDisplayPercent(p, bbox);
-                  return `${pos.x},${pos.y}`;
-                })
-                .join(" ")}
-            />
-          ) : null}
-        </svg>
-        {routePoints.map((point, index) => {
-          const pos = pointDisplayPercent(point, bbox);
-          return (
-            <button
-              key={point.id}
-              type="button"
-              className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary px-2 py-0.5 text-[10px] text-white shadow-md"
-              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-              onClick={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                const label = window.prompt("نام نقطه", point.label);
-                if (!label) return;
-                patch({
-                  points: project.points.map((p) => (p.id === point.id ? { ...p, label } : p)),
-                });
-              }}
-            >
-              {point.label || (index === 0 ? "مبدا" : "نقطه")}
-            </button>
-          );
-        })}
+        <div
+          ref={containerRef}
+          className="absolute inset-0 z-0 h-full w-full"
+          data-testid="event-map-osm-embed"
+          aria-label={`نقشه OpenStreetMap — ${OSM_ATTRIBUTION}`}
+        />
       </div>
     </div>
   );
