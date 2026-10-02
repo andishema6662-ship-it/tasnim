@@ -9,6 +9,7 @@ import { CHAT_SUPPORT_CHIEF_HREF, CHAT_SUPPORT_IT_HREF } from "@/lib/chat-suppor
 import { usersForRole } from "@/lib/session-user";
 import { canAccessPath, DASHBOARD_MODULE_KEY, effectiveModuleKeys } from "@/lib/module-access";
 import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules";
+import { ADMIN_BASE, isPublicPortalPath, publicHomePath } from "@/lib/routes";
 import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
 import { useNewsroom } from "@/lib/store";
 import { avatarUrlForUser } from "@/lib/user-avatar";
@@ -182,16 +183,21 @@ function NavList({
     <div className="space-y-2">
       {allowedKeys.has(DASHBOARD_MODULE_KEY) ? (
         <Link
-          href="/"
+          href={ADMIN_BASE}
           onClick={onNavigate}
           title="پیشخوان"
           className={cn(
             "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
-            path === "/" ? linkActive : linkIdle,
+            path === ADMIN_BASE || path === `${ADMIN_BASE}/` ? linkActive : linkIdle,
             collapsed && "justify-center px-2",
           )}
         >
-          <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary", path === "/" && "bg-primary text-white")}>
+          <span
+            className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary",
+              (path === ADMIN_BASE || path === `${ADMIN_BASE}/`) && "bg-primary text-white",
+            )}
+          >
             <IconHome className="h-4 w-4" />
           </span>
           {!collapsed ? <span>پیشخوان</span> : null}
@@ -359,8 +365,7 @@ export function Shell({ children }: { children: ReactNode }) {
     return message.senderUserId !== user?.id && message.createdAt > (cursor?.lastReadAt ?? "");
   }).length;
 
-  const isPublicSite = path === "/site" || path.startsWith("/site/");
-  if (isPublicSite) {
+  if (isPublicPortalPath(path)) {
     return <>{children}</>;
   }
 
@@ -443,7 +448,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <button type="button" className="rounded-lg px-2 py-2 text-sm lg:hidden hover:bg-sand" onClick={() => setOpen(true)} aria-label="بخش‌ها">
               <IconMenu className="h-5 w-5" />
             </button>
-            <Link href="/" className="flex min-w-0 items-center gap-2 lg:gap-2.5" data-testid="admin-header-brand">
+            <Link href={ADMIN_BASE} className="flex min-w-0 items-center gap-2 lg:gap-2.5" data-testid="admin-header-brand">
               <img src={panelMark} alt={SHAMSEH_MEDIA_NAME} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
               <div className="min-w-0 max-w-[11rem] sm:max-w-xs lg:max-w-sm">
                 <p className="truncate text-xs font-bold leading-5 text-ink sm:text-sm">{headerBrandTitle}</p>
@@ -473,7 +478,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </label>
             </form>
             <div className="ms-auto flex flex-wrap items-center gap-0.5 sm:gap-1">
-              <HeaderIconButton href="/admin/chat" label="چت تحریریه" badge={chatUnread}>
+              <HeaderIconButton href="/admin/admin/chat" label="چت تحریریه" badge={chatUnread}>
                 <IconTicket className="h-5 w-5" />
               </HeaderIconButton>
               <div className="relative">
@@ -550,7 +555,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     <p className="px-3 py-1 text-xs text-muted">نقش: {role.name}</p>
                     <p className="px-3 pb-1 text-sm font-semibold">{user?.name}</p>
                     <Link
-                      href="/reporters/my-profile"
+                      href="/admin/reporters/my-profile"
                       className="block px-3 py-2 text-sm font-medium text-primary hover:bg-sand"
                       role="menuitem"
                       data-testid="header-profile-link"
@@ -597,13 +602,16 @@ export function Shell({ children }: { children: ReactNode }) {
                         </button>
                       ))}
                     </div>
-                    <Link href="/site" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    <Link href={publicHomePath()} className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       خروجی سایت
                     </Link>
-                    <Link href="/infra/changelog" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    <Link href={ADMIN_BASE} className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                      پیشخوان تحریریه
+                    </Link>
+                    <Link href="/admin/infra/changelog" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       گزارش تغییرات سامانه
                     </Link>
-                    <Link href="/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    <Link href="/admin/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       تنظیمات سیستم
                     </Link>
                   </div>

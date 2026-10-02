@@ -44,7 +44,7 @@ export function ThemeBrandingSection({
     <>
       <section className="rounded-lg border border-line bg-sheet p-4">
         <h2 className="text-base font-bold">لوگو و آرم رسانه</h2>
-        <p className="mt-1 text-sm text-muted">نام و آرم در سرصفحه پورتال عمومی (/site) نمایش داده می‌شود.</p>
+        <p className="mt-1 text-sm text-muted">نام و آرم در سرصفحه پورتال عمومی (صفحه اصلی) نمایش داده می‌شود.</p>
         <div className="mt-4 grid max-w-xl gap-3">
           <Field label="نام رسانه">
             <Input
@@ -98,7 +98,7 @@ export function ThemeBrandingSection({
             disabled={!allowed}
             onChange={(event) => patchBanner({ enabled: event.target.checked })}
           />
-          نمایش بنر بالای جستجو در /site
+          نمایش بنر بالای جستجو در صفحه اصلی
         </label>
         <div className="mt-4 grid max-w-2xl gap-3">
           <Field label="پیوند بنر (URL)">

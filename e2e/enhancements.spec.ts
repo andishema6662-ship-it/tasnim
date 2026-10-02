@@ -12,16 +12,16 @@ test("enhancements smoke", async ({ page }) => {
     [STORAGE_KEY, JSON.stringify(data)],
   );
 
-  await page.goto("/admin/official-contacts", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/admin/official-contacts", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("official-contacts-search")).toBeVisible();
 
-  await page.goto("/editorial/agenda", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/editorial/agenda", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("agenda-jalali-header")).toBeVisible();
 
-  await page.goto("/site", { waitUntil: "networkidle" });
+  await page.goto("/", { waitUntil: "networkidle" });
   await expect(page.getByTestId("portal-home-poll")).toBeVisible();
 
-  await page.goto("/reports/pitch-performance", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reports/pitch-performance", { waitUntil: "domcontentloaded" });
   await page.getByTestId("pitch-produced-link").first().click();
   await expect(page.getByTestId("pitch-stories-modal")).toBeVisible();
 });

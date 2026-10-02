@@ -60,9 +60,11 @@ export function EventMapInteractive({
   const skipNextRegionFlyRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
 
-  projectRef.current = project;
-  phaseRef.current = phase;
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    projectRef.current = project;
+    phaseRef.current = phase;
+    onChangeRef.current = onChange;
+  });
 
   const routePoints = orderedRoutePoints(project);
 

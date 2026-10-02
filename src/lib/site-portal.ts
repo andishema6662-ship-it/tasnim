@@ -14,10 +14,10 @@ export const PORTAL_NAV: PortalNavItem[] = [
   { id: "culture", label: "فرهنگی هنری", categoryId: "cat-culture" },
   { id: "politics", label: "سیاسی", categoryId: "cat-politics" },
   { id: "tech", label: "فناوری", categoryId: "cat-science" },
-  { id: "media", label: "فیلم و صوت", href: "/site#multimedia" },
-  { id: "photo", label: "گزارش تصویری", href: "/site#photos" },
-  { id: "people", label: "همکاران رسانه‌ای", href: "/site/people" },
-  { id: "contact", label: "تماس با ما", href: "/site/contact" },
+  { id: "media", label: "فیلم و صوت", href: "/#multimedia" },
+  { id: "photo", label: "گزارش تصویری", href: "/#photos" },
+  { id: "people", label: "همکاران رسانه‌ای", href: "/people" },
+  { id: "contact", label: "تماس با ما", href: "/contact" },
 ];
 
 export function featuredStory(data: NewsroomData): Story | undefined {

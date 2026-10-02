@@ -15,12 +15,12 @@ import { cn, StatusBadge } from "./ui";
 const chartColors = ["#8231d3", "#5f63f2", "#d97706", "#0891b2", "#059669", "#db2777", "#4d7c0f", "#272b41"];
 
 const shortcuts = [
-  { href: "/editorial/cartable", label: "کارتابل" },
-  { href: "/editorial/cartable?view=queue", label: "صف سردبیری" },
-  { href: "/editorial/ai", label: "دستیار تحریریه" },
-  { href: "/editorial/order", label: "ترتیب خروجی" },
-  { href: "/media/albums", label: "آلبوم‌ها" },
-  { href: "/structure/categories", label: "دسته‌ها" },
+  { href: "/admin/editorial/cartable", label: "کارتابل" },
+  { href: "/admin/editorial/cartable?view=queue", label: "صف سردبیری" },
+  { href: "/admin/editorial/ai", label: "دستیار تحریریه" },
+  { href: "/admin/editorial/order", label: "ترتیب خروجی" },
+  { href: "/admin/media/albums", label: "آلبوم‌ها" },
+  { href: "/admin/structure/categories", label: "دسته‌ها" },
 ];
 
 function KpiCard({
@@ -62,8 +62,8 @@ export function Dashboard() {
   const role = currentRole(data);
   const recent = [...data.stories].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
   const waiting = [
-    { label: "ارسال تازه‌خبر", value: data.submissions.filter((item) => item.status === "new").length, href: "/editorial/submissions" },
-    { label: "پیشنهاد باز", value: data.suggestions.filter((item) => item.status === "pending").length, href: "/editorial/suggestions" },
+    { label: "ارسال تازه‌خبر", value: data.submissions.filter((item) => item.status === "new").length, href: "/admin/editorial/submissions" },
+    { label: "پیشنهاد باز", value: data.suggestions.filter((item) => item.status === "pending").length, href: "/admin/editorial/suggestions" },
     { label: "نظر در انتظار", value: data.comments.filter((item) => item.status === "pending").length, href: "/audience/comments" },
   ];
 
@@ -119,7 +119,7 @@ export function Dashboard() {
           label="اخبار در خط"
           value={data.stories.length}
           hint="همه وضعیت‌ها در کارتابل"
-          href="/editorial/cartable"
+          href="/admin/editorial/cartable"
           iconBg="bg-primary-light text-primary"
           trend={reviewCount > 0 ? `${faNum(reviewCount)} در بازبینی/ویرایش` : undefined}
           icon={
@@ -132,7 +132,7 @@ export function Dashboard() {
           label="منتشرشده"
           value={publishedCount}
           hint="خروجی عمومی سایت"
-          href="/editorial/cartable?status=published"
+          href="/admin/editorial/cartable?status=published"
           iconBg="bg-emerald-50 text-emerald-600"
           icon={
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -144,7 +144,7 @@ export function Dashboard() {
           label="خبرنگاران فعال"
           value={reporterCount}
           hint="بر اساس نقش کاربران"
-          href="/admin/users"
+          href="/admin/admin/users"
           iconBg="bg-indigo-50 text-accent-blue"
           icon={
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -156,7 +156,7 @@ export function Dashboard() {
           label="پیام خوانده‌نشده"
           value={chatUnread}
           hint="گفتگو و پیام‌رسان تحریریه"
-          href="/admin/chat"
+          href="/admin/admin/chat"
           iconBg="bg-amber-50 text-amber-600"
           icon={
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -216,7 +216,7 @@ export function Dashboard() {
           return (
             <Link
               key={status}
-              href={`/editorial/cartable?status=${status}`}
+              href={`/admin/editorial/cartable?status=${status}`}
               className="rounded-xl border border-line bg-sheet px-3 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
             >
               <p className="text-2xl font-bold tabular-nums">{faNum(count)}</p>
@@ -230,7 +230,7 @@ export function Dashboard() {
         <section className="overflow-hidden rounded-2xl border border-line bg-sheet shadow-sm">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="font-bold">آخرین خبرها</h2>
-            <Link href="/editorial/cartable" className="text-sm font-medium text-primary hover:underline">
+            <Link href="/admin/editorial/cartable" className="text-sm font-medium text-primary hover:underline">
               همه خبرها
             </Link>
           </div>
@@ -243,7 +243,7 @@ export function Dashboard() {
                   <span>{story.author}</span>
                   <span>{faDate(story.updatedAt)}</span>
                 </div>
-                <Link href={`/editorial/cartable/${story.id}`} className="mt-1 block font-semibold leading-7 hover:text-primary">
+                <Link href={`/admin/editorial/cartable/${story.id}`} className="mt-1 block font-semibold leading-7 hover:text-primary">
                   {story.title}
                 </Link>
               </li>

@@ -385,7 +385,7 @@ export function ReporterAgendaScreen({ moduleSlug = "agenda" }: { moduleSlug?: s
                 {item.done ? "بازگشت به باز" : "انجام شد"}
               </Button>
               {item.linkedStoryId ? (
-                <Link href={`/editorial/cartable/${item.linkedStoryId}`} className="rounded-md border border-line px-3 py-2 text-sm">خبر متصل</Link>
+                <Link href={`/admin/editorial/cartable/${item.linkedStoryId}`} className="rounded-md border border-line px-3 py-2 text-sm">خبر متصل</Link>
               ) : (
                 <Button type="button" tone="ghost" data-testid="agenda-link-story" onClick={() => linkStory(item)}>ثبت خبر از جلسه</Button>
               )}
@@ -395,7 +395,7 @@ export function ReporterAgendaScreen({ moduleSlug = "agenda" }: { moduleSlug?: s
       </ul>
       <p className="mt-4 text-sm text-muted">
         یادآوری‌های امروز و فردا در{" "}
-        <Link href="/" className="text-accent underline">پیشخوان</Link> نمایش داده می‌شود.
+        <Link href="/admin" className="text-accent underline">پیشخوان</Link> نمایش داده می‌شود.
       </p>
     </ModulePage>
   );
@@ -452,7 +452,7 @@ export function DashboardAgendaWidget() {
     <section className="flex h-full min-h-[12rem] flex-col rounded-2xl border-2 border-accent/30 bg-gradient-to-l from-accent/5 to-sheet p-4 shadow-sm" data-testid="dashboard-agenda-reminders">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-bold">برنامه‌ها و مصاحبه‌های پیش‌رو</h2>
-        <Link href="/editorial/agenda" className="text-sm text-accent">تقویم کاری</Link>
+        <Link href="/admin/editorial/agenda" className="text-sm text-accent">تقویم کاری</Link>
       </div>
       <p className="mt-1 text-xs text-muted">یادآوری امروز و فردا</p>
       {items.length === 0 ? (
@@ -466,7 +466,7 @@ export function DashboardAgendaWidget() {
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button type="button" tone="ghost" data-testid="dashboard-agenda-done" onClick={() => markDone(item.id)}>انجام شد</Button>
                 {item.linkedStoryId ? (
-                  <Link href={`/editorial/cartable/${item.linkedStoryId}`} className="rounded-md border border-line px-2 py-1 text-xs">مشاهده خبر</Link>
+                  <Link href={`/admin/editorial/cartable/${item.linkedStoryId}`} className="rounded-md border border-line px-2 py-1 text-xs">مشاهده خبر</Link>
                 ) : (
                   <Button type="button" tone="ghost" data-testid="dashboard-agenda-story" onClick={() => createStory(item)}>ثبت خبر</Button>
                 )}

@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
-import { SiteHomeView } from "@/components/site/site-views";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function PublicSitePage() {
-  return (
-    <Suspense fallback={<p className="p-6 text-center text-sm">در حال بارگذاری سایت…</p>}>
-      <SiteHomeView />
-    </Suspense>
-  );
+/** Legacy bookmark: /site → public home */
+export default function LegacySiteRedirectPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/");
+  }, [router]);
+  return <p className="p-6 text-center text-sm text-muted">در حال انتقال به صفحه اصلی…</p>;
 }

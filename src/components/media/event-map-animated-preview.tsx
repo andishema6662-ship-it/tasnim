@@ -44,7 +44,9 @@ export const EventMapAnimatedPreview = forwardRef<
   const [mapReady, setMapReady] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  projectRef.current = project;
+  useEffect(() => {
+    projectRef.current = project;
+  });
 
   function ensureTravelDot(t: number) {
     const L = leafletRef.current;

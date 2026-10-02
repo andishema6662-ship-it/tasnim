@@ -1,11 +1,10 @@
-import { AdminPersonProfileClient } from "./client";
-import { createSeed } from "@/lib/seed";
+import { staticVisiblePeopleIds } from "@/lib/static-export-params";
+import { SitePersonProfileClient } from "./client";
 
 export function generateStaticParams() {
-  const seed = createSeed();
-  return seed.people.map((p) => ({ id: p.id }));
+  return staticVisiblePeopleIds();
 }
 
-export default function AdminPersonProfilePage() {
-  return <AdminPersonProfileClient />;
+export default function SitePersonProfilePage() {
+  return <SitePersonProfileClient />;
 }

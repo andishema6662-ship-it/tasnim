@@ -12,7 +12,7 @@ test("dossier poster upload field and public page", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/structure/dossiers", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/structure/dossiers", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dossier-create-poster-upload-btn")).toBeVisible();
   const tinyPng = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -24,7 +24,7 @@ test("dossier poster upload field and public page", async ({ page }) => {
     buffer: tinyPng,
   });
   await expect(page.getByTestId("dossier-create-poster-preview")).toBeVisible();
-  await page.goto("/site/dossier/dos-1", { waitUntil: "domcontentloaded" });
+  await page.goto("/dossier/dos-1", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dossier-page")).toBeVisible();
 });
 
@@ -37,7 +37,7 @@ test("event map two-step workflow and route list", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/media/event-map", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/media/event-map", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("event-map-route-list")).toBeVisible();
   await expect(page.getByTestId("event-map-region-label")).toContainText("نقشه تهران");
   await expect(page.getByTestId("event-map-osm-embed")).toBeVisible();
@@ -63,7 +63,7 @@ test("sidebar support opens IT chat thread", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   await expect(page.getByTestId("sidebar-editorial-support")).toContainText("پیام‌رسان تحریریه");
   await page.getByTestId("sidebar-support-it-link").click();

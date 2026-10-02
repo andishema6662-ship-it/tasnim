@@ -43,11 +43,26 @@ export function migrateModuleAccessList(list: string[]): string[] {
   return out;
 }
 
-/** Permanent redirects for bookmarks and old links (`/group/slug`). */
+import { groups } from "./modules";
+
+/** Permanent redirects for bookmarks and old links. */
 export function legacyNavRedirects(): { source: string; destination: string; permanent: boolean }[] {
-  return Object.entries(MODULE_KEY_MIGRATIONS).map(([from, to]) => ({
+  const moduleRedirects = Object.entries(MODULE_KEY_MIGRATIONS).map(([from, to]) => ({
     source: `/${from}`,
-    destination: `/${to}`,
+    destination: `/admin/${to}`,
     permanent: false,
   }));
+  const adminGroupRedirects = groups.flatMap((group) => [
+    {
+      source: `/${group.id}/:slug`,
+      destination: `/admin/${group.id}/:slug`,
+      permanent: false,
+    },
+  ]);
+  return [
+    { source: "/site", destination: "/", permanent: false },
+    { source: "/site/:path*", destination: "/:path*", permanent: false },
+    ...moduleRedirects,
+    ...adminGroupRedirects,
+  ];
 }

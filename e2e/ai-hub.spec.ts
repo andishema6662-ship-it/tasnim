@@ -11,7 +11,7 @@ test("AI hub polish and origin tracker", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/editorial/ai-hub", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/editorial/ai-hub", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("ai-text-correction-hero")).toBeVisible();
 
   await page.getByTestId("ai-tab-polish").click();
@@ -36,7 +36,7 @@ test("transcription sends draft to cartable", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/editorial/ai-hub", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/editorial/ai-hub", { waitUntil: "domcontentloaded" });
   await page.getByTestId("ai-tab-transcribe").click();
   await page.locator('input[type="file"]').setInputFiles({
     name: "briefing.mp3",

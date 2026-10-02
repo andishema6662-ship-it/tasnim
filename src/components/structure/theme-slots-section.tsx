@@ -95,7 +95,7 @@ function RssFeedFields({
       </Field>
       <p className="self-end text-xs text-muted sm:col-span-2">
         فیدهای جدید را در{" "}
-        <Link href="/template/rss" className="font-semibold text-accent underline">فیدخوان</Link> اضافه کنید یا آدرس مستقیم وارد کنید.
+        <Link href="/admin/template/rss" className="font-semibold text-accent underline">فیدخوان</Link> اضافه کنید یا آدرس مستقیم وارد کنید.
       </p>
       <Field label="نام منبع (مستقیم)">
         <Input
@@ -157,7 +157,7 @@ export function ThemeSlotsSection({
               disabled={!allowed}
               onChange={(event) => patchSlots({ ticker: { ...slots.ticker, enabled: event.target.checked } })}
             />
-            نمایش پیام متحرک در /site
+            نمایش پیام متحرک در صفحه اصلی سایت
           </label>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Field label="برچسب نوار">

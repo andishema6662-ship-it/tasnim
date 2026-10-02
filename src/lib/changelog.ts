@@ -3,7 +3,7 @@ export const SYSTEM_VERSION = "2.4.0";
 
 export const SYSTEM_PRODUCT_NAME = "سامانه جامع تحریریه خبر شمسه";
 
-export const CHANGELOG_HREF = "/infra/changelog";
+export const CHANGELOG_HREF = "/admin/infra/changelog";
 
 export type ChangelogChangeKind = "new" | "updated" | "fixed";
 

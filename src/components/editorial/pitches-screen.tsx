@@ -277,7 +277,7 @@ export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string 
                     <ul className="mt-2 space-y-1">
                       {report.linked.map((story) => (
                         <li key={story.id}>
-                          <Link href={`/editorial/cartable/${story.id}`} className="text-rule hover:underline">
+                          <Link href={`/admin/editorial/cartable/${story.id}`} className="text-rule hover:underline">
                             {story.title}
                           </Link>
                           <span className="text-muted"> — {statusLabel(data, story.status)}</span>
@@ -288,14 +288,14 @@ export function PitchesScreen({ moduleSlug = "pitches" }: { moduleSlug?: string 
                 </div>
                 {pitch.status === "active" && role.base === "reporter" ? (
                   <Link
-                    href={`/editorial/cartable/new?pitch=${pitch.id}`}
+                    href={`/admin/editorial/cartable/new?pitch=${pitch.id}`}
                     className="mt-4 inline-block rounded-md bg-ink px-3 py-2 text-sm text-sheet"
                   >
                     ثبت خبر بر اساس این سوژه
                   </Link>
                 ) : null}
                 {manage && pitch.status === "active" ? (
-                  <Link href={`/editorial/cartable/new?pitch=${pitch.id}`} className="mt-4 ml-2 inline-block text-sm text-rule">
+                  <Link href={`/admin/editorial/cartable/new?pitch=${pitch.id}`} className="mt-4 ml-2 inline-block text-sm text-rule">
                     پیش‌نویس نمونه برای این سوژه
                   </Link>
                 ) : null}

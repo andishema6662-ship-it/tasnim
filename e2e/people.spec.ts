@@ -15,12 +15,12 @@ test("chief sidebar shows media people module", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   await page.getByRole("button", { name: /رسانه‌های مکمل/ }).click();
   await expect(page.getByRole("link", { name: "همکاران رسانه‌ای" })).toBeVisible();
   await page.getByRole("link", { name: "همکاران رسانه‌ای" }).click();
-  await expect(page).toHaveURL(/\/media\/people/);
+  await expect(page).toHaveURL(/\/admin\/media\/people/);
 });
 
 test("admin people HexaDash cards and add member", async ({ page }) => {
@@ -32,7 +32,7 @@ test("admin people HexaDash cards and add member", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/media/people", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/media/people", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "همکاران رسانه‌ای و دست‌اندرکاران" })).toBeVisible();
   await expect(page.getByTestId("people-card-grid")).toBeVisible();
   await expect(page.getByText("محمدحسین شمسایی")).toBeVisible();
@@ -51,7 +51,7 @@ test("public site people page", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site/people", { waitUntil: "domcontentloaded" });
+  await page.goto("/people", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("site-people-grid")).toBeVisible();
   await expect(page.getByText("سارا محمدی")).toBeVisible();
   await page.getByTestId("person-profile-link").first().click();

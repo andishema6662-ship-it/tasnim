@@ -22,7 +22,7 @@ test("live widget embed appears on site when configured", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("portal-widget-rates")).toContainText("نرخ زنده تست");
   await expect(page.getByTestId("external-rate-widget")).toBeVisible();
 });
@@ -36,7 +36,7 @@ test("theme admin shows live widget script fields", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/template/theme", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/template/theme", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("theme-live-widgets")).toBeVisible();
   await expect(page.getByTestId("live-widget-rates-embed")).toBeVisible();
 });

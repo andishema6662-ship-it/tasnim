@@ -117,7 +117,7 @@ export function moduleBySlug(slug: string): ModuleInfo | undefined {
 }
 
 export function hrefFor(group: string, slug: string): string {
-  return `/${group}/${slug}`;
+  return `/admin/${group}/${slug}`;
 }
 
 export function moduleKey(module: ModuleInfo): string {

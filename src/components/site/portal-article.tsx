@@ -21,7 +21,7 @@ export function SiteArticleView({ id }: { id: string }) {
     return (
       <PortalLayout>
         <h1 className="text-xl font-bold">این خبر در خروجی عمومی نیست</h1>
-        <Link href="/site" className="mt-4 inline-block text-sm text-[var(--portal-primary)]">بازگشت به صفحه اصلی</Link>
+        <Link href="/" className="mt-4 inline-block text-sm text-[var(--portal-primary)]">بازگشت به صفحه اصلی</Link>
       </PortalLayout>
     );
   }
@@ -62,9 +62,9 @@ export function SiteArticleView({ id }: { id: string }) {
   return (
     <PortalLayout>
       <nav className="text-sm text-muted" aria-label="مسیر">
-        <Link href="/site" className="hover:text-[var(--portal-primary)]">خانه</Link>
+        <Link href="/" className="hover:text-[var(--portal-primary)]">خانه</Link>
         <span className="mx-2">›</span>
-        <Link href={`/site?cat=${story.categoryId}`} className="hover:text-[var(--portal-primary)]">{storyCategoryLabel(data, story)}</Link>
+        <Link href={`/?cat=${story.categoryId}`} className="hover:text-[var(--portal-primary)]">{storyCategoryLabel(data, story)}</Link>
         <span className="mx-2">›</span>
         <span className="text-ink">{story.title}</span>
       </nav>
@@ -101,7 +101,7 @@ export function SiteArticleView({ id }: { id: string }) {
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {related.map((item) => (
             <li key={item.id}>
-              <Link href={`/site/${item.id}`} className="block rounded border border-line bg-white p-3 text-sm font-semibold hover:border-[var(--portal-primary)]/40">
+              <Link href={`/${item.id}`} className="block rounded border border-line bg-white p-3 text-sm font-semibold hover:border-[var(--portal-primary)]/40">
                 {item.title}
               </Link>
             </li>

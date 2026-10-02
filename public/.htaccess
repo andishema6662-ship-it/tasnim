@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Legacy public site prefix
+  RewriteRule ^site/?$ / [R=301,L]
+  RewriteRule ^site/(.*)$ /$1 [R=301,L]
+
+  # Legacy admin module URLs (pre-/admin prefix)
+  RewriteRule ^(editorial|reporters|media|audience|reports|structure|template|infra)/(.*)$ /admin/$1/$2 [R=301,L]
+
+</IfModule>

@@ -1,9 +1,8 @@
+import { staticStoryIds } from "@/lib/static-export-params";
 import { PublicStoryClient } from "./client";
-import { createSeed } from "@/lib/seed";
 
 export function generateStaticParams() {
-  const seed = createSeed();
-  return seed.stories.map((s) => ({ id: s.id }));
+  return staticStoryIds();
 }
 
 export default function PublicStoryPage() {

@@ -1,9 +1,8 @@
+import { staticAlbumIds } from "@/lib/static-export-params";
 import { SiteAlbumClient } from "./client";
-import { createSeed } from "@/lib/seed";
 
 export function generateStaticParams() {
-  const seed = createSeed();
-  return seed.albums.map((a) => ({ id: a.id }));
+  return staticAlbumIds();
 }
 
 export default function PublicAlbumPage() {

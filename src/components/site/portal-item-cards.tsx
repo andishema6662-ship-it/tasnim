@@ -32,7 +32,7 @@ export function HeroPortalItem({
     const hero = item.story;
     return (
       <Link
-        href={`/site/${hero.id}`}
+        href={`/${hero.id}`}
         className={`group relative overflow-hidden rounded-lg shadow-lg ${tall ? "min-h-[280px] sm:min-h-[360px]" : "min-h-[200px] sm:min-h-[260px]"}`}
       >
         <CoverThumb cover={hero.cover} className="absolute inset-0 h-full w-full object-cover" />
@@ -67,7 +67,7 @@ export function SidePortalItem({ data, item }: { data: NewsroomData; item: Porta
     const story = item.story;
     return (
       <Link
-        href={`/site/${story.id}`}
+        href={`/${story.id}`}
         className="flex gap-3 rounded-lg border border-line bg-white p-2 shadow-sm hover:border-[var(--portal-primary)]/40"
       >
         {isCoverImage(story.cover) ? (
@@ -101,7 +101,7 @@ export function GridPortalItem({ data, item }: { data: NewsroomData; item: Porta
   if (item.type === "story") {
     const story = item.story;
     return (
-      <Link href={`/site/${story.id}`} className="block overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+      <Link href={`/${story.id}`} className="block overflow-hidden rounded-lg border border-line bg-white shadow-sm">
         {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-36 w-full" /> : null}
         <div className="p-3">
           <p className={`text-xs ${accent}`}>{storyCategoryLabel(data, story)}</p>
@@ -129,7 +129,7 @@ export function ListPortalItem({ data, item }: { data: NewsroomData; item: Porta
   if (item.type === "story") {
     const story = item.story;
     return (
-      <Link href={`/site/${story.id}`} className={`flex gap-3 hover:text-[var(--portal-primary)]`}>
+      <Link href={`/${story.id}`} className={`flex gap-3 hover:text-[var(--portal-primary)]`}>
         {isCoverImage(story.cover) ? <CoverThumb cover={story.cover} className="h-16 w-24 shrink-0 rounded" /> : null}
         <div>
           <h3 className="line-clamp-2 text-sm font-semibold leading-6">{story.title}</h3>

@@ -11,7 +11,7 @@ test("dashboard upcoming events widget", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dashboard-upcoming-events")).toBeVisible();
   await expect(page.getByTestId("upcoming-event-item").first()).toBeVisible();
   await page.getByTestId("upcoming-range-month").click();
@@ -40,6 +40,6 @@ test("file upload folder selector", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/reporters/file-manager", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reporters/file-manager", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("file-upload-folder-select")).toBeVisible();
 });

@@ -11,7 +11,7 @@ test("social bot configuration persists locally", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/template/social", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/template/social", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("social-bots-config")).toBeVisible();
   await page.getByTestId("bot-telegram-token").fill("test-token-123");
   await page.getByTestId("bot-test-connection").click();

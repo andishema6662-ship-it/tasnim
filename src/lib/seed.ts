@@ -696,8 +696,8 @@ export function createSeed(): NewsroomData {
       },
     ],
     banners: [
-      { id: "bn-1", title: "هفته فیلم", text: "اکران رایگان سانس صبح در خانه هنرمندان", href: "/editorial/cartable/s-film", placement: "بالای صفحه", active: true },
-      { id: "bn-2", title: "عضویت مجموعه کرج", text: "ثبت‌نام محله‌ای از شنبه", href: "/editorial/cartable/s-karaj", placement: "ستون", active: false },
+      { id: "bn-1", title: "هفته فیلم", text: "اکران رایگان سانس صبح در خانه هنرمندان", href: "/admin/editorial/cartable/s-film", placement: "بالای صفحه", active: true },
+      { id: "bn-2", title: "عضویت مجموعه کرج", text: "ثبت‌نام محله‌ای از شنبه", href: "/admin/editorial/cartable/s-karaj", placement: "ستون", active: false },
     ],
     tickers: [
       { id: "tk-1", text: "ماهواره پارس ۲ سیگنال فرستاد؛ خبر در صف بازبینی است", active: true },
@@ -770,7 +770,7 @@ export function createSeed(): NewsroomData {
     links: [
       { id: "ln-1", title: "درباره تحریریه", url: "/template/pages", group: "پاصفحه" },
       { id: "ln-2", title: "تماس", url: "/audience/contact", group: "پاصفحه" },
-      { id: "ln-3", title: "آرشیو", url: "/editorial/cartable?status=archived", group: "ستون" },
+      { id: "ln-3", title: "آرشیو", url: "/admin/editorial/cartable?status=archived", group: "ستون" },
       { id: "ln-4", title: "خبرنامه", url: "/media/newsletter", group: "ستون" },
     ],
     logos: [

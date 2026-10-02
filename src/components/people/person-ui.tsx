@@ -132,7 +132,7 @@ function CardActionMenu({
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  const profileHref = mode === "portal" ? `/site/people/${person.id}` : `/people/${person.id}`;
+  const profileHref = mode === "portal" ? `/people/${person.id}` : `/admin/colleague/${person.id}`;
 
   return (
     <div className="relative" ref={ref}>
@@ -168,7 +168,7 @@ function CardActionMenu({
 }
 
 export function PersonHexaCard({ data, person, mode, canManage, onEdit, onDelete }: PersonCardProps) {
-  const profileHref = mode === "portal" ? `/site/people/${person.id}` : `/people/${person.id}`;
+  const profileHref = mode === "portal" ? `/people/${person.id}` : `/admin/colleague/${person.id}`;
   const phone = person.phone?.trim();
   const email = person.email?.trim();
   const desk = person.desk?.trim();
@@ -478,7 +478,7 @@ export function PersonProfileView({
   const [tier, setTier] = useState(person.reporterTier ?? 3);
   const [tierNote, setTierNote] = useState(person.tierNote ?? "");
 
-  const storyHref = (id: string) => (mode === "portal" ? `/site/${id}` : `/editorial/cartable/${id}`);
+  const storyHref = (id: string) => (mode === "portal" ? `/${id}` : `/admin/editorial/cartable/${id}`);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6" data-testid="person-profile">

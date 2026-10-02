@@ -77,7 +77,7 @@ export function PitchPerformanceScreen() {
               {modalStories.length === 0 ? <li className="text-muted">خبری ثبت نشده است.</li> : null}
               {modalStories.map((story) => (
                 <li key={story.id}>
-                  <Link href={`/editorial/cartable/${story.id}`} className="font-semibold text-accent hover:underline">
+                  <Link href={`/admin/editorial/cartable/${story.id}`} className="font-semibold text-accent hover:underline">
                     {story.title}
                   </Link>
                   <p className="text-xs text-muted">{story.status}</p>
@@ -493,7 +493,7 @@ export function DossiersScreen() {
                   }
                 />
               </div>
-              <Link href={`/site/dossier/${item.id}`} className="text-sm font-semibold text-accent" target="_blank" data-testid="dossier-site-link">
+              <Link href={`/dossier/${item.id}`} className="text-sm font-semibold text-accent" target="_blank" data-testid="dossier-site-link">
                 مشاهده در سایت
               </Link>
             </div>

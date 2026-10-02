@@ -32,8 +32,8 @@ export function ThemeScreen() {
     <ModulePage slug="theme">
       <p className="mb-4 text-sm text-muted">
         تغییرات پس از ذخیره در{" "}
-        <a href="/site" target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
-          پورتال عمومی (/site)
+        <a href="/" target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+          پورتال عمومی (صفحه اصلی)
         </a>{" "}
         با بارگذاری مجدد صفحه اعمال می‌شود.
       </p>

@@ -32,7 +32,7 @@ test("featured side grid shows stories from selected category", async ({ page })
     },
     [STORAGE_KEY, payload],
   );
-  await page.goto("/site", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const side = page.getByTestId("portal-featured-side");
   await expect(side.getByRole("link", { name: /خانه هنرمندان/ })).toBeVisible();
   await expect(side.getByRole("link", { name: /مجموعه ورزشی انقلاب کرج/ })).toHaveCount(0);
@@ -60,7 +60,7 @@ test("category showcase block lists configured category", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const politics = page.getByTestId("portal-category-block-cat-politics");
   await expect(politics).toContainText("سیاست");
   await expect(politics.getByRole("link", { name: /لایحه حمایت از حمل‌ونقل/ })).toBeVisible();
@@ -87,7 +87,7 @@ test("hero uses RSS feed when configured", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const hero = page.getByTestId("portal-hero");
   await expect(hero.getByText(/آزمایش میدانی شبکه لرزه‌نگاری/)).toBeVisible();
   await expect(hero.getByText(/منبع:/)).toBeVisible();
@@ -109,7 +109,7 @@ test("portal branding title appears in header", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const brand = page.getByTestId("portal-site-brand");
   await expect(brand).toContainText("خبرگزاری آزمایشی");
   await expect(brand).toContainText("تیتر نمایشی");
@@ -138,7 +138,7 @@ test("ticker shows category headlines", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const ticker = page.getByTestId("portal-ticker");
   await expect(ticker).toContainText("لایحه حمایت از حمل‌ونقل");
 });

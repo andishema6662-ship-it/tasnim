@@ -8,6 +8,8 @@ import { loadState, saveState } from "./storage";
 import type { NewsroomData, Story } from "./types";
 import { placeStory } from "./workflow";
 import { ShamsehSplashGate } from "@/components/shamseh-splash";
+import { isPublicPortalPath } from "@/lib/routes";
+import { usePathname } from "next/navigation";
 
 interface StoreValue {
   data: NewsroomData;
@@ -22,6 +24,7 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function NewsroomProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [data, setData] = useState<NewsroomData | null>(null);
 
   useEffect(() => {
@@ -83,6 +86,12 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
     () => (data ? { data, update, commitStory, setRole, setCurrentUser, replaceData, resetData } : null),
     [data, update, commitStory, setRole, setCurrentUser, replaceData, resetData],
   );
+
+  const skipSplash = isPublicPortalPath(pathname ?? "/");
+
+  if (skipSplash) {
+    return value ? <StoreContext.Provider value={value}>{children}</StoreContext.Provider> : null;
+  }
 
   return (
     <ShamsehSplashGate ready={value !== null}>

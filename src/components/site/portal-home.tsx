@@ -116,7 +116,7 @@ export function SiteHomeView() {
             {hot.map((story, index) => (
               <li key={story.id} className="flex gap-2 text-sm">
                 <span className={`text-lg font-black text-[var(--portal-primary)]/40`}>{faNum(index + 1)}</span>
-                <Link href={`/site/${story.id}`} className={`font-semibold leading-6 ${accentHover}`}>{story.title}</Link>
+                <Link href={`/${story.id}`} className={`font-semibold leading-6 ${accentHover}`}>{story.title}</Link>
               </li>
             ))}
           </ol>
@@ -130,7 +130,7 @@ export function SiteHomeView() {
             {hot.map((story, index) => (
               <li key={story.id} className="flex gap-2 text-sm">
                 <span className={`text-lg font-black text-[var(--portal-primary)]/40`}>{faNum(index + 1)}</span>
-                <Link href={`/site/${story.id}`} className={`font-semibold leading-6 ${accentHover}`}>{story.title}</Link>
+                <Link href={`/${story.id}`} className={`font-semibold leading-6 ${accentHover}`}>{story.title}</Link>
               </li>
             ))}
           </ol>
@@ -161,7 +161,7 @@ export function SiteHomeView() {
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {featuredDossiers.map((dossier) => (
               <li key={dossier.id}>
-                <Link href={`/site/dossier/${dossier.id}`} className="flex gap-3 rounded border border-line p-3 hover:border-[var(--portal-primary)]">
+                <Link href={`/dossier/${dossier.id}`} className="flex gap-3 rounded border border-line p-3 hover:border-[var(--portal-primary)]">
                   <CoverThumb cover={dossier.poster} className="h-20 w-28 shrink-0" />
                   <div>
                     <h3 className="font-bold leading-7">{dossier.title}</h3>
@@ -198,7 +198,7 @@ export function SiteHomeView() {
             <h2 className="flex items-center justify-between border-b border-line pb-2 text-base font-bold">
               {block.label}
               {block.key.startsWith("cat-") ? (
-                <Link href={`/site?cat=${block.key}`} className={`text-xs ${accent}`}>همه</Link>
+                <Link href={`/?cat=${block.key}`} className={`text-xs ${accent}`}>همه</Link>
               ) : null}
             </h2>
             <ul className="mt-3 space-y-3">
@@ -215,7 +215,7 @@ export function SiteHomeView() {
         <h2 className={sectionTitle}>گزارش‌های تصویری</h2>
         <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
           {photoAlbums.map((album) => (
-            <Link key={album.id} href={`/site/album/${album.id}`} className="w-64 shrink-0 overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+            <Link key={album.id} href={`/album/${album.id}`} className="w-64 shrink-0 overflow-hidden rounded-lg border border-line bg-white shadow-sm">
               <CoverThumb cover={album.photos[0]?.src ?? "sand"} className="h-40 w-full" />
               <div className="p-3">
                 <h3 className="line-clamp-2 text-sm font-bold">{album.title}</h3>

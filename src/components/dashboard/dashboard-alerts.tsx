@@ -65,7 +65,7 @@ export function DashboardDeadlineAlerts() {
           <h2 className="font-bold text-amber-950">هشدارهای هوشمند و ضرب‌الاجل‌ها</h2>
           <p className="mt-0.5 text-xs text-amber-900/80">کارهای فوری و یادآوری‌های نزدیک</p>
         </div>
-        <Link href="/reporters/my-tasks" className="text-sm font-medium text-primary hover:underline">کارهای من</Link>
+        <Link href="/admin/reporters/my-tasks" className="text-sm font-medium text-primary hover:underline">کارهای من</Link>
       </div>
       <ul className="mt-3 flex-1 space-y-2 text-sm">
         {!todos.length && !urgentAnnouncements.length ? (
@@ -107,7 +107,7 @@ export function NotificationPreviewList() {
     <div className="max-h-72 overflow-y-auto p-2 text-sm" data-testid="header-notifications">
       {todos.length === 0 && announcements.length === 0 ? <p className="px-2 py-3 text-muted">اعلان فعالی نیست.</p> : null}
       {todos.map((todo) => (
-        <Link key={todo.id} href="/reporters/my-tasks" className="block rounded-lg px-2 py-2 hover:bg-sand">
+        <Link key={todo.id} href="/admin/reporters/my-tasks" className="block rounded-lg px-2 py-2 hover:bg-sand">
           کار: {todo.title}
         </Link>
       ))}
@@ -117,7 +117,7 @@ export function NotificationPreviewList() {
           <p className="text-xs text-muted">{item.authorName}</p>
         </div>
       ))}
-      <Link href="/" className="mt-2 block px-2 text-xs font-medium text-primary">مشاهده پیشخوان</Link>
+      <Link href="/admin" className="mt-2 block px-2 text-xs font-medium text-primary">مشاهده پیشخوان</Link>
     </div>
   );
 }

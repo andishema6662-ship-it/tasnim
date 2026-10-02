@@ -45,10 +45,10 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();
     const q = query.trim();
-    if (pathname === "/site") {
-      router.push(q ? `/site?q=${encodeURIComponent(q)}` : "/site");
+    if (pathname === "/") {
+      router.push(q ? `/?q=${encodeURIComponent(q)}` : "/");
     } else {
-      router.push(q ? `/site?q=${encodeURIComponent(q)}` : "/site");
+      router.push(q ? `/?q=${encodeURIComponent(q)}` : "/");
     }
   }
 
@@ -79,14 +79,14 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                   {lang === "fa" ? "FA" : "EN"}
                 </button>
               ) : null}
-              <Link href="/" className="text-white/70 hover:text-white">پنل تحریریه</Link>
+              <Link href="/admin" className="text-white/70 hover:text-white">پنل تحریریه</Link>
             </div>
           </div>
         </div>
       ) : null}
       <header className="border-b border-[#ddd] bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <Link href="/site" className="flex items-center gap-3" data-testid="portal-site-brand">
+          <Link href="/" className="flex items-center gap-3" data-testid="portal-site-brand">
             <img src={mark} alt={SHAMSEH_MEDIA_NAME} className="h-14 w-14 shrink-0 object-contain drop-shadow-sm sm:h-16 sm:w-16" />
             <div>
               <p className="text-xs text-muted">{subtitle}</p>
@@ -123,12 +123,12 @@ export function PortalLayout({ children }: { children: ReactNode }) {
           </button>
           <ul className={`${mobileNav ? "flex" : "hidden"} absolute right-0 left-0 top-full flex-col border-t border-black/20 bg-[var(--portal-nav)] lg:static lg:flex lg:flex-row lg:border-0`}>
             <li>
-              <Link href="/site" className="block px-4 py-3 text-sm font-semibold hover:bg-[var(--portal-primary)]">صفحه اصلی</Link>
+              <Link href="/" className="block px-4 py-3 text-sm font-semibold hover:bg-[var(--portal-primary)]">صفحه اصلی</Link>
             </li>
             {PORTAL_NAV.map((item) => (
               <li key={item.id} className="group relative">
                 <Link
-                  href={"href" in item && item.href ? item.href : `/site?cat=${item.categoryId}`}
+                  href={"href" in item && item.href ? item.href : `/?cat=${item.categoryId}`}
                   className="block px-4 py-3 text-sm hover:bg-[var(--portal-primary)]"
                 >
                   {item.label}
@@ -167,7 +167,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             <ul className="mt-2 space-y-1 text-sm">
               {PORTAL_NAV.slice(0, 6).map((item) => (
                 <li key={item.id}>
-                  <Link href={"href" in item && item.href ? item.href : `/site?cat=${item.categoryId}`} className="hover:text-white">{item.label}</Link>
+                  <Link href={"href" in item && item.href ? item.href : `/?cat=${item.categoryId}`} className="hover:text-white">{item.label}</Link>
                 </li>
               ))}
             </ul>

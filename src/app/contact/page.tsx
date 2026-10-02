@@ -2,6 +2,6 @@
 
 import { SiteContactView } from "@/components/site/portal-contact";
 
-export default function SiteContactPage() {
+export default function ContactPage() {
   return <SiteContactView />;
 }

@@ -19,7 +19,7 @@ export function DossierClient() {
     return (
       <PortalLayout>
         <p className="rounded-lg border border-line bg-white p-8 text-center">پرونده پیدا نشد.</p>
-        <Link href="/site" className="mt-4 inline-block text-accent">بازگشت به صفحه اصلی</Link>
+        <Link href="/" className="mt-4 inline-block text-accent">بازگشت به صفحه اصلی</Link>
       </PortalLayout>
     );
   }
@@ -42,7 +42,7 @@ export function DossierClient() {
           {stories.length === 0 ? <li className="text-sm text-muted">خبر منتشرشده‌ای به این پرونده وصل نشده است.</li> : null}
           {stories.map((story) => (
             <li key={story.id}>
-              <Link href={`/site/${story.id}`} className="block rounded border border-line p-4 hover:border-[var(--portal-primary)]">
+              <Link href={`/${story.id}`} className="block rounded border border-line p-4 hover:border-[var(--portal-primary)]">
                 <h3 className="font-bold">{story.title}</h3>
                 <p className="mt-1 text-sm text-muted">{story.lead}</p>
                 <p className="mt-2 text-xs text-muted">{faDate(story.publishedAt ?? story.updatedAt)}</p>

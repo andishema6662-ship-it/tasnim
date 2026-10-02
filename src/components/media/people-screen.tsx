@@ -114,7 +114,7 @@ export function PeopleScreen() {
             <h1 className="text-xl font-bold text-slate-800">همکاران رسانه‌ای و دست‌اندرکاران</h1>
             <p className="mt-1 max-w-2xl text-sm leading-7 text-muted">
               کارت تماس HexaDash برای مدیر مسئول، سردبیر، خبرنگاران و عکاسان — در پنل و{" "}
-              <Link href="/site/people" className="font-medium text-primary hover:underline">صفحه عمومی سایت</Link>.
+              <Link href="/people" className="font-medium text-primary hover:underline">صفحه عمومی سایت</Link>.
             </p>
           </div>
           {canManage ? (

@@ -11,7 +11,7 @@ test("reporter profile avatar upload controls", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/reporters/my-profile", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-avatar-editor")).toBeVisible();
   await expect(page.getByTestId("person-avatar-upload-btn")).toBeVisible();
   const tinyPng = Buffer.from(
@@ -51,7 +51,7 @@ test("file lands in selected folder", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/reporters/file-manager", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reporters/file-manager", { waitUntil: "domcontentloaded" });
   await page.getByTestId("file-upload-folder-select").selectOption(folderId);
   const tinyPng = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",

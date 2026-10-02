@@ -18,7 +18,7 @@ export function SitePeopleView() {
   return (
     <PortalLayout>
       <nav className="text-sm text-muted">
-        <Link href="/site" className="hover:text-[var(--portal-primary)]">خانه</Link>
+        <Link href="/" className="hover:text-[var(--portal-primary)]">خانه</Link>
         <span className="mx-2">›</span>
         <span>همکاران رسانه‌ای</span>
       </nav>

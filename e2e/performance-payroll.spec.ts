@@ -11,7 +11,7 @@ test("reporter profile performance charts", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/reporters/my-profile", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("reporter-performance-panel")).toBeVisible();
   await expect(page.getByTestId("reporter-workload-progress")).toBeVisible();
 });
@@ -32,6 +32,6 @@ test("payroll approval gate for reporter", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/reporters/my-payroll", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reporters/my-payroll", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("payroll-pending-notice")).toBeVisible();
 });

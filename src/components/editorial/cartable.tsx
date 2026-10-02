@@ -60,7 +60,7 @@ export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable
     <ModulePage
       slug={moduleSlug}
       actions={
-        <Link href="/editorial/cartable/new" className="rounded-md bg-ink px-3 py-2 text-sm text-sheet">
+        <Link href="/admin/editorial/cartable/new" className="rounded-md bg-ink px-3 py-2 text-sm text-sheet">
           خبر جدید
         </Link>
       }
@@ -117,7 +117,7 @@ export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable
           {blogLayout ? (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3" data-testid="my-news-blog-grid">
               {visible.map((story) => (
-                <Blog3StoryCard key={story.id} data={data} story={story} href={`/editorial/cartable/${story.id}`} />
+                <Blog3StoryCard key={story.id} data={data} story={story} href={`/admin/editorial/cartable/${story.id}`} />
               ))}
             </div>
           ) : (
@@ -130,7 +130,7 @@ export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable
                     <span>{story.author}</span>
                     <span>{faDate(story.updatedAt)}</span>
                   </div>
-                  <Link href={`/editorial/cartable/${story.id}`} className="mt-1 block text-lg font-bold leading-8 hover:text-rule">
+                  <Link href={`/admin/editorial/cartable/${story.id}`} className="mt-1 block text-lg font-bold leading-8 hover:text-rule">
                     {story.title}
                   </Link>
                   <p className="line-clamp-2 text-sm text-muted">{story.lead}</p>
@@ -164,7 +164,7 @@ export function CartableScreen({ lockAuthorToCurrentUser, moduleSlug = "cartable
                     const actions = transitionsFrom(data, story.status);
                     return (
                       <article key={story.id} className="rounded-md border border-line p-3">
-                        <Link href={`/editorial/cartable/${story.id}`} className="font-semibold leading-7 hover:text-rule">
+                        <Link href={`/admin/editorial/cartable/${story.id}`} className="font-semibold leading-7 hover:text-rule">
                           {story.title}
                         </Link>
                         <p className="mt-1 text-xs text-muted">

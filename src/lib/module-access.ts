@@ -1,3 +1,4 @@
+import { ADMIN_BASE, isPublicPortalPath } from "./routes";
 import { allModuleKeys, moduleKeyFromParts, modules } from "./modules";
 import type { NewsroomData, RoleBase } from "./types";
 import { canPerm, currentRole, currentUser } from "./workflow";
@@ -122,15 +123,28 @@ export function canAccessModuleKey(data: NewsroomData, key: string): boolean {
 }
 
 export function moduleKeyFromPath(path: string): string | null {
-  if (path === "/" || path === "") return DASHBOARD_MODULE_KEY;
-  if (path === "/site" || path.startsWith("/site/")) return null;
+  if (path === ADMIN_BASE || path === `${ADMIN_BASE}/`) return DASHBOARD_MODULE_KEY;
+  if (isPublicPortalPath(path)) return null;
   const parts = path.split("/").filter(Boolean);
-  if (parts.length >= 2) return moduleKeyFromParts(parts[0], parts[1]);
+  if (parts[0] === "admin") {
+    if (parts.length >= 3) return moduleKeyFromParts(parts[1], parts[2]);
+    if (parts.length === 1) return DASHBOARD_MODULE_KEY;
+    return null;
+  }
+  if (parts.length >= 2 && parts[0] !== "admin") {
+    return moduleKeyFromParts(parts[0], parts[1]);
+  }
   return null;
 }
 
 export function canAccessPath(data: NewsroomData, path: string): boolean {
-  if (path === "/people" || path.startsWith("/people/")) return true;
+  if (isPublicPortalPath(path)) return true;
+  if (path.startsWith(`${ADMIN_BASE}/colleague/`)) {
+    return canAccessModuleKey(data, MEDIA_PEOPLE_MODULE_KEY);
+  }
+  if (path.startsWith(`${ADMIN_BASE}/editorial/cartable/`)) {
+    return canAccessModuleKey(data, "editorial/cartable");
+  }
   const key = moduleKeyFromPath(path);
   if (!key) return true;
   if (!modules.some((item) => moduleKeyFromParts(item.group, item.slug) === key)) return true;

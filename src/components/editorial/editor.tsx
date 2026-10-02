@@ -92,7 +92,7 @@ export function Editor({ id }: { id: string }) {
     return (
       <div className="mx-auto max-w-3xl space-y-3">
         <h1 className="text-2xl font-bold">این خبر پیدا نشد</h1>
-        <Link href="/editorial/cartable" className="text-sm text-rule">
+        <Link href="/admin/editorial/cartable" className="text-sm text-rule">
           بازگشت به کارتابل
         </Link>
       </div>
@@ -174,7 +174,7 @@ export function Editor({ id }: { id: string }) {
     setForm(story);
     setError("");
     setFlash(`${action} انجام شد. وضعیت: ${statusLabel(data, status)}.`);
-    if (isNew) router.replace(`/editorial/cartable/${storyId}`);
+    if (isNew) router.replace(`/admin/editorial/cartable/${storyId}`);
   }
 
   const desk = categoryName(data, form.categoryId);
@@ -189,7 +189,7 @@ export function Editor({ id }: { id: string }) {
           <p className="text-xs font-semibold text-rule">کارتابل و سردبیری</p>
           <h1 className="text-2xl font-bold">{isNew ? "خبر تازه" : "ویرایش خبر"}</h1>
         </div>
-        <Link href="/editorial/cartable" className="text-sm text-rule">
+        <Link href="/admin/editorial/cartable" className="text-sm text-rule">
           بازگشت به فهرست
         </Link>
       </div>
@@ -296,7 +296,7 @@ export function Editor({ id }: { id: string }) {
               ))}
             </Select>
             {linkedPitch ? (
-              <Link href="/editorial/pitches" className="mt-1 block text-xs text-rule">
+              <Link href="/admin/editorial/pitches" className="mt-1 block text-xs text-rule">
                 مشاهده سوژه: {linkedPitch.title}
               </Link>
             ) : null}

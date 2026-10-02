@@ -10,7 +10,7 @@ test("public contact form with captcha persists message", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/site/contact", { waitUntil: "domcontentloaded" });
+  await page.goto("/contact", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("site-contact-intro")).toBeVisible();
   await page.getByTestId("site-contact-form").getByLabel("نام و نام خانوادگی").fill("کاربر تست");
   await page.getByTestId("site-contact-form").getByLabel("عنوان پیام").fill("سوال عمومی");
@@ -35,6 +35,6 @@ test("admin contact inbox and reporter sidebar group", async ({ page }) => {
     },
     [STORAGE_KEY, JSON.stringify(data)],
   );
-  await page.goto("/reporters/my-profile", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-profile")).toBeVisible();
 });

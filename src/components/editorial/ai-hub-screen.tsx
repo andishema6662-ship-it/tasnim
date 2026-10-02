@@ -94,7 +94,7 @@ export function AiHubScreen() {
   }
 
   function openInEditor(storyId: string) {
-    router.push(`/editorial/cartable/${storyId}`);
+    router.push(`/admin/editorial/cartable/${storyId}`);
   }
 
   function runTranscription(fileName: string, durationSec: number) {

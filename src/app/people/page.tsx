@@ -2,6 +2,6 @@
 
 import { SitePeopleView } from "@/components/site/portal-people";
 
-export default function SitePeoplePage() {
+export default function PeoplePage() {
   return <SitePeopleView />;
 }
