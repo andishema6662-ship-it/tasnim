@@ -612,7 +612,7 @@ export interface SpecialDossier {
   featuredOnHome: boolean;
 }
 
-export type EventMapPointKind = "checkpoint" | "gather" | "rally";
+export type EventMapPointKind = "checkpoint" | "gather" | "rally" | "origin" | "destination" | "waypoint";
 
 export interface EventMapPoint {
   id: string;
@@ -637,6 +637,19 @@ export interface EventMapProject {
   centerLat?: number;
   centerLng?: number;
   mapZoom?: number;
+  /** استان / منطقه مبنا */
+  regionId?: string;
+  description?: string;
+  eventDate?: string;
+  /** نمای قفل‌شده پس از مرحله زوم */
+  viewLocked?: boolean;
+  viewCenterLat?: number;
+  viewCenterLng?: number;
+  viewZoom?: number;
+}
+
+export interface EventMapDefaults {
+  defaultRegionId: string;
 }
 
 export interface OfficialContact {
@@ -862,6 +875,7 @@ export interface NewsroomData {
   adminTemplates: AdminLetterTemplate[];
   specialDossiers: SpecialDossier[];
   eventMaps: EventMapProject[];
+  eventMapDefaults?: EventMapDefaults;
   officialContacts: OfficialContact[];
   reporterAgenda: ReporterAgendaItem[];
   reporterTodos: ReporterTodo[];

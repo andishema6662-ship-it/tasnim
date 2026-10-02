@@ -28,11 +28,11 @@ import { EmailScreen, NewsletterScreen, RssScreen, SocialScreen, VideosScreen } 
 import {
   AdminAffairsScreen,
   DossiersScreen,
-  EventMapScreen,
   PayrollScreen,
   PitchPerformanceScreen,
   ReporterPeriodScreen,
 } from "./enterprise/enterprise-screens";
+import { EventMapScreen } from "./media/event-map-screen";
 import { NewsReportScreen, StaffScreen, TrafficScreen, ViewsScreen } from "./reports/report-screens";
 import { AdsScreen, BannersScreen, CalendarScreen, CategoriesScreen, PagesScreen, ServicesScreen, TablesScreen, TickerScreen } from "./structure/structure-screens";
 import { ThemeScreen } from "./structure/theme-screen";

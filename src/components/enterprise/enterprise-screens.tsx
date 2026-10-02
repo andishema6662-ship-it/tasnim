@@ -14,10 +14,8 @@ import {
   type PeriodKind,
 } from "@/lib/reporter-analytics";
 import { PayrollSlipView } from "@/components/payroll-slip";
-import { EventMapCanvas } from "@/components/event-map-canvas";
 import { DossierPosterField } from "@/components/structure/dossier-poster-field";
 import { CoverThumb } from "@/components/cover-thumb";
-import { IRAN_MAP_CENTER, TEHRAN_MAP_CENTER } from "@/lib/event-map-geo";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
 import { useNewsroom } from "@/lib/store";
 import type { AdminLetterTemplate, SpecialDossier } from "@/lib/types";
@@ -502,119 +500,6 @@ export function DossiersScreen() {
           </li>
         ))}
       </ul>
-    </ModulePage>
-  );
-}
-
-export function EventMapScreen() {
-  const { data, update } = useNewsroom();
-  const [activeId, setActiveId] = useState(data.eventMaps[0]?.id ?? "");
-  const project = data.eventMaps.find((item) => item.id === activeId) ?? data.eventMaps[0];
-  const [flash, setFlash] = useState("");
-
-  return (
-    <ModulePage slug="event-map">
-      <Flash>{flash}</Flash>
-      <Field label="پروژه نقشه">
-        <Select value={activeId} onChange={(event) => setActiveId(event.target.value)}>
-          {data.eventMaps.map((item) => (
-            <option key={item.id} value={item.id}>{item.title}</option>
-          ))}
-        </Select>
-      </Field>
-      {project ? (
-        <div className="rounded-2xl border border-line bg-sheet p-4 shadow-sm" data-testid="event-map-card">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-bold">نقشه رویداد</h2>
-            <Field label="سبک نقشه">
-              <Select
-                value={project.mapStyle ?? "light"}
-                onChange={(event) =>
-                  update((current) => ({
-                    ...current,
-                    eventMaps: current.eventMaps.map((item) =>
-                      item.id === project.id ? { ...item, mapStyle: event.target.value as "light" | "dark" | "brand" } : item,
-                    ),
-                  }))
-                }
-                data-testid="event-map-style"
-              >
-                <option value="light">نقشه استاندارد روشن</option>
-                <option value="dark">نقشه تیره</option>
-                <option value="brand">تم سازمانی</option>
-              </Select>
-            </Field>
-          </div>
-          <div className="mb-2 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              tone="ghost"
-              className="text-xs"
-              data-testid="event-map-center-iran"
-              onClick={() =>
-                update((current) => ({
-                  ...current,
-                  eventMaps: current.eventMaps.map((item) =>
-                    item.id === project.id
-                      ? {
-                          ...item,
-                          centerLat: IRAN_MAP_CENTER.lat,
-                          centerLng: IRAN_MAP_CENTER.lng,
-                          mapZoom: IRAN_MAP_CENTER.zoom,
-                        }
-                      : item,
-                  ),
-                }))
-              }
-            >
-              مرکزیت نقشه ایران
-            </Button>
-            <Button
-              type="button"
-              tone="ghost"
-              className="text-xs"
-              data-testid="event-map-center-tehran"
-              onClick={() =>
-                update((current) => ({
-                  ...current,
-                  eventMaps: current.eventMaps.map((item) =>
-                    item.id === project.id
-                      ? {
-                          ...item,
-                          centerLat: TEHRAN_MAP_CENTER.lat,
-                          centerLng: TEHRAN_MAP_CENTER.lng,
-                          mapZoom: TEHRAN_MAP_CENTER.zoom,
-                        }
-                      : item,
-                  ),
-                }))
-              }
-            >
-              زوم تهران
-            </Button>
-          </div>
-          <p className="mb-2 text-xs text-muted">ایستگاه جمع، نقاط عبور و مسیر راهپیمایی — کلیک برای ایستگاه جدید</p>
-          <EventMapCanvas
-            project={{ ...project, routeOrder: project.routeOrder ?? project.points.map((p) => p.id) }}
-            onChange={(next) =>
-              update((current) => ({
-                ...current,
-                eventMaps: current.eventMaps.map((item) => (item.id === project.id ? next : item)),
-              }))
-            }
-          />
-          <div className="mt-4">
-            <Field label="کد درج در خبر">
-              <TextArea readOnly rows={2} value={project.embedCode} data-testid="event-map-embed" />
-            </Field>
-          </div>
-          <Button type="button" tone="ghost" onClick={() => { navigator.clipboard?.writeText(project.embedCode); setFlash("کد ابزارک کپی شد."); }}>
-            کپی کد
-          </Button>
-        </div>
-      ) : (
-        <Empty>پروژه‌ای تعریف نشده است.</Empty>
-      )}
     </ModulePage>
   );
 }

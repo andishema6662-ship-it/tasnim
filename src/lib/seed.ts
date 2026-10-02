@@ -926,20 +926,28 @@ export function createSeed(): NewsroomData {
         featuredOnHome: true,
       },
     ],
+    eventMapDefaults: { defaultRegionId: "iran" },
     eventMaps: [
       {
         id: "map-1",
         title: "راهپیمایی میدان انقلاب تا آزادی — تهران",
+        description: "مسیر نمونه برای پوشش راهپیمایی شهری در تهران.",
+        eventDate: "2026-10-02",
+        regionId: "tehran",
         centerLat: TEHRAN_MAP_CENTER.lat,
         centerLng: TEHRAN_MAP_CENTER.lng,
         mapZoom: 14,
+        viewLocked: true,
+        viewCenterLat: TEHRAN_MAP_CENTER.lat,
+        viewCenterLng: TEHRAN_MAP_CENTER.lng,
+        viewZoom: 14,
         points: [
-          { id: "pt-1", x: 0, y: 0, lat: 35.7009, lng: 51.3912, label: "میدان انقلاب", kind: "rally" },
-          { id: "pt-2", x: 0, y: 0, lat: 35.6995, lng: 51.3678, label: "خیابان کارگر", kind: "checkpoint" },
-          { id: "pt-3", x: 0, y: 0, lat: 35.6997, lng: 51.3381, label: "میدان آزادی", kind: "gather" },
+          { id: "pt-1", x: 0, y: 0, lat: 35.7009, lng: 51.3912, label: "میدان انقلاب", kind: "origin" },
+          { id: "pt-2", x: 0, y: 0, lat: 35.6995, lng: 51.3678, label: "خیابان کارگر", kind: "waypoint" },
+          { id: "pt-3", x: 0, y: 0, lat: 35.6997, lng: 51.3381, label: "میدان آزادی", kind: "destination" },
         ],
         routeOrder: ["pt-1", "pt-2", "pt-3"],
-        embedCode: '<div data-event-map="map-1" class="event-map-widget"></div>',
+        embedCode: '<div data-event-map="map-1" class="event-map-widget" data-animated="1"></div>',
       },
     ],
     officialContacts: [
@@ -1202,14 +1210,21 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     const routeOrder = map.routeOrder?.length ? map.routeOrder : points.map((p) => p.id);
     const withMeta = {
       ...map,
+      regionId: map.regionId ?? (map.mapZoom != null && map.mapZoom >= 10 ? "tehran" : "iran"),
       centerLat: map.centerLat ?? IRAN_MAP_CENTER.lat,
       centerLng: map.centerLng ?? IRAN_MAP_CENTER.lng,
       mapZoom: map.mapZoom ?? IRAN_MAP_CENTER.zoom,
       points,
       routeOrder,
+      embedCode: map.embedCode?.includes("data-animated")
+        ? map.embedCode
+        : `<div data-event-map="${map.id}" class="event-map-widget" data-animated="1"></div>`,
     };
     return normalizeEventMapProject(withMeta);
   });
+  if (!next.eventMapDefaults?.defaultRegionId) {
+    next.eventMapDefaults = base.eventMapDefaults ?? { defaultRegionId: "iran" };
+  }
   const changelogModuleKey = "infra/changelog";
   next.roles.forEach((role) => {
     const list = next.roleModuleAccess[role.id] ?? [];
