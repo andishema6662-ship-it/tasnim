@@ -7,3 +7,7 @@ tsconfig.tsbuildinfo
 test-results
 playwright-report
 tasnim-static-out.zip
+
+tasnim-static-stage.zip
+tasnim-full-*.zip
+tasnim-deploy-latest.zip
