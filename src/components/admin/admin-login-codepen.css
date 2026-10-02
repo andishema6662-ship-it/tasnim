@@ -100,6 +100,30 @@
   }
 }
 
+.dp-login__content-inner--brand-only {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: 3.25rem;
+  padding-bottom: 2rem;
+}
+
+@media (min-width: 48rem) {
+  .dp-login__content-inner--brand-only {
+    padding-top: 2.5rem;
+  }
+}
+
+.dp-login__content-inner--brand-only .dp-login__hero {
+  margin-bottom: 0;
+  padding-inline-end: 0;
+  max-width: 100%;
+}
+
+.dp-login__content-inner--brand-only .dp-login__hero-tagline {
+  margin-inline: auto;
+}
+
 .dp-login__hero {
   position: relative;
   z-index: 3;

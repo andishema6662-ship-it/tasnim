@@ -5,33 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { resolveSystemVersion, versionDisplay } from "@/lib/changelog";
 import { useAdminAuth } from "@/lib/admin-auth-context";
-import { resolveBrandMark, SHAMSEH_MEDIA_NAME, SHAMSEH_TAGLINE } from "@/lib/branding";
+import { resolveBrandMark, SHAMSEH_LOGIN_SUBTITLE, SHAMSEH_MEDIA_NAME } from "@/lib/branding";
+import { checkLoginAllowed } from "@/lib/login-guard";
 import { publicHomePath } from "@/lib/routes";
 import { useNewsroom } from "@/lib/store";
 import "./admin-login-codepen.css";
-
-const SLIDES = [
-  {
-    tag: "تحریریه",
-    title: "خط تولید خبر",
-    text: "کارتابل، سردبیری و انتشار در یک میز واحد شمسه",
-  },
-  {
-    tag: "پورتال",
-    title: "خروجی عمومی",
-    text: "صفحه اصلی خبرگزاری و پورتال خوانندگان در یک کلیک",
-  },
-  {
-    tag: "تیم",
-    title: "نقش‌ها و دسترسی",
-    text: "مدیر مسئول، سردبیر و خبرنگار با منوی متناسب",
-  },
-  {
-    tag: "شمسه",
-    title: "سامانه جامع",
-    text: "میز یکپارچه تولید و انتشار خبر با هویت بصری شمسه",
-  },
-] as const;
 
 export function AdminLoginScreen() {
   const { data } = useNewsroom();
@@ -43,28 +21,25 @@ export function AdminLoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [slide, setSlide] = useState(0);
-
   const mark = resolveBrandMark(data.settings.brandMark);
   const systemVersion = versionDisplay(resolveSystemVersion(data));
+  const lockout = !checkLoginAllowed().allowed;
 
   useEffect(() => {
     if (!authenticated) return;
     router.replace(next.startsWith("/admin") ? next : "/admin");
   }, [authenticated, next, router]);
 
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setSlide((current) => (current + 1) % SLIDES.length);
-    }, 4200);
-    return () => window.clearInterval(id);
-  }, []);
-
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const gate = checkLoginAllowed();
+    if (!gate.allowed) {
+      setError(gate.message ?? null);
+      return;
+    }
     setPending(true);
-    const result = login(username, password);
+    const result = await login(username, password);
     setPending(false);
     if (!result.ok) {
       setError(result.message);
@@ -76,29 +51,14 @@ export function AdminLoginScreen() {
   return (
     <div className="dp-login" data-testid="admin-login-page">
       <div className="dp-login__wrap">
-        <section className="dp-login__content" aria-label="معرفی شمسه">
+        <section className="dp-login__content" aria-label="شمسه">
           <div className="dp-login__logo">
             <img src={mark} alt={SHAMSEH_MEDIA_NAME} />
           </div>
-          <div className="dp-login__content-inner">
+          <div className="dp-login__content-inner dp-login__content-inner--brand-only">
             <div className="dp-login__hero">
               <h1 className="dp-login__hero-brand">{SHAMSEH_MEDIA_NAME}</h1>
-              <p className="dp-login__hero-tagline">{SHAMSEH_TAGLINE}</p>
-            </div>
-            <div className="dp-login__slide-stage" aria-live="polite">
-              {SLIDES.map((item, index) => (
-                <div
-                  key={item.tag}
-                  className={`dp-login__slide${index === slide ? " is-active" : ""}`}
-                  aria-hidden={index !== slide}
-                >
-                  <h2>
-                    <span>{item.tag}</span>
-                    {item.title}
-                  </h2>
-                  <p>{item.text}</p>
-                </div>
-              ))}
+              <p className="dp-login__hero-tagline">{SHAMSEH_LOGIN_SUBTITLE}</p>
             </div>
           </div>
         </section>
@@ -117,9 +77,10 @@ export function AdminLoginScreen() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="dp-login__input"
-                  placeholder="Email or Username"
+                  placeholder="نام کاربری"
                   dir="ltr"
                   required
+                  disabled={lockout}
                 />
               </div>
               <div className="dp-login__field">
@@ -132,17 +93,23 @@ export function AdminLoginScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="dp-login__input"
-                  placeholder="Password"
+                  placeholder="رمز عبور"
                   dir="ltr"
                   required
+                  disabled={lockout}
                 />
               </div>
               {error ? (
-                <p className="dp-login__error" role="alert">
+                <p className="dp-login__error" role="alert" data-testid="admin-login-error">
                   {error}
                 </p>
               ) : null}
-              <button type="submit" data-testid="admin-login-submit" className="dp-login__submit" disabled={pending}>
+              <button
+                type="submit"
+                data-testid="admin-login-submit"
+                className="dp-login__submit"
+                disabled={pending || lockout}
+              >
                 {pending ? "در حال ورود…" : "ورود"}
               </button>
             </form>

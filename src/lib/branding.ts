@@ -10,6 +10,9 @@ export const SHAMSEH_MEDIA_NAME = "شمسه";
 
 export const SHAMSEH_FULL_TITLE = "سامانه جامع تحریریه خبر شمسه";
 
+/** زیرعنوان پنل ورود (بدون تکرار نام شمسه) */
+export const SHAMSEH_LOGIN_SUBTITLE = "سامانه جامع تحریریه خبر";
+
 /** عنوان رسمی در نوار بالای پنل مدیریت */
 export const SHAMSEH_ADMIN_HEADER = "سامانه تحریریه خبر شمسه";
 

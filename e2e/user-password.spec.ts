@@ -14,7 +14,7 @@ test("admin can set user password and user logs in with new password", async ({ 
   data.currentUserId = "u-leila";
   await installAdminAuth(page, data);
   await page.goto("/admin/admin/users", { waitUntil: "domcontentloaded" });
-  await page.locator("tr", { hasText: "shamsaei" }).getByRole("button", { name: "ویرایش" }).click();
+  await page.getByTestId("user-edit-u-leila").click();
   await page.getByTestId("user-edit-password").fill("newpass99");
   await page.getByTestId("user-edit-password-confirm").fill("newpass99");
   await page.getByRole("button", { name: "ذخیره" }).click();

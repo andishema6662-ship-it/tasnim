@@ -5,6 +5,39 @@ export const DEFAULT_USER_PASSWORD = "shams1404";
 
 export const MIN_PASSWORD_LENGTH = 6;
 
+const STRONG_PASSWORD_LENGTH = 16;
+const STRONG_LOWER = "abcdefghjkmnpqrstuvwxyz";
+const STRONG_UPPER = "ABCDEFGHJKMNPQRSTUVWXYZ";
+const STRONG_DIGITS = "23456789";
+const STRONG_SYMBOLS = "!@#$%&*+-=?";
+
+function randomChar(pool: string): string {
+  const bytes = new Uint8Array(1);
+  crypto.getRandomValues(bytes);
+  return pool[bytes[0] % pool.length];
+}
+
+/** Cryptographically random password for admin-assigned accounts (client-side demo). */
+export function generateStrongPassword(length = STRONG_PASSWORD_LENGTH): string {
+  const size = Math.max(length, 12);
+  const required = [
+    randomChar(STRONG_LOWER),
+    randomChar(STRONG_UPPER),
+    randomChar(STRONG_DIGITS),
+    randomChar(STRONG_SYMBOLS),
+  ];
+  const all = STRONG_LOWER + STRONG_UPPER + STRONG_DIGITS + STRONG_SYMBOLS;
+  const rest = Array.from({ length: size - required.length }, () => randomChar(all));
+  const chars = [...required, ...rest];
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const bytes = new Uint8Array(1);
+    crypto.getRandomValues(bytes);
+    const j = bytes[0] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
+
 const HASH_PREFIX = "tasnim-sha256:";
 
 /** Sync SHA-256 (hex) for static client + seed — not for production secrets. */

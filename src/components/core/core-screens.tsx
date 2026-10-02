@@ -13,7 +13,9 @@ import { hashPassword, validateNewPassword, usernameTaken } from "@/lib/password
 import { canManageModuleAccess } from "@/lib/module-access";
 import { defaultTicketRecipient, TICKET_RECIPIENT_PRESETS, ticketRecipientLabel } from "@/lib/ticket-recipients";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
-import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
+import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea, cn } from "../ui";
+import { IconButton, IconPencil, IconTrash, IconUserCheck, IconUserOff } from "../ui/icon-button";
+import { UserPasswordPairFields } from "./user-password-pair-fields";
 import { ModuleAccessMatrix, ModuleAccessRolePicker } from "./module-access-matrix";
 
 export function SystemScreen() {
@@ -182,7 +184,7 @@ export function UsersScreen() {
       {!allowed ? <Notice>افزودن کاربر با مدیر مسئول است.</Notice> : null}
       <Flash>{flash}</Flash>
       <form
-        className="grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-2 lg:grid-cols-3"
+        className="grid gap-3 rounded-xl border border-line bg-sheet p-4 shadow-sm md:grid-cols-2 lg:grid-cols-3"
         onSubmit={(event) => {
           event.preventDefault();
           if (!allowed) return;
@@ -239,25 +241,18 @@ export function UsersScreen() {
             data-testid="user-create-username"
           />
         </Field>
-        <Field label="رمز عبور">
-          <Input
-            type="password"
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-            dir="ltr"
-            autoComplete="new-password"
-            data-testid="user-create-password"
+        <div className="md:col-span-2 lg:col-span-3">
+          <UserPasswordPairFields
+            password={form.password}
+            confirm={form.passwordConfirm}
+            onPasswordChange={(password) => setForm({ ...form, password })}
+            onConfirmChange={(passwordConfirm) => setForm({ ...form, passwordConfirm })}
+            passwordLabel="رمز عبور"
+            confirmLabel="تکرار رمز"
+            passwordTestId="user-create-password"
+            disabled={!allowed}
           />
-        </Field>
-        <Field label="تکرار رمز">
-          <Input
-            type="password"
-            value={form.passwordConfirm}
-            onChange={(event) => setForm({ ...form, passwordConfirm: event.target.value })}
-            dir="ltr"
-            autoComplete="new-password"
-          />
-        </Field>
+        </div>
         <Field label="نقش">
           <Select value={form.roleId} onChange={(event) => setForm({ ...form, roleId: event.target.value })}>
             {data.roles.map((role) => (
@@ -272,16 +267,16 @@ export function UsersScreen() {
         </Button>
       </form>
       <p className="text-xs text-muted">رمزها به‌صورت هش SHA-256 در localStorage ذخیره می‌شوند (دمو استاتیک، نه امنیت واقعی).</p>
-      <div className="overflow-x-auto rounded-lg border border-line bg-sheet">
-        <table className="w-full min-w-[36rem] text-sm">
-          <thead className="border-b border-line text-xs text-muted">
+      <div className="overflow-x-auto rounded-xl border border-line bg-sheet shadow-sm">
+        <table className="w-full min-w-[36rem] text-sm" data-testid="users-table">
+          <thead className="border-b border-line bg-sand/40 text-xs text-muted">
             <tr>
-              <th className="px-3 py-2 text-right font-medium">نام</th>
-              <th className="px-3 py-2 text-right font-medium">کاربری</th>
-              <th className="px-3 py-2 text-right font-medium">نقش</th>
-              <th className="px-3 py-2 text-right font-medium">رتبه</th>
-              <th className="px-3 py-2 text-right font-medium">وضعیت</th>
-              <th className="px-3 py-2 text-right font-medium">عملیات</th>
+              <th className="px-3 py-2.5 text-right font-semibold">نام</th>
+              <th className="px-3 py-2.5 text-right font-semibold">کاربری</th>
+              <th className="px-3 py-2.5 text-right font-semibold">نقش</th>
+              <th className="px-3 py-2.5 text-right font-semibold">رتبه</th>
+              <th className="px-3 py-2.5 text-right font-semibold">وضعیت</th>
+              <th className="px-3 py-2.5 text-right font-semibold w-[7.5rem]">عملیات</th>
             </tr>
           </thead>
           <tbody>
@@ -290,7 +285,13 @@ export function UsersScreen() {
               const row = isEditing ? editing : user;
               return (
                 <>
-                <tr key={user.id} className="border-b border-line last:border-0">
+                <tr
+                  key={user.id}
+                  className={cn(
+                    "border-b border-line transition-colors last:border-0",
+                    isEditing ? "bg-primary-light/30" : "hover:bg-sand/35",
+                  )}
+                >
                   <td className="px-3 py-2">
                     {isEditing ? (
                       <Input value={row.name} aria-label="نام" onChange={(event) => setEditing({ ...row, name: event.target.value })} />
@@ -344,11 +345,22 @@ export function UsersScreen() {
                         <option value="inactive">غیرفعال</option>
                       </Select>
                     ) : (
-                      <span className="text-muted">{user.active ? "فعال" : "غیرفعال"}</span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                          user.active ? "bg-teal-100 text-teal-900" : "bg-stone-100 text-stone-600",
+                        )}
+                      >
+                        <span
+                          className={cn("h-1.5 w-1.5 rounded-full", user.active ? "bg-teal-600" : "bg-stone-400")}
+                          aria-hidden="true"
+                        />
+                        {user.active ? "فعال" : "غیرفعال"}
+                      </span>
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center justify-end gap-0.5">
                       {isEditing ? (
                         <>
                           <Button tone="primary" disabled={!allowed} onClick={saveEdit}>
@@ -367,8 +379,9 @@ export function UsersScreen() {
                         </>
                       ) : (
                         <>
-                          <Button
-                            tone="ghost"
+                          <IconButton
+                            tone={user.active ? "default" : "success"}
+                            label={user.active ? "غیرفعال‌سازی کاربر" : "فعال‌سازی کاربر"}
                             disabled={!allowed}
                             data-testid={`user-toggle-active-${user.id}`}
                             onClick={() => {
@@ -384,11 +397,13 @@ export function UsersScreen() {
                               );
                             }}
                           >
-                            {user.active ? "غیرفعال‌سازی" : "فعال‌سازی"}
-                          </Button>
-                          <Button
-                            tone="ghost"
+                            {user.active ? <IconUserOff className="h-4 w-4" /> : <IconUserCheck className="h-4 w-4" />}
+                          </IconButton>
+                          <IconButton
+                            tone="accent"
+                            label="ویرایش کاربر"
                             disabled={!allowed}
+                            data-testid={`user-edit-${user.id}`}
                             onClick={() => {
                               setEditing({ ...user });
                               setEditPassword("");
@@ -402,11 +417,17 @@ export function UsersScreen() {
                               );
                             }}
                           >
-                            ویرایش
-                          </Button>
-                          <Button tone="quiet" disabled={!allowed} onClick={() => removeUser(user)}>
-                            حذف
-                          </Button>
+                            <IconPencil className="h-4 w-4" />
+                          </IconButton>
+                          <IconButton
+                            tone="danger"
+                            label="حذف کاربر"
+                            disabled={!allowed}
+                            data-testid={`user-delete-${user.id}`}
+                            onClick={() => removeUser(user)}
+                          >
+                            <IconTrash className="h-4 w-4" />
+                          </IconButton>
                         </>
                       )}
                     </div>
@@ -415,28 +436,17 @@ export function UsersScreen() {
                 {isEditing ? (
                   <tr key={`${user.id}-password`} className="border-b border-line bg-sand/20">
                     <td colSpan={6} className="px-3 py-3">
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <Field label="رمز عبور جدید (خالی = بدون تغییر)">
-                          <Input
-                            type="password"
-                            value={editPassword}
-                            onChange={(event) => setEditPassword(event.target.value)}
-                            dir="ltr"
-                            autoComplete="new-password"
-                            data-testid="user-edit-password"
-                          />
-                        </Field>
-                        <Field label="تکرار رمز جدید">
-                          <Input
-                            type="password"
-                            value={editPasswordConfirm}
-                            onChange={(event) => setEditPasswordConfirm(event.target.value)}
-                            dir="ltr"
-                            autoComplete="new-password"
-                            data-testid="user-edit-password-confirm"
-                          />
-                        </Field>
-                      </div>
+                      <UserPasswordPairFields
+                        password={editPassword}
+                        confirm={editPasswordConfirm}
+                        onPasswordChange={setEditPassword}
+                        onConfirmChange={setEditPasswordConfirm}
+                        passwordLabel="رمز عبور جدید (خالی = بدون تغییر)"
+                        confirmLabel="تکرار رمز جدید"
+                        passwordTestId="user-edit-password"
+                        confirmTestId="user-edit-password-confirm"
+                        disabled={!allowed}
+                      />
                     </td>
                   </tr>
                 ) : null}

@@ -37,6 +37,7 @@ export function saveAdminSession(session: AdminSession | null) {
 
 export function findUserByUsername(data: NewsroomData, username: string): User | undefined {
   const norm = username.trim().toLowerCase();
+  if (!norm) return undefined;
   return data.users.find((u) => u.active && u.username.toLowerCase() === norm);
 }
 

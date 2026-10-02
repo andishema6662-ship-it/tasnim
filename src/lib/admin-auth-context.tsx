@@ -8,13 +8,24 @@ import {
   verifyAdminCredentials,
   type AdminSession,
 } from "./admin-auth";
+import {
+  GENERIC_LOGIN_ERROR,
+  checkLoginAllowed,
+  clearLoginGuard,
+  recordFailedLoginAttempt,
+  sleep,
+  touchLoginAttempt,
+} from "./login-guard";
 import { useNewsroom } from "./store";
 
 interface AdminAuthValue {
   ready: boolean;
   authenticated: boolean;
   session: AdminSession | null;
-  login: (username: string, password: string) => { ok: true } | { ok: false; message: string };
+  login: (
+    username: string,
+    password: string,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;
 }
 
@@ -40,11 +51,26 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, [data, setCurrentUser]);
 
   const login = useCallback(
-    (username: string, password: string) => {
-      const user = verifyAdminCredentials(data, username, password);
-      if (!user) {
-        return { ok: false as const, message: "نام کاربری یا رمز عبور نادرست است." };
+    async (username: string, password: string) => {
+      const gate = checkLoginAllowed();
+      if (!gate.allowed) {
+        return { ok: false as const, message: gate.message ?? GENERIC_LOGIN_ERROR };
       }
+      if (gate.waitMs && gate.waitMs > 0) {
+        await sleep(gate.waitMs);
+      }
+      touchLoginAttempt();
+
+      const user = verifyAdminCredentials(data, username.trim(), password);
+      if (!user) {
+        const message = recordFailedLoginAttempt();
+        const locked = checkLoginAllowed();
+        if (!locked.allowed && locked.message) {
+          return { ok: false as const, message: locked.message };
+        }
+        return { ok: false as const, message };
+      }
+      clearLoginGuard();
       const next: AdminSession = {
         userId: user.id,
         username: user.username,
