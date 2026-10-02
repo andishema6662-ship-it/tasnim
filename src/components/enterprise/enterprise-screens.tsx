@@ -15,6 +15,9 @@ import {
 } from "@/lib/reporter-analytics";
 import { PayrollSlipView } from "@/components/payroll-slip";
 import { EventMapCanvas } from "@/components/event-map-canvas";
+import { DossierPosterField } from "@/components/structure/dossier-poster-field";
+import { CoverThumb } from "@/components/cover-thumb";
+import { IRAN_MAP_CENTER, TEHRAN_MAP_CENTER } from "@/lib/event-map-geo";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
 import { useNewsroom } from "@/lib/store";
 import type { AdminLetterTemplate, SpecialDossier } from "@/lib/types";
@@ -466,20 +469,36 @@ export function DossiersScreen() {
             onChange={(event) => setForm({ ...form, tags: event.target.value.split(/[،,]/).map((item) => item.trim()).filter(Boolean) })}
           />
         </Field>
+        <DossierPosterField poster={form.poster ?? "sand"} onPosterChange={(poster) => setForm({ ...form, poster })} testIdPrefix="dossier-create" />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.featuredOnHome ?? false} onChange={(event) => setForm({ ...form, featuredOnHome: event.target.checked })} />
           نمایش در صفحه اصلی سایت
         </label>
-        <Button type="submit">ایجاد پرونده</Button>
+        <Button type="submit" data-testid="dossier-create-submit">ایجاد پرونده</Button>
       </form>
       <ul className="mt-6 space-y-3">
         {data.specialDossiers.map((item) => (
-          <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sheet p-4">
-            <div>
-              <p className="font-bold">{item.title}</p>
-              <p className="text-sm text-muted">{faNum(item.storyIds.length)} خبر · {item.featuredOnHome ? "صفحه اصلی" : "فقط صفحه پرونده"}</p>
+          <li key={item.id} className="rounded-lg border border-line bg-sheet p-4" data-testid="dossier-list-item">
+            <div className="flex flex-wrap items-start gap-4">
+              <CoverThumb cover={item.poster} className="h-24 w-36 shrink-0 rounded-lg border border-line" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold">{item.title}</p>
+                <p className="text-sm text-muted">{faNum(item.storyIds.length)} خبر · {item.featuredOnHome ? "صفحه اصلی" : "فقط صفحه پرونده"}</p>
+                <DossierPosterField
+                  poster={item.poster}
+                  testIdPrefix={`dossier-${item.id}`}
+                  onPosterChange={(poster) =>
+                    update((current) => ({
+                      ...current,
+                      specialDossiers: current.specialDossiers.map((row) => (row.id === item.id ? { ...row, poster } : row)),
+                    }))
+                  }
+                />
+              </div>
+              <Link href={`/site/dossier/${item.id}`} className="text-sm font-semibold text-accent" target="_blank" data-testid="dossier-site-link">
+                مشاهده در سایت
+              </Link>
             </div>
-            <Link href={`/site/dossier/${item.id}`} className="text-sm font-semibold text-accent" target="_blank">مشاهده در سایت</Link>
           </li>
         ))}
       </ul>
@@ -525,6 +544,54 @@ export function EventMapScreen() {
                 <option value="brand">تم سازمانی</option>
               </Select>
             </Field>
+          </div>
+          <div className="mb-2 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              tone="ghost"
+              className="text-xs"
+              data-testid="event-map-center-iran"
+              onClick={() =>
+                update((current) => ({
+                  ...current,
+                  eventMaps: current.eventMaps.map((item) =>
+                    item.id === project.id
+                      ? {
+                          ...item,
+                          centerLat: IRAN_MAP_CENTER.lat,
+                          centerLng: IRAN_MAP_CENTER.lng,
+                          mapZoom: IRAN_MAP_CENTER.zoom,
+                        }
+                      : item,
+                  ),
+                }))
+              }
+            >
+              مرکزیت نقشه ایران
+            </Button>
+            <Button
+              type="button"
+              tone="ghost"
+              className="text-xs"
+              data-testid="event-map-center-tehran"
+              onClick={() =>
+                update((current) => ({
+                  ...current,
+                  eventMaps: current.eventMaps.map((item) =>
+                    item.id === project.id
+                      ? {
+                          ...item,
+                          centerLat: TEHRAN_MAP_CENTER.lat,
+                          centerLng: TEHRAN_MAP_CENTER.lng,
+                          mapZoom: TEHRAN_MAP_CENTER.zoom,
+                        }
+                      : item,
+                  ),
+                }))
+              }
+            >
+              زوم تهران
+            </Button>
           </div>
           <p className="mb-2 text-xs text-muted">ایستگاه جمع، نقاط عبور و مسیر راهپیمایی — کلیک برای ایستگاه جدید</p>
           <EventMapCanvas

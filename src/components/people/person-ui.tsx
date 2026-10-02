@@ -12,7 +12,8 @@ import {
 } from "@/lib/people";
 import { applyUserAvatar, avatarUrlForPerson } from "@/lib/user-avatar";
 import { useNewsroom } from "@/lib/store";
-import type { NewsroomData, Person } from "@/lib/types";
+import type { NewsroomData, Person, RoleBase } from "@/lib/types";
+import type { PersonContactPatch } from "@/lib/person-profile";
 import { MediaLibraryModal } from "../media/media-library-modal";
 import { Button, cn, Flash } from "../ui";
 
@@ -294,6 +295,58 @@ function PersonAvatarEditor({
   );
 }
 
+function PersonContactEditor({
+  person,
+  onSave,
+}: {
+  person: Person;
+  onSave: (patch: PersonContactPatch) => void;
+}) {
+  const [bio, setBio] = useState(person.bio);
+  const [title, setTitle] = useState(person.title);
+  const [phone, setPhone] = useState(person.phone ?? "");
+  const [email, setEmail] = useState(person.email ?? "");
+  const [desk, setDesk] = useState(person.desk ?? "");
+  const [flash, setFlash] = useState("");
+
+  return (
+    <form
+      className="mt-4 space-y-3 rounded-xl border border-line bg-paper p-4"
+      data-testid="person-contact-editor"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave({ bio, title, phone, email, desk });
+        setFlash("اطلاعات تماس ذخیره شد.");
+      }}
+    >
+      <Flash>{flash}</Flash>
+      <label className="block text-sm">
+        <span className="text-xs text-muted">سمت / عنوان</span>
+        <input className="mt-1 w-full rounded-lg border border-line bg-sheet px-3 py-2 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} />
+      </label>
+      <label className="block text-sm">
+        <span className="text-xs text-muted">بیوگرافی</span>
+        <textarea className="mt-1 w-full rounded-lg border border-line bg-sheet px-3 py-2 text-sm" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm">
+          <span className="text-xs text-muted">تلفن</span>
+          <input className="mt-1 w-full rounded-lg border border-line bg-sheet px-3 py-2 text-sm" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+        </label>
+        <label className="block text-sm">
+          <span className="text-xs text-muted">ایمیل</span>
+          <input className="mt-1 w-full rounded-lg border border-line bg-sheet px-3 py-2 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+        </label>
+      </div>
+      <label className="block text-sm">
+        <span className="text-xs text-muted">میز / محل کار</span>
+        <input className="mt-1 w-full rounded-lg border border-line bg-sheet px-3 py-2 text-sm" value={desk} onChange={(e) => setDesk(e.target.value)} />
+      </label>
+      <Button type="submit" className="text-xs" data-testid="person-contact-save">ذخیره اطلاعات تماس</Button>
+    </form>
+  );
+}
+
 export function PersonProfileView({
   data,
   person,
@@ -302,6 +355,9 @@ export function PersonProfileView({
   onSaveTier,
   canEditAvatar,
   avatarUserId,
+  canEditContact,
+  onSaveContact,
+  roleBase,
 }: {
   data: NewsroomData;
   person: Person;
@@ -310,6 +366,9 @@ export function PersonProfileView({
   onSaveTier?: (tier: number, note: string) => void;
   canEditAvatar?: boolean;
   avatarUserId?: string;
+  canEditContact?: boolean;
+  onSaveContact?: (patch: PersonContactPatch) => void;
+  roleBase?: RoleBase;
 }) {
   const published = publishedCountForPerson(data, person);
   const worked = workedCountForPerson(data, person);
@@ -333,9 +392,14 @@ export function PersonProfileView({
             <PersonAvatar person={person} src={avatarUrlForPerson(data, person)} className="h-28 w-28" />
           )}
           <div className="flex-1 text-center sm:text-right">
-            <h1 className="text-2xl font-bold">{person.name}</h1>
+            <h1 className="text-2xl font-bold" data-testid="person-profile-name">{person.name}</h1>
             <p className="mt-1 text-sm font-semibold text-violet-600">{person.title}</p>
-            <p className="mt-1 text-xs text-muted">{person.kind}</p>
+            <p className="mt-1 text-xs text-muted" data-testid="person-profile-role">{person.kind}</p>
+            {roleBase ? (
+              <p className="mt-1 text-[11px] font-medium text-primary" data-testid="person-profile-role-base">
+                نقش سامانه: {roleBase === "publisher" ? "مدیر مسئول" : roleBase === "chief" ? "سردبیر" : "خبرنگار / تحریریه"}
+              </p>
+            ) : null}
             <p className="mt-4 text-sm leading-8 text-slate-600">{person.bio}</p>
           </div>
         </div>
@@ -357,12 +421,15 @@ export function PersonProfileView({
             <dd className="text-sm font-bold">{person.joinedAt ? faDate(person.joinedAt) : "—"}</dd>
           </div>
         </dl>
+        {canEditContact && onSaveContact ? <PersonContactEditor person={person} onSave={onSaveContact} /> : null}
         <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/50 p-4">
-          <p className="text-xs font-semibold text-violet-800">رتبه خبرنگار (سردبیر)</p>
-          <p className="mt-1 text-lg tracking-widest text-amber-500" aria-label={`رتبه ${tier} از ۵`}>
-            {reporterTierStars(person.reporterTier)}
+          <p className="text-xs font-semibold text-violet-800">
+            {roleBase === "reporter" || !roleBase ? "رتبه خبرنگار (سردبیر)" : "رتبه / جایگاه تحریریه"}
           </p>
-          {person.tierNote ? <p className="mt-2 text-sm text-slate-600">{person.tierNote}</p> : null}
+          <p className="mt-1 text-lg tracking-widest text-amber-500" aria-label={`رتبه ${tier} از ۵`}>
+            {roleBase === "reporter" || !roleBase ? reporterTierStars(person.reporterTier) : personEditorialRank(person)}
+          </p>
+          {person.tierNote && (roleBase === "reporter" || !roleBase) ? <p className="mt-2 text-sm text-slate-600">{person.tierNote}</p> : null}
           {canEditTier && onSaveTier ? (
             <div className="mt-3 space-y-2 border-t border-violet-100 pt-3">
               <label className="block text-xs text-muted">

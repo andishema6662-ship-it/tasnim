@@ -71,7 +71,7 @@ export const modules: ModuleInfo[] = [
   { group: "editorial", slug: "order", title: "ترتیب اخبار", description: "چیدمان اخبار منتشرشده؛ ردیف اول تیتر یک است." },
   { group: "editorial", slug: "suggestions", title: "اخبار پیشنهادی", description: "پیشنهاد خبر منتشرشده برای سرویس دیگر." },
 
-  { group: "reporters", slug: "my-profile", title: "پروفایل من", description: "اطلاعات شخصی، آمار کار و رتبه خبرنگاری شما." },
+  { group: "reporters", slug: "my-profile", title: "پروفایل کاربری", description: "اطلاعات شخصی، عکس، تماس و آمار نقش فعال شما (مدیر، سردبیر یا خبرنگار)." },
   { group: "reporters", slug: "my-news", title: "اخبار من", description: "کارتابل محدود به خبرهای نوشته‌شده توسط شما." },
   { group: "reporters", slug: "my-payroll", title: "حق‌الزحمه و فیش", description: "تعرفه، کارکرد و پیش‌نمایش فیش حقوقی خبرنگار." },
   { group: "reporters", slug: "my-admin-affairs", title: "نامه‌های اداری", description: "کارت خبرنگاری، معرفی‌نامه و گواهی‌ها." },

@@ -1,5 +1,8 @@
 import { applyBrandingDefaults, defaultBrandingSettings, LEGACY_NEWSROOM_NAME } from "./branding";
 import { migrateModuleAccessList } from "./nav-migration";
+import { CHAT_THREAD_IT_SUPPORT } from "./chat-support";
+import { IRAN_MAP_CENTER, normalizeEventMapProject, TEHRAN_MAP_CENTER } from "./event-map-geo";
+import { defaultUserIdForRole } from "./session-user";
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
 import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
@@ -79,6 +82,7 @@ export function createSeed(): NewsroomData {
 
   const seed: NewsroomData = {
     currentRoleId: "reporter",
+    currentUserId: "u-sara",
     sessionStartedAt: new Date().toISOString(),
     settings: {
       ...defaultBrandingSettings(),
@@ -112,9 +116,10 @@ export function createSeed(): NewsroomData {
     ]),
     userModuleAccess: {},
     users: [
-      { id: "u-leila", name: "لیلا نوری", username: "leila", roleId: "publisher", active: true },
-      { id: "u-kamran", name: "کامران شفیعی", username: "kamran", roleId: "chief", active: true },
+      { id: "u-leila", name: "محمدحسین شمسایی", username: "shamsaei", roleId: "publisher", active: true },
+      { id: "u-kamran", name: "علیرضا رضایی", username: "rezaei", roleId: "chief", active: true },
       { id: "u-sara", name: "سارا محمدی", username: "sara", roleId: "reporter", active: true, reporterGrade: "senior" },
+      { id: "u-pouria", name: "مهدی پوریا", username: "pouria", roleId: "reporter", active: true, reporterGrade: "junior" },
       { id: "u-ali", name: "علی رضایی", username: "ali", roleId: "reporter", active: true, reporterGrade: "junior" },
       { id: "u-narges", name: "نرگس کاظمی", username: "narges", roleId: "reporter", active: true, reporterGrade: "trainee" },
     ],
@@ -550,6 +555,7 @@ export function createSeed(): NewsroomData {
         phone: "021-88776655",
         email: "desk@shamseh.news",
         desk: "اتاق ۱۰۱ — مدیریت",
+        userId: "u-leila",
         reporterTier: 5,
         tierNote: "رهبری تحریریه و خط‌مشی انتشار.",
       },
@@ -565,6 +571,7 @@ export function createSeed(): NewsroomData {
         phone: "021-88776656",
         email: "chief@shamseh.news",
         desk: "میز سردبیری",
+        userId: "u-kamran",
         reporterTier: 5,
       },
       {
@@ -612,6 +619,7 @@ export function createSeed(): NewsroomData {
         phone: "021-88776658",
         email: "photo@shamseh.news",
         desk: "اتاق عکاسی",
+        userId: "u-pouria",
         reporterTier: 3,
       },
       {
@@ -921,11 +929,14 @@ export function createSeed(): NewsroomData {
     eventMaps: [
       {
         id: "map-1",
-        title: "مسیر راهپیمایی نمونه",
+        title: "راهپیمایی میدان انقلاب تا آزادی — تهران",
+        centerLat: TEHRAN_MAP_CENTER.lat,
+        centerLng: TEHRAN_MAP_CENTER.lng,
+        mapZoom: 14,
         points: [
-          { id: "pt-1", x: 18, y: 72, label: "میدان آغاز", kind: "rally" },
-          { id: "pt-2", x: 42, y: 48, label: "ایستگاه سخنرانی", kind: "checkpoint" },
-          { id: "pt-3", x: 78, y: 28, label: "محل تجمع", kind: "gather" },
+          { id: "pt-1", x: 0, y: 0, lat: 35.7009, lng: 51.3912, label: "میدان انقلاب", kind: "rally" },
+          { id: "pt-2", x: 0, y: 0, lat: 35.6995, lng: 51.3678, label: "خیابان کارگر", kind: "checkpoint" },
+          { id: "pt-3", x: 0, y: 0, lat: 35.6997, lng: 51.3381, label: "میدان آزادی", kind: "gather" },
         ],
         routeOrder: ["pt-1", "pt-2", "pt-3"],
         embedCode: '<div data-event-map="map-1" class="event-map-widget"></div>',
@@ -1048,6 +1059,14 @@ export function createSeed(): NewsroomData {
     ],
     chatThreads: [
       {
+        id: CHAT_THREAD_IT_SUPPORT,
+        kind: "group",
+        title: "پشتیبانی فنی و IT",
+        participantIds: ["u-sara", "u-kamran", "u-leila", "u-ali", "u-narges"],
+        lastPreview: "درخواست دسترسی یا گزارش خطای فنی را اینجا بنویسید.",
+        lastAt: iso("2026-10-01T08:00:00Z"),
+      },
+      {
         id: "cht-sara-chief",
         kind: "direct",
         title: "کامران شفیعی (سردبیر)",
@@ -1096,6 +1115,7 @@ export function createSeed(): NewsroomData {
     ],
   };
   seed.payrollApprovals = seedPendingApprovals(seed);
+  seed.eventMaps = seed.eventMaps.map((map) => normalizeEventMapProject(map));
   return seed;
 }
 
@@ -1107,6 +1127,15 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     if (value !== undefined) next[key] = value as never;
   });
   if (!next.roles.some((role) => role.id === next.currentRoleId)) next.currentRoleId = "reporter";
+  if (!next.currentUserId) {
+    next.currentUserId = defaultUserIdForRole(next, next.currentRoleId);
+  }
+  next.people = next.people.map((person) => {
+    if (person.id === "p-shamsaei" && !person.userId) return { ...person, userId: "u-leila" };
+    if (person.id === "p-rezaei" && !person.userId) return { ...person, userId: "u-kamran" };
+    if (person.id === "p-pouria" && !person.userId) return { ...person, userId: "u-pouria" };
+    return person;
+  });
   if (raw.settings) next.settings = normalizeSettings({ ...base.settings, ...raw.settings });
   else next.settings = normalizeSettings(next.settings);
   if (!Array.isArray(next.ads) || next.ads.length === 0) next.ads = base.ads;
@@ -1166,10 +1195,25 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
       x: point.x,
       y: point.y,
       label: point.label,
+      kind: point.kind,
+      lat: point.lat,
+      lng: point.lng,
     }));
     const routeOrder = map.routeOrder?.length ? map.routeOrder : points.map((p) => p.id);
-    return { ...map, points, routeOrder };
+    const withMeta = {
+      ...map,
+      centerLat: map.centerLat ?? IRAN_MAP_CENTER.lat,
+      centerLng: map.centerLng ?? IRAN_MAP_CENTER.lng,
+      mapZoom: map.mapZoom ?? IRAN_MAP_CENTER.zoom,
+      points,
+      routeOrder,
+    };
+    return normalizeEventMapProject(withMeta);
   });
+  if (!next.chatThreads.some((thread) => thread.id === CHAT_THREAD_IT_SUPPORT)) {
+    const support = base.chatThreads.find((thread) => thread.id === CHAT_THREAD_IT_SUPPORT);
+    if (support) next.chatThreads = [support, ...next.chatThreads];
+  }
   next.users = next.users.map((user) => ({
     ...user,
     reporterGrade: user.reporterGrade ?? (user.roleId === "reporter" ? "junior" : undefined),

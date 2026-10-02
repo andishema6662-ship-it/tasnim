@@ -1,4 +1,5 @@
 import { pushActivity } from "./activity";
+import { resolveCurrentUser } from "./session-user";
 import type { NewsroomData, Permissions, RoleBase, RoleDef, Status, Story, Transition } from "./types";
 
 export const STATUSES: Status[] = ["draft", "editing", "review", "ready", "published", "archived"];
@@ -23,8 +24,7 @@ export function currentRole(data: NewsroomData): RoleDef {
 }
 
 export function currentUser(data: NewsroomData) {
-  const role = currentRole(data);
-  return data.users.find((user) => user.roleId === role.id && user.active) ?? data.users.find((user) => user.active) ?? data.users[0];
+  return resolveCurrentUser(data);
 }
 
 export function statusLabel(data: NewsroomData, status: Status): string {

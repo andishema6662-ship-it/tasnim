@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { pushActivity } from "./activity";
+import { defaultUserIdForRole } from "./session-user";
 import { createSeed } from "./seed";
 import { loadState, saveState } from "./storage";
 import type { NewsroomData, Story } from "./types";
@@ -13,6 +14,7 @@ interface StoreValue {
   update: (fn: (data: NewsroomData) => NewsroomData) => void;
   commitStory: (story: Story, opts?: { promote?: boolean; log?: string }) => void;
   setRole: (roleId: string) => void;
+  setCurrentUser: (userId: string) => void;
   replaceData: (data: NewsroomData) => void;
   resetData: () => void;
 }
@@ -48,7 +50,22 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
       update((current) => {
         const role = current.roles.find((item) => item.id === roleId);
         if (!role) return current;
-        return pushActivity({ ...current, currentRoleId: roleId }, `تغییر نقش به ${role.name}`);
+        const currentUserId = defaultUserIdForRole(current, roleId) ?? current.currentUserId;
+        return pushActivity({ ...current, currentRoleId: roleId, currentUserId }, `تغییر نقش به ${role.name}`);
+      });
+    },
+    [update],
+  );
+
+  const setCurrentUser = useCallback(
+    (userId: string) => {
+      update((current) => {
+        const user = current.users.find((item) => item.id === userId && item.active);
+        if (!user) return current;
+        return pushActivity(
+          { ...current, currentUserId: userId, currentRoleId: user.roleId },
+          `ورود به حساب ${user.name}`,
+        );
       });
     },
     [update],
@@ -63,8 +80,8 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => (data ? { data, update, commitStory, setRole, replaceData, resetData } : null),
-    [data, update, commitStory, setRole, replaceData, resetData],
+    () => (data ? { data, update, commitStory, setRole, setCurrentUser, replaceData, resetData } : null),
+    [data, update, commitStory, setRole, setCurrentUser, replaceData, resetData],
   );
 
   return (

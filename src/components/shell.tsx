@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveBrandMark, SHAMSEH_ADMIN_HEADER, SHAMSEH_MEDIA_NAME } from "@/lib/branding";
 import { norm, todayTriCalendar } from "@/lib/format";
+import { CHAT_SUPPORT_CHIEF_HREF, CHAT_SUPPORT_IT_HREF } from "@/lib/chat-support";
+import { usersForRole } from "@/lib/session-user";
 import { canAccessPath, DASHBOARD_MODULE_KEY, effectiveModuleKeys } from "@/lib/module-access";
 import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules";
 import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
@@ -296,7 +298,7 @@ function HeaderIconButton({
 }
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { data, setRole } = useNewsroom();
+  const { data, setRole, setCurrentUser } = useNewsroom();
   const path = usePathname();
   const [query, setQuery] = useState("");
   const [menuPath, setMenuPath] = useState<string | null>(null);
@@ -397,12 +399,17 @@ export function Shell({ children }: { children: ReactNode }) {
           <NavList query={query} collapsed={sidebarCollapsed} />
         </nav>
         {!sidebarCollapsed ? (
-          <div className="m-3 rounded-xl border border-line bg-gradient-to-l from-primary-light/80 to-sheet p-3 text-xs leading-6">
-            <p className="font-bold text-ink">پشتیبانی تحریریه</p>
-            <p className="mt-1 text-muted">تیکت فنی یا درخواست دسترسی را از بخش تیکتینگ ثبت کنید.</p>
-            <Link href="/admin/chat" className="mt-2 inline-block font-semibold text-primary hover:underline">
-              تیکت جدید
-            </Link>
+          <div className="m-3 rounded-xl border border-line bg-gradient-to-l from-primary-light/80 to-sheet p-3 text-xs leading-6" data-testid="sidebar-editorial-support">
+            <p className="font-bold text-ink">پشتیبانی و ارتباط با سردبیری</p>
+            <p className="mt-1 text-muted">به‌جای تیکتینگ قدیمی، از پیام‌رسان تحریریه برای پشتیبانی فنی یا هماهنگی با میز سردبیری استفاده کنید.</p>
+            <div className="mt-2 flex flex-col gap-1.5">
+              <Link href={CHAT_SUPPORT_IT_HREF} className="font-semibold text-primary hover:underline" data-testid="sidebar-support-it-link">
+                پیام به پشتیبانی فنی
+              </Link>
+              <Link href={CHAT_SUPPORT_CHIEF_HREF} className="font-semibold text-primary hover:underline" data-testid="sidebar-support-chief-link">
+                گفتگو با میز تحریریه
+              </Link>
+            </div>
           </div>
         ) : null}
         <div className={cn("border-t border-line px-3 py-3", sidebarCollapsed && "px-2")}>
@@ -533,11 +540,45 @@ export function Shell({ children }: { children: ReactNode }) {
                     {userAvatar ? <img src={userAvatar} alt="" className="h-full w-full object-cover" /> : user?.name?.slice(0, 1) ?? "؟"}
                     <span className="absolute bottom-0 left-0 h-2 w-2 rounded-full border border-sheet bg-emerald-500" />
                   </span>
-                  <span className="hidden max-w-[6rem] truncate text-xs font-semibold lg:inline">{user?.name}</span>
+                  <span className="hidden max-w-[8rem] truncate text-xs font-semibold lg:inline" data-testid="header-user-name">
+                    {user?.name}
+                  </span>
                 </button>
                 {userOpen ? (
                   <div className="absolute left-0 top-full z-40 mt-2 w-52 rounded-xl border border-line bg-sheet py-2 shadow-lg" role="menu">
                     <p className="px-3 py-1 text-xs text-muted">نقش: {role.name}</p>
+                    <p className="px-3 pb-1 text-sm font-semibold">{user?.name}</p>
+                    <Link
+                      href="/reporters/my-profile"
+                      className="block px-3 py-2 text-sm font-medium text-primary hover:bg-sand"
+                      role="menuitem"
+                      data-testid="header-profile-link"
+                      onClick={() => setUserOpen(false)}
+                    >
+                      پروفایل کاربری
+                    </Link>
+                    {usersForRole(data, role.id).length > 1 ? (
+                      <div className="border-t border-line py-1">
+                        <p className="px-3 py-1 text-[11px] font-semibold text-muted">تغییر کاربر این نقش</p>
+                        {usersForRole(data, role.id).map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            role="menuitem"
+                            className={cn(
+                              "block w-full px-3 py-2 text-right text-sm hover:bg-sand",
+                              item.id === user?.id && "font-semibold text-primary",
+                            )}
+                            onClick={() => {
+                              setCurrentUser(item.id);
+                              setUserOpen(false);
+                            }}
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     <div className="my-1 border-t border-line md:hidden">
                       <p className="px-3 py-1 text-[11px] font-semibold text-muted">تغییر نقش</p>
                       {data.roles.map((item) => (

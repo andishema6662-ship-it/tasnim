@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { uid } from "@/lib/id";
 import { useNewsroom } from "@/lib/store";
 import type { ChatMessage, ChatThread } from "@/lib/types";
@@ -16,6 +17,8 @@ function unreadForThread(messages: ChatMessage[], threadId: string, userId: stri
 export function ChatScreen() {
   const { data, update } = useNewsroom();
   const me = currentUser(data);
+  const searchParams = useSearchParams();
+  const threadFromUrl = searchParams.get("thread");
   const [tab, setTab] = useState<"direct" | "group">("direct");
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState(data.chatThreads[0]?.id ?? "");
@@ -53,6 +56,15 @@ export function ChatScreen() {
       return { ...current, chatReadCursors: [...rest, { userId: me.id, threadId, lastReadAt: now }] };
     });
   }
+
+  useEffect(() => {
+    if (!threadFromUrl) return;
+    const match = data.chatThreads.find((thread) => thread.id === threadFromUrl);
+    if (!match) return;
+    setActiveId(match.id);
+    setTab(match.kind);
+    markRead(match.id);
+  }, [threadFromUrl, data.chatThreads, me?.id, update]);
 
   function send() {
     if (!me || !active || (!text.trim() && !pendingFile)) return;

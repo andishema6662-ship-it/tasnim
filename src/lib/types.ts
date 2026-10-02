@@ -599,6 +599,9 @@ export interface EventMapPoint {
   y: number;
   label: string;
   kind?: EventMapPointKind;
+  /** مختصات جغرافیایی روی نقشه ایران */
+  lat?: number;
+  lng?: number;
 }
 
 export type EventMapStyle = "light" | "dark" | "brand";
@@ -610,6 +613,9 @@ export interface EventMapProject {
   routeOrder: string[];
   embedCode: string;
   mapStyle?: EventMapStyle;
+  centerLat?: number;
+  centerLng?: number;
+  mapZoom?: number;
 }
 
 export interface OfficialContact {
@@ -777,6 +783,8 @@ export interface OriginHit {
 
 export interface NewsroomData {
   currentRoleId: string;
+  /** کاربر فعال در سشن (پروفایل و هدر) — با نقش باید هم‌خوان باشد */
+  currentUserId?: string;
   settings: Settings;
   templateSettings: TemplateSettings;
   roles: RoleDef[];
