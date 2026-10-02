@@ -1,0 +1,235 @@
+/* Inspired by https://codepen.io/Ahmed_B_Hameed/pen/LZqNmp — Shamseh RTL variant */
+
+.shamseh-404 {
+  --nf-blue: #07b3f9;
+  --nf-teal: #4fc1b7;
+  --nf-digit: var(--nf-teal);
+  --nf-shadow: #535353;
+  --nf-muted: #a2a2a2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem 3rem;
+  background: #fff;
+  text-align: center;
+}
+
+.shamseh-404__brand {
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nf-shadow);
+  letter-spacing: 0.02em;
+}
+
+.shamseh-404__stage {
+  position: relative;
+  height: 250px;
+  padding-top: 2.5rem;
+  margin-bottom: 0.5rem;
+  direction: ltr;
+}
+
+.shamseh-404__clip {
+  display: inline-block;
+  transform: skew(-45deg);
+}
+
+.shamseh-404__shadow {
+  height: 180px;
+  overflow: hidden;
+}
+
+.shamseh-404__clip:nth-of-type(2) .shamseh-404__shadow {
+  width: 130px;
+  position: relative;
+  box-shadow:
+    inset 20px 0 20px -15px rgba(150, 150, 150, 0.8),
+    20px 0 20px -15px rgba(150, 150, 150, 0.8);
+}
+
+.shamseh-404__clip:nth-of-type(1) .shamseh-404__shadow,
+.shamseh-404__clip:nth-of-type(3) .shamseh-404__shadow {
+  width: 250px;
+}
+
+.shamseh-404__clip:nth-of-type(3) .shamseh-404__shadow::after,
+.shamseh-404__clip:nth-of-type(1) .shamseh-404__shadow::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  bottom: 0;
+  z-index: 2;
+  height: 100%;
+  width: 10px;
+  background: linear-gradient(90deg, transparent, rgba(173, 173, 173, 0.8), transparent);
+  border-radius: 50%;
+}
+
+.shamseh-404__clip:nth-of-type(3) .shamseh-404__shadow::after {
+  left: -8px;
+  right: auto;
+}
+
+.shamseh-404__digit {
+  position: relative;
+  top: 8%;
+  width: 150px;
+  height: 150px;
+  line-height: 150px;
+  font-size: 7.5rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--nf-digit);
+  border-radius: 50%;
+  display: inline-block;
+  transform: skew(45deg);
+  font-variant-numeric: tabular-nums;
+}
+
+.shamseh-404__clip:nth-of-type(2) .shamseh-404__digit {
+  left: -10%;
+}
+
+.shamseh-404__clip:nth-of-type(1) .shamseh-404__digit {
+  right: -20%;
+}
+
+.shamseh-404__clip:nth-of-type(3) .shamseh-404__digit {
+  left: -20%;
+}
+
+.shamseh-404__bubble {
+  position: absolute;
+  z-index: 5;
+  top: -190px;
+  left: 30%;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-style: italic;
+  background: var(--nf-shadow);
+  color: var(--nf-muted);
+  border-radius: 50%;
+}
+
+.shamseh-404__bubble-tail {
+  position: absolute;
+  z-index: 4;
+  top: 70%;
+  right: 0;
+  transform: rotate(45deg);
+  width: 0;
+  height: 0;
+  border-left: 20px solid var(--nf-shadow);
+  border-top: 15px solid transparent;
+  border-bottom: 15px solid transparent;
+}
+
+.shamseh-404__title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--nf-muted);
+  padding-bottom: 0.75rem;
+}
+
+.shamseh-404__lead {
+  margin: 0 0 1.75rem;
+  max-width: 22rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #6b7280;
+}
+
+.shamseh-404__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.shamseh-404__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.35rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    filter 0.2s ease,
+    transform 0.15s ease;
+}
+
+.shamseh-404__btn--primary {
+  color: #fff;
+  background: linear-gradient(180deg, #69ddc9 0%, var(--nf-teal) 100%);
+  box-shadow: 0 0.75rem 1.5rem -0.5rem rgba(0, 0, 0, 0.35);
+}
+
+.shamseh-404__btn--ghost {
+  color: var(--nf-shadow);
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
+.shamseh-404__btn:hover {
+  filter: brightness(1.06);
+}
+
+.shamseh-404__btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 767px) {
+  .shamseh-404__stage {
+    height: 150px;
+    padding-top: 1.5rem;
+  }
+
+  .shamseh-404__shadow {
+    height: 100px;
+  }
+
+  .shamseh-404__clip:nth-of-type(2) .shamseh-404__shadow {
+    width: 80px;
+  }
+
+  .shamseh-404__clip:nth-of-type(1) .shamseh-404__shadow,
+  .shamseh-404__clip:nth-of-type(3) .shamseh-404__shadow {
+    width: 100px;
+  }
+
+  .shamseh-404__digit {
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    font-size: 3.25rem;
+  }
+
+  .shamseh-404__bubble {
+    top: -110px;
+    left: 15%;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .shamseh-404__bubble-tail {
+    border-left-width: 10px;
+    border-top-width: 8px;
+    border-bottom-width: 8px;
+    right: -3%;
+  }
+
+  .shamseh-404__title {
+    font-size: 1.35rem;
+  }
+}
