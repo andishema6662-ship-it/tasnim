@@ -104,6 +104,25 @@ export interface PortalHeaderBannerSettings {
   href: string;
 }
 
+export interface LiveWidgetSlotSettings {
+  enabled: boolean;
+  title: string;
+  embedCode: string;
+  /** فقط آب‌وهوا — شهرهای پیش‌فرض وقتی embed خالی است */
+  cities?: string;
+}
+
+export interface LiveWidgetCustomSlot extends LiveWidgetSlotSettings {
+  id: string;
+}
+
+export interface LiveWidgetsSettings {
+  weather: LiveWidgetSlotSettings;
+  rates: LiveWidgetSlotSettings;
+  league: LiveWidgetSlotSettings;
+  customSlots: LiveWidgetCustomSlot[];
+}
+
 export interface TemplateSettings {
   palette: ThemePalette;
   customPrimary: string;
@@ -125,6 +144,8 @@ export interface TemplateSettings {
   portalHeaderBanner: PortalHeaderBannerSettings;
   homepageSlots: HomepageSlots;
   ershadLicense: { enabled: boolean; code: string; badgeImage: string };
+  /** ویجت‌های زنده — کد embed هر بخش */
+  liveWidgets: LiveWidgetsSettings;
   portalWidgets: {
     showRates: boolean;
     showWeather: boolean;

@@ -1,8 +1,10 @@
 "use client";
 
 import { faNum } from "@/lib/format";
+import { resolveLiveWidgets } from "@/lib/live-widgets";
 import { resolveTemplateSettings } from "@/lib/template";
 import { useNewsroom } from "@/lib/store";
+import { LiveWidgetSection } from "./portal-widget-embed";
 
 function pseudoRates(seed: number) {
   const usd = 58_200 + (seed % 400);
@@ -15,29 +17,45 @@ function pseudoRates(seed: number) {
 export function PortalWidgetsSidebar() {
   const { data } = useNewsroom();
   const theme = resolveTemplateSettings(data);
-  const widgets = theme.portalWidgets;
-  if (!widgets.showRates && !widgets.showWeather && !widgets.showLeague) return null;
+  const live = resolveLiveWidgets(theme);
+  const anyEnabled =
+    live.rates.enabled ||
+    live.weather.enabled ||
+    live.league.enabled ||
+    live.customSlots.some((slot) => slot.enabled);
+  if (!anyEnabled) return null;
+
   const seed = new Date().getDate();
   const rates = pseudoRates(seed);
-  const cities = widgets.weatherCities.split(/[،,]/).map((item) => item.trim()).filter(Boolean).slice(0, 4);
+  const cities = (live.weather.cities ?? "")
+    .split(/[،,]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
   return (
     <aside className="space-y-4" data-testid="portal-widgets">
-      {widgets.showRates ? (
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
-          <h2 className="border-r-4 border-[var(--portal-primary)] pr-2 text-sm font-bold">نرخ ارز و طلا</h2>
-          <ul className="mt-3 space-y-2 text-sm">
+      <LiveWidgetSection
+        title={live.rates.title}
+        enabled={live.rates.enabled}
+        embedCode={live.rates.embedCode}
+        testId="portal-widget-rates"
+        fallback={
+          <ul className="space-y-2 text-sm">
             <li className="flex justify-between"><span>دلار</span><span dir="ltr">{faNum(rates.usd)}</span></li>
             <li className="flex justify-between"><span>یورو</span><span dir="ltr">{faNum(rates.eur)}</span></li>
             <li className="flex justify-between"><span>طلای ۱۸</span><span dir="ltr">{faNum(rates.gold)}</span></li>
             <li className="flex justify-between"><span>سکه</span><span dir="ltr">{faNum(rates.coin)}</span></li>
           </ul>
-        </section>
-      ) : null}
-      {widgets.showWeather ? (
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
-          <h2 className="border-r-4 border-[var(--portal-primary)] pr-2 text-sm font-bold">آب و هوا</h2>
-          <ul className="mt-3 space-y-2 text-sm">
+        }
+      />
+      <LiveWidgetSection
+        title={live.weather.title}
+        enabled={live.weather.enabled}
+        embedCode={live.weather.embedCode}
+        testId="portal-widget-weather"
+        fallback={
+          <ul className="space-y-2 text-sm">
             {cities.map((city, index) => (
               <li key={city} className="flex justify-between">
                 <span>{city}</span>
@@ -45,12 +63,15 @@ export function PortalWidgetsSidebar() {
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
-      {widgets.showLeague ? (
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
-          <h2 className="border-r-4 border-[var(--portal-primary)] pr-2 text-sm font-bold">جدول لیگ</h2>
-          <table className="mt-3 w-full text-xs">
+        }
+      />
+      <LiveWidgetSection
+        title={live.league.title}
+        enabled={live.league.enabled}
+        embedCode={live.league.embedCode}
+        testId="portal-widget-league"
+        fallback={
+          <table className="w-full text-xs">
             <thead>
               <tr className="text-muted">
                 <th className="py-1 text-right">تیم</th>
@@ -66,8 +87,20 @@ export function PortalWidgetsSidebar() {
               ))}
             </tbody>
           </table>
-        </section>
-      ) : null}
+        }
+      />
+      {live.customSlots
+        .filter((slot) => slot.enabled)
+        .map((slot) => (
+          <LiveWidgetSection
+            key={slot.id}
+            title={slot.title || "ویجت سفارشی"}
+            enabled={true}
+            embedCode={slot.embedCode}
+            testId={`portal-widget-custom-${slot.id}`}
+            fallback={<p className="text-sm text-muted">کد اسکریپت ویجت سفارشی را در تنظیمات قالب وارد کنید.</p>}
+          />
+        ))}
     </aside>
   );
 }

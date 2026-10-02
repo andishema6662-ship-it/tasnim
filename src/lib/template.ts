@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { defaultBrandingSettings } from "./branding";
 import { defaultHomepageSlots } from "./homepage-slots";
+import { defaultLiveWidgetsSettings, portalWidgetsFromLive, resolveLiveWidgets } from "./live-widgets";
 import type { NewsroomData, TemplateSettings } from "./types";
 
 export const PALETTE_OPTIONS: { id: TemplateSettings["palette"]; label: string; primary: string; accent: string; nav: string }[] = [
@@ -54,6 +55,7 @@ export function defaultTemplateSettings(): TemplateSettings {
     },
     homepageSlots: defaultHomepageSlots(),
     ershadLicense: { enabled: false, code: "", badgeImage: "" },
+    liveWidgets: defaultLiveWidgetsSettings(),
     portalWidgets: {
       showRates: true,
       showWeather: true,
@@ -103,10 +105,8 @@ export function resolveTemplateSettings(data: NewsroomData): TemplateSettings {
       ...defaults.ershadLicense,
       ...raw.ershadLicense,
     },
-    portalWidgets: {
-      ...defaults.portalWidgets,
-      ...raw.portalWidgets,
-    },
+    liveWidgets: resolveLiveWidgets({ ...defaults, ...raw }),
+    portalWidgets: portalWidgetsFromLive(resolveLiveWidgets({ ...defaults, ...raw })),
   };
 }
 

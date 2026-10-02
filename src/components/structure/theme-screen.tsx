@@ -12,8 +12,10 @@ import type { TemplateSettings } from "@/lib/types";
 import { useNewsroom } from "@/lib/store";
 import { canPerm } from "@/lib/workflow";
 import { Button, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
+import { LiveWidgetsThemeSection } from "./live-widgets-theme-section";
 import { ThemeBrandingSection } from "./theme-branding-section";
 import { ThemeSlotsSection } from "./theme-slots-section";
+import { portalWidgetsFromLive } from "@/lib/live-widgets";
 
 export function ThemeScreen() {
   const { data, update } = useNewsroom();
@@ -54,6 +56,8 @@ export function ThemeScreen() {
             },
             templateSettings: {
               ...form,
+              liveWidgets: form.liveWidgets,
+              portalWidgets: portalWidgetsFromLive(form.liveWidgets),
               showBreakingTicker: form.homepageSlots.ticker.enabled,
               tickerLabel: form.homepageSlots.ticker.label.trim() || "فوری",
               aboutFooter: form.aboutFooter.trim(),
@@ -238,30 +242,7 @@ export function ThemeScreen() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-line bg-sheet p-4">
-          <h2 className="text-base font-bold">ویجت‌های زنده پورتال</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.portalWidgets.showRates} disabled={!allowed} onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, showRates: event.target.checked } })} />
-              نرخ ارز و طلا
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.portalWidgets.showWeather} disabled={!allowed} onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, showWeather: event.target.checked } })} />
-              آب و هوا
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.portalWidgets.showLeague} disabled={!allowed} onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, showLeague: event.target.checked } })} />
-              جدول لیگ
-            </label>
-          </div>
-          <Field label="شهرهای هواشناسی">
-            <Input
-              value={form.portalWidgets.weatherCities}
-              disabled={!allowed}
-              onChange={(event) => patch({ portalWidgets: { ...form.portalWidgets, weatherCities: event.target.value } })}
-            />
-          </Field>
-        </section>
+        <LiveWidgetsThemeSection form={form} disabled={!allowed} onForm={setForm} />
 
         <ThemeSlotsSection
           form={form}

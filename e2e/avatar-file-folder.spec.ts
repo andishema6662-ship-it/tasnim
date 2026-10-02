@@ -14,6 +14,17 @@ test("reporter profile avatar upload controls", async ({ page }) => {
   await page.goto("/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-avatar-editor")).toBeVisible();
   await expect(page.getByTestId("person-avatar-upload-btn")).toBeVisible();
+  const tinyPng = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  await page.getByTestId("person-avatar-file").setInputFiles({
+    name: "avatar.png",
+    mimeType: "image/png",
+    buffer: tinyPng,
+  });
+  await expect(page.getByTestId("person-avatar-success-toast")).toHaveText("تصویر پروفایل با موفقیت به‌روزرسانی شد");
+  await expect(page.getByTestId("person-avatar-clear-btn")).toBeVisible();
 });
 
 test("file lands in selected folder", async ({ page }) => {

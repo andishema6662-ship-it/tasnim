@@ -29,8 +29,8 @@ export const groups: GroupInfo[] = [
   { id: "audience", title: "تعامل با مخاطب و ارتباطات", priority: "light" },
   { id: "reports", title: "تحلیل، گزارش و پایش", priority: "light" },
   { id: "structure", title: "ساختاردهی و انتشار محتوا", priority: "deep" },
-  { id: "template", title: "تنظیمات قالب", priority: "deep" },
   { id: "admin", title: "مدیریت و کاربران", priority: "light" },
+  { id: "template", title: "تنظیمات قالب", priority: "deep" },
   { id: "infra", title: "زیرساخت", priority: "light" },
 ];
 

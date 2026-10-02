@@ -10,7 +10,7 @@ import {
   reporterTierStars,
   workedCountForPerson,
 } from "@/lib/people";
-import { applyUserAvatar, avatarUrlForPerson } from "@/lib/user-avatar";
+import { applyUserAvatar, avatarUrlForPerson, clearUserAvatar } from "@/lib/user-avatar";
 import { useNewsroom } from "@/lib/store";
 import type { NewsroomData, Person, RoleBase } from "@/lib/types";
 import type { PersonContactPatch } from "@/lib/person-profile";
@@ -240,13 +240,35 @@ function PersonAvatarEditor({
   const { data, update } = useNewsroom();
   const [preview, setPreview] = useState<string | undefined>(() => avatarUrlForPerson(data, person));
   const [flash, setFlash] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [hoverAvatar, setHoverAvatar] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPreview(avatarUrlForPerson(data, person));
+  }, [data, person]);
+
+  useEffect(() => {
+    if (!success) return;
+    const timer = window.setTimeout(() => setSuccess(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, [success]);
 
   function saveAvatar(url: string) {
     setPreview(url);
     update((current) => applyUserAvatar(current, userId, url));
-    setFlash("عکس پرسنلی ذخیره شد.");
+    setUploading(false);
+    setSuccess(true);
+    setFlash("");
+  }
+
+  function clearAvatar() {
+    setPreview(undefined);
+    update((current) => clearUserAvatar(current, userId));
+    setSuccess(false);
+    setFlash("به آواتار پیش‌فرض بازگشتید.");
   }
 
   function onFile(event: React.ChangeEvent<HTMLInputElement>) {
@@ -261,25 +283,101 @@ function PersonAvatarEditor({
       setFlash("حجم تصویر زیاد است. کمتر از ۲٫۵ مگابایت انتخاب کنید.");
       return;
     }
+    setUploading(true);
+    setSuccess(false);
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") saveAvatar(reader.result);
+      else setUploading(false);
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      setFlash("خطا در خواندن فایل تصویر.");
     };
     reader.readAsDataURL(file);
   }
 
+  function pickFromLibrary(src: string) {
+    setUploading(true);
+    setSuccess(false);
+    window.setTimeout(() => saveAvatar(src), 200);
+  }
+
+  const hasCustomPhoto = Boolean(preview);
+
   return (
     <div className="flex flex-col items-center gap-3" data-testid="person-avatar-editor">
-      <PersonAvatar person={person} src={preview} className="h-28 w-28" />
+      <div
+        className="relative"
+        onMouseEnter={() => setHoverAvatar(true)}
+        onMouseLeave={() => setHoverAvatar(false)}
+      >
+        <PersonAvatar
+          person={person}
+          src={preview}
+          className={cn(
+            "h-32 w-32 ring-4 transition-all duration-200",
+            success ? "ring-emerald-500" : "ring-primary/20",
+            uploading && "opacity-70",
+          )}
+        />
+        {uploading ? (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/50 text-white"
+            data-testid="person-avatar-loading"
+          >
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
+            <span className="mt-2 px-2 text-center text-[11px] font-semibold leading-tight">در حال بارگذاری تصویر...</span>
+          </div>
+        ) : null}
+        {!uploading && (hoverAvatar || !hasCustomPhoto) ? (
+          <button
+            type="button"
+            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 px-2 text-center text-xs font-bold text-white transition-opacity hover:bg-black/55"
+            data-testid="person-avatar-overlay"
+            onClick={() => fileRef.current?.click()}
+          >
+            بارگذاری تصویر جدید
+          </button>
+        ) : null}
+        {success ? (
+          <span
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow"
+            data-testid="person-avatar-success-badge"
+          >
+            ذخیره شد
+          </span>
+        ) : null}
+      </div>
+      {success ? (
+        <p
+          role="status"
+          className="w-full max-w-xs rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-sm font-semibold text-emerald-800"
+          data-testid="person-avatar-success-toast"
+        >
+          تصویر پروفایل با موفقیت به‌روزرسانی شد
+        </p>
+      ) : null}
       <Flash>{flash}</Flash>
       <input ref={fileRef} type="file" accept="image/*" className="hidden" data-testid="person-avatar-file" onChange={onFile} />
       <div className="flex flex-wrap justify-center gap-2">
-        <Button type="button" className="text-xs" data-testid="person-avatar-upload-btn" onClick={() => fileRef.current?.click()}>
+        <Button
+          type="button"
+          className="text-xs"
+          data-testid="person-avatar-upload-btn"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+        >
           تغییر عکس پرسنلی / بارگذاری تصویر
         </Button>
-        <Button type="button" tone="ghost" className="text-xs" onClick={() => setMediaOpen(true)}>
+        <Button type="button" tone="ghost" className="text-xs" disabled={uploading} onClick={() => setMediaOpen(true)}>
           انتخاب از کتابخانه
         </Button>
+        {hasCustomPhoto ? (
+          <Button type="button" tone="quiet" className="text-xs" data-testid="person-avatar-clear-btn" disabled={uploading} onClick={clearAvatar}>
+            حذف تصویر / بازگشت به آواتار پیش‌فرض
+          </Button>
+        ) : null}
       </div>
       <MediaLibraryModal
         open={mediaOpen}
@@ -287,7 +385,7 @@ function PersonAvatarEditor({
         confirmLabel="استفاده به‌عنوان عکس"
         onClose={() => setMediaOpen(false)}
         onPick={(src) => {
-          saveAvatar(src);
+          pickFromLibrary(src);
           setMediaOpen(false);
         }}
       />
