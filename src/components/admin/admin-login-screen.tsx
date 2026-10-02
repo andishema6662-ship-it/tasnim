@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { DEFAULT_USER_PASSWORD } from "@/lib/password";
+import { resolveSystemVersion, versionDisplay } from "@/lib/changelog";
 import { useAdminAuth } from "@/lib/admin-auth-context";
 import { resolveBrandMark, SHAMSEH_MEDIA_NAME, SHAMSEH_TAGLINE } from "@/lib/branding";
 import { publicHomePath } from "@/lib/routes";
@@ -46,7 +46,7 @@ export function AdminLoginScreen() {
   const [slide, setSlide] = useState(0);
 
   const mark = resolveBrandMark(data.settings.brandMark);
-  const panelTitle = (data.settings.mediaName ?? "").trim() || data.settings.newsroomName;
+  const systemVersion = versionDisplay(resolveSystemVersion(data));
 
   useEffect(() => {
     if (!authenticated) return;
@@ -80,29 +80,32 @@ export function AdminLoginScreen() {
           <div className="dp-login__logo">
             <img src={mark} alt={SHAMSEH_MEDIA_NAME} />
           </div>
-          <div className="dp-login__slideshow">
-            <h1 className="dp-login__hero-brand">{SHAMSEH_MEDIA_NAME}</h1>
-            <p className="sr-only">{panelTitle}</p>
-            {SLIDES.map((item, index) => (
-              <div
-                key={item.tag}
-                className={`dp-login__slide${index === slide ? " is-active" : ""}`}
-                aria-hidden={index !== slide}
-              >
-                <h2>
-                  <span>{item.tag}</span>
-                  {item.title}
-                </h2>
-                <p>{item.text}</p>
-              </div>
-            ))}
+          <div className="dp-login__content-inner">
+            <div className="dp-login__hero">
+              <h1 className="dp-login__hero-brand">{SHAMSEH_MEDIA_NAME}</h1>
+              <p className="dp-login__hero-tagline">{SHAMSEH_TAGLINE}</p>
+            </div>
+            <div className="dp-login__slide-stage" aria-live="polite">
+              {SLIDES.map((item, index) => (
+                <div
+                  key={item.tag}
+                  className={`dp-login__slide${index === slide ? " is-active" : ""}`}
+                  aria-hidden={index !== slide}
+                >
+                  <h2>
+                    <span>{item.tag}</span>
+                    {item.title}
+                  </h2>
+                  <p>{item.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         <section className="dp-login__user" aria-label="ورود به پنل">
           <div className="dp-login__form-wrap">
             <p className="dp-login__tab">ورود به پنل</p>
-            <p className="mb-4 text-xs text-[#9aa3b2]">{SHAMSEH_TAGLINE}</p>
             <form onSubmit={onSubmit}>
               <div className="dp-login__field">
                 <label htmlFor="admin-login-username">نام کاربری</label>
@@ -146,9 +149,8 @@ export function AdminLoginScreen() {
             <p className="dp-login__help">
               <Link href={publicHomePath()}>← بازگشت به سایت خبری</Link>
             </p>
-            <p className="dp-login__demo">
-              نسخه نمایشی: کاربران seed (مثلاً <code>rezaei</code>، <code>shamsaei</code>) — رمز پیش‌فرض{" "}
-              <code>{DEFAULT_USER_PASSWORD}</code> (هش SHA-256 در localStorage)
+            <p className="dp-login__version" data-testid="admin-login-version">
+              نسخه {systemVersion}
             </p>
           </div>
         </section>
