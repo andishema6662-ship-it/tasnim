@@ -1,16 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("reporter todo list and dashboard alerts", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-tasks", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("todo-list")).toBeVisible();
   await page.getByTestId("todo-add-btn").click();
@@ -29,12 +26,7 @@ test("reporter todo list and dashboard alerts", async ({ page }) => {
 test("notes and file manager quota", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-notes", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("notes-grid")).toBeVisible();
   await page.goto("/admin/reporters/file-manager", { waitUntil: "domcontentloaded" });
@@ -44,12 +36,7 @@ test("notes and file manager quota", async ({ page }) => {
 test("my-news blog3 cards", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-news", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("my-news-blog-grid")).toBeVisible();
   await expect(page.getByTestId("blog3-card").first()).toBeVisible();
@@ -58,12 +45,7 @@ test("my-news blog3 cards", async ({ page }) => {
 test("chief publishes announcement", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "chief";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/admin/announcements", { waitUntil: "domcontentloaded" });
   await page.getByTestId("announcement-form").getByLabel("عنوان").fill("اطلاعیه تست");
   await page.getByTestId("announcement-form").getByLabel("متن پیام").fill("متن آزمایشی");

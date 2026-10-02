@@ -1,16 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("dashboard upcoming events widget", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dashboard-upcoming-events")).toBeVisible();
   await expect(page.getByTestId("upcoming-event-item").first()).toBeVisible();
@@ -34,12 +31,7 @@ test("file upload folder selector", async ({ page }) => {
       createdAt: new Date().toISOString(),
     });
   }
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/file-manager", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("file-upload-folder-select")).toBeVisible();
 });

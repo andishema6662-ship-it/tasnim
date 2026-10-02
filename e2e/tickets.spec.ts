@@ -1,16 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("editorial chat messenger", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/tickets", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("chat-layout")).toBeVisible();
   await expect(page.getByTestId("chat-sidebar")).toBeVisible();

@@ -25,6 +25,18 @@ export function isAdminPanelPath(path: string): boolean {
   return path === ADMIN_BASE || path.startsWith(`${ADMIN_BASE}/`);
 }
 
+export function isAdminLoginPath(path: string): boolean {
+  const base = `${ADMIN_BASE}/login`;
+  return path === base || path.startsWith(`${base}/`);
+}
+
+export function adminLoginPath(nextPath?: string): string {
+  if (!nextPath || nextPath === ADMIN_BASE || nextPath.startsWith(`${ADMIN_BASE}/login`)) {
+    return `${ADMIN_BASE}/login`;
+  }
+  return `${ADMIN_BASE}/login?next=${encodeURIComponent(nextPath)}`;
+}
+
 export function adminModulePath(group: string, slug: string): string {
   return `${ADMIN_BASE}/${group}/${slug}`;
 }

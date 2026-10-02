@@ -1,0 +1,56 @@
+import type { NewsroomData, User } from "./types";
+
+export const ADMIN_SESSION_KEY = "tasnim-admin-session-v1";
+
+/** Demo password for seeded newsroom users (static hosting — not production security). */
+export const DEMO_ADMIN_PASSWORD = "shams1404";
+
+export interface AdminSession {
+  userId: string;
+  username: string;
+  loggedInAt: string;
+}
+
+export function loadAdminSession(): AdminSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ADMIN_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AdminSession;
+    if (!parsed?.userId || !parsed?.username) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAdminSession(session: AdminSession | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (!session) window.localStorage.removeItem(ADMIN_SESSION_KEY);
+    else window.localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function findUserByUsername(data: NewsroomData, username: string): User | undefined {
+  const norm = username.trim().toLowerCase();
+  return data.users.find((u) => u.active && u.username.toLowerCase() === norm);
+}
+
+export function verifyAdminCredentials(
+  data: NewsroomData,
+  username: string,
+  password: string,
+): User | null {
+  if (password !== DEMO_ADMIN_PASSWORD) return null;
+  const user = findUserByUsername(data, username);
+  return user ?? null;
+}
+
+export function sessionMatchesUser(session: AdminSession | null, data: NewsroomData): boolean {
+  if (!session) return false;
+  const user = data.users.find((u) => u.id === session.userId && u.active);
+  return Boolean(user && user.username.toLowerCase() === session.username.toLowerCase());
+}

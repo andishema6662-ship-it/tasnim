@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveBrandMark, SHAMSEH_ADMIN_HEADER, SHAMSEH_MEDIA_NAME } from "@/lib/branding";
 import { norm, todayTriCalendar } from "@/lib/format";
@@ -9,7 +9,8 @@ import { CHAT_SUPPORT_CHIEF_HREF, CHAT_SUPPORT_IT_HREF } from "@/lib/chat-suppor
 import { usersForRole } from "@/lib/session-user";
 import { canAccessPath, DASHBOARD_MODULE_KEY, effectiveModuleKeys } from "@/lib/module-access";
 import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules";
-import { ADMIN_BASE, isPublicPortalPath, publicHomePath } from "@/lib/routes";
+import { useAdminAuth } from "@/lib/admin-auth-context";
+import { ADMIN_BASE, adminLoginPath, isAdminLoginPath, isAdminPanelPath, isPublicPortalPath, publicHomePath } from "@/lib/routes";
 import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
 import { useNewsroom } from "@/lib/store";
 import { avatarUrlForUser } from "@/lib/user-avatar";
@@ -306,6 +307,8 @@ function HeaderIconButton({
 
 export function Shell({ children }: { children: ReactNode }) {
   const { data, setRole, setCurrentUser } = useNewsroom();
+  const { ready: authReady, authenticated, logout } = useAdminAuth();
+  const router = useRouter();
   const path = usePathname();
   const [query, setQuery] = useState("");
   const [menuPath, setMenuPath] = useState<string | null>(null);
@@ -355,6 +358,13 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  useEffect(() => {
+    if (!authReady || !path) return;
+    if (isAdminPanelPath(path) && !isAdminLoginPath(path) && !authenticated) {
+      router.replace(adminLoginPath(path));
+    }
+  }, [authReady, authenticated, path, router]);
+
   const notifyCount =
     data.submissions.filter((item) => item.status === "new").length +
     data.suggestions.filter((item) => item.status === "pending").length +
@@ -367,6 +377,18 @@ export function Shell({ children }: { children: ReactNode }) {
 
   if (isPublicPortalPath(path)) {
     return <>{children}</>;
+  }
+
+  if (isAdminPanelPath(path)) {
+    if (!authReady) {
+      return <p className="p-6 text-center text-sm text-muted">در حال بارگذاری…</p>;
+    }
+    if (isAdminLoginPath(path)) {
+      return <>{children}</>;
+    }
+    if (!authenticated) {
+      return <p className="p-6 text-center text-sm text-muted">در حال انتقال به صفحه ورود…</p>;
+    }
   }
 
   return (
@@ -614,6 +636,19 @@ export function Shell({ children }: { children: ReactNode }) {
                     <Link href="/admin/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       تنظیمات سیستم
                     </Link>
+                    <button
+                      type="button"
+                      className="block w-full px-3 py-2 text-right text-sm text-rose-700 hover:bg-rose-50"
+                      role="menuitem"
+                      data-testid="admin-logout"
+                      onClick={() => {
+                        logout();
+                        setUserOpen(false);
+                        router.replace(adminLoginPath());
+                      }}
+                    >
+                      خروج از حساب
+                    </button>
                   </div>
                 ) : null}
               </div>

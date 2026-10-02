@@ -1,15 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("public contact form with captcha persists message", async ({ page }) => {
   const data = createSeed();
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/contact", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("site-contact-intro")).toBeVisible();
   await page.getByTestId("site-contact-form").getByLabel("نام و نام خانوادگی").fill("کاربر تست");
@@ -29,12 +26,7 @@ test("public contact form with captcha persists message", async ({ page }) => {
 test("admin contact inbox and reporter sidebar group", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-profile")).toBeVisible();
 });

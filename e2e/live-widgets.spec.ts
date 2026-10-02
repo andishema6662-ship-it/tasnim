@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
@@ -16,12 +18,7 @@ test("live widget embed appears on site when configured", async ({ page }) => {
       },
     },
   };
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("portal-widget-rates")).toContainText("نرخ زنده تست");
   await expect(page.getByTestId("external-rate-widget")).toBeVisible();
@@ -30,12 +27,7 @@ test("live widget embed appears on site when configured", async ({ page }) => {
 test("theme admin shows live widget script fields", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "chief";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/template/theme", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("theme-live-widgets")).toBeVisible();
   await expect(page.getByTestId("live-widget-rates-embed")).toBeVisible();

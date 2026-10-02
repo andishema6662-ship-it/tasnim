@@ -1,16 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("reporter profile avatar upload controls", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-avatar-editor")).toBeVisible();
   await expect(page.getByTestId("person-avatar-upload-btn")).toBeVisible();
@@ -45,12 +42,7 @@ test("file lands in selected folder", async ({ page }) => {
       createdAt: new Date().toISOString(),
     });
   }
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/file-manager", { waitUntil: "domcontentloaded" });
   await page.getByTestId("file-upload-folder-select").selectOption(folderId);
   const tinyPng = Buffer.from(

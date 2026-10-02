@@ -1,15 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("dashboard footer shows version and changelog link", async ({ page }) => {
   const data = createSeed();
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   const footer = page.getByRole("contentinfo");
@@ -24,12 +21,7 @@ test("dashboard footer shows version and changelog link", async ({ page }) => {
 test("chief can publish new changelog version and footer updates", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "chief";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/infra/changelog", { waitUntil: "domcontentloaded" });
   await page.getByTestId("changelog-add-version").click();
   await page.getByTestId("changelog-form-version").fill("2.5.0");
@@ -43,12 +35,7 @@ test("chief can publish new changelog version and footer updates", async ({ page
 test("changelog accordion expands older release", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/infra/changelog", { waitUntil: "domcontentloaded" });
   await page.getByTestId("changelog-release-2.0.0").getByRole("button").click();
   await expect(page.getByTestId("changelog-release-2.0.0")).toContainText("پیشخوان تحریریه");

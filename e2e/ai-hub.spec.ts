@@ -1,16 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("AI hub polish and origin tracker", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/editorial/ai-hub", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("ai-text-correction-hero")).toBeVisible();
 
@@ -30,12 +27,7 @@ test("transcription sends draft to cartable", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
   const before = data.stories.length;
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/editorial/ai-hub", { waitUntil: "domcontentloaded" });
   await page.getByTestId("ai-tab-transcribe").click();
   await page.locator('input[type="file"]').setInputFiles({

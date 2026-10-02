@@ -37,6 +37,7 @@ export const PRODUCT_CHANGELOG: ChangelogRelease[] = [
     jalaliPeriod: "مهر ۱۴۰۵",
     summary: "قالب هگزا دش، پیام‌رسان تحریریه، نامه‌های اداری و مدیریت فایل.",
     changes: [
+      { kind: "new", text: "ورود به پنل مدیریت با نام کاربری و رمز (کاربران نمونه seed؛ رمز نمایشی shams1404)" },
       { kind: "new", text: "قالب پیشخوان و نمودارها بر اساس HexaDash" },
       { kind: "new", text: "گفتگو و پیام‌رسان تحریریه (جایگزین تیکتینگ)" },
       { kind: "new", text: "نامه‌های اداری و کارتابل امور اداری خبرنگاران" },

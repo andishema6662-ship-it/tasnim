@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
@@ -9,12 +11,7 @@ test("chief sidebar shows media people module", async ({ page }) => {
     ...data.roleModuleAccess,
     chief: (data.roleModuleAccess.chief ?? []).filter((key) => key !== "media/people"),
   };
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   await page.getByRole("button", { name: /رسانه‌های مکمل/ }).click();
@@ -26,12 +23,7 @@ test("chief sidebar shows media people module", async ({ page }) => {
 test("admin people HexaDash cards and add member", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/media/people", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "همکاران رسانه‌ای و دست‌اندرکاران" })).toBeVisible();
   await expect(page.getByTestId("people-card-grid")).toBeVisible();
@@ -45,12 +37,7 @@ test("admin people HexaDash cards and add member", async ({ page }) => {
 test("public site people page", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/people", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("site-people-grid")).toBeVisible();
   await expect(page.getByText("سارا محمدی")).toBeVisible();

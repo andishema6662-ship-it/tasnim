@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { CHAT_THREAD_IT_SUPPORT } from "../src/lib/chat-support";
 import { STORAGE_KEY } from "../src/lib/storage";
@@ -6,12 +8,7 @@ import { STORAGE_KEY } from "../src/lib/storage";
 test("dossier poster upload field and public page", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "chief";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/structure/dossiers", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dossier-create-poster-upload-btn")).toBeVisible();
   const tinyPng = Buffer.from(
@@ -31,12 +28,7 @@ test("dossier poster upload field and public page", async ({ page }) => {
 test("event map two-step workflow and route list", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "chief";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/media/event-map", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("event-map-route-list")).toBeVisible();
   await expect(page.getByTestId("event-map-region-label")).toContainText("نقشه تهران");
@@ -57,12 +49,7 @@ test("event map two-step workflow and route list", async ({ page }) => {
 test("sidebar support opens IT chat thread", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   await expect(page.getByTestId("sidebar-editorial-support")).toContainText("پیام‌رسان تحریریه");

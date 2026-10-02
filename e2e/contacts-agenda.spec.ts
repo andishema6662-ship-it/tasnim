@@ -1,16 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
 test("official contacts directory CRUD search", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/admin/official-contacts", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("official-contacts-table")).toBeVisible();
   await page.getByTestId("official-contacts-search").fill("احمدی");
@@ -20,12 +17,7 @@ test("official contacts directory CRUD search", async ({ page }) => {
 test("dashboard agenda reminder and agenda page", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("dashboard-agenda-reminders")).toBeVisible();
   await expect(page.getByTestId("dashboard-agenda-line").first()).toContainText(/مصاحبه|گزارش میدانی/);

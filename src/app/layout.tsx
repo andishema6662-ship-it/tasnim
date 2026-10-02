@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 import { SHAMSEH_APP_TITLE, SHAMSEH_TAGLINE } from "@/lib/branding";
-import { Shell } from "@/components/shell";
-import { NewsroomProvider } from "@/lib/store";
+import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 const vazir = Vazirmatn({
@@ -24,9 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="fa" dir="rtl" className={vazir.variable}>
       <body>
-        <NewsroomProvider>
-          <Shell>{children}</Shell>
-        </NewsroomProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

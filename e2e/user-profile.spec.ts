@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
@@ -6,12 +8,7 @@ test("chief profile shows علیرضا رضایی and editorial stats", async ({
   const data = createSeed();
   data.currentRoleId = "chief";
   data.currentUserId = "u-kamran";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-profile-name")).toHaveText("علیرضا رضایی");
   await expect(page.getByTestId("chief-profile-stats")).toBeVisible();
@@ -21,12 +18,7 @@ test("publisher profile shows محمدحسین شمسایی", async ({ page }) =
   const data = createSeed();
   data.currentRoleId = "publisher";
   data.currentUserId = "u-leila";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-profile-name")).toHaveText("محمدحسین شمسایی");
   await expect(page.getByTestId("publisher-profile-stats")).toBeVisible();
@@ -36,12 +28,7 @@ test("reporter profile and header link", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
   data.currentUserId = "u-sara";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   await page.getByTestId("header-user-name").click();
@@ -55,12 +42,7 @@ test("user menu switches reporter to مهدی پوریا", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
   data.currentUserId = "u-sara";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
   await page.getByTestId("header-user-name").click();
@@ -72,12 +54,7 @@ test("photographer profile مهدی پوریا", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "reporter";
   data.currentUserId = "u-pouria";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/reporters/my-profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("person-profile-name")).toHaveText("مهدی پوریا");
 });

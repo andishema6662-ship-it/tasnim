@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { installAdminAuth } from "./admin-login";
+
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 import { defaultTemplateSettings } from "../src/lib/template";
@@ -10,12 +12,7 @@ test("enterprise modules and portal widgets", async ({ page }) => {
     ...defaultTemplateSettings(),
     ershadLicense: { enabled: true, code: "۱۲۳۴۵۶۷۸", badgeImage: "" },
   };
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
 
   await page.goto("/admin/reports/pitch-performance", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("pitch-performance-table")).toBeVisible();
@@ -35,12 +32,7 @@ test("enterprise modules and portal widgets", async ({ page }) => {
 test("cartable social publish modal", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";
-  await page.addInitScript(
-    ([key, value]) => {
-      window.localStorage.setItem(key, value);
-    },
-    [STORAGE_KEY, JSON.stringify(data)],
-  );
+  await installAdminAuth(page, data);
   await page.goto("/admin/editorial/cartable", { waitUntil: "domcontentloaded" });
   await page.getByTestId("cartable-social-publish").first().click();
   await expect(page.getByTestId("social-publish-modal")).toBeVisible();
