@@ -262,7 +262,7 @@
 }
 
 .dp-login__input::placeholder {
-  color: #8b95a5;
+  color: transparent;
 }
 
 .dp-login__input:focus {

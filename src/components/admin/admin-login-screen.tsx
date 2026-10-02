@@ -77,7 +77,7 @@ export function AdminLoginScreen() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="dp-login__input"
-                  placeholder="نام کاربری"
+                  placeholder=" "
                   dir="ltr"
                   required
                   disabled={lockout}
@@ -93,7 +93,7 @@ export function AdminLoginScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="dp-login__input"
-                  placeholder="رمز عبور"
+                  placeholder=" "
                   dir="ltr"
                   required
                   disabled={lockout}
