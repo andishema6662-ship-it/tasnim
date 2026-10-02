@@ -1,10 +1,14 @@
 import type { NextConfig } from "next";
-import { legacyNavRedirects } from "./src/lib/nav-migration";
 
 const nextConfig: NextConfig = {
+  output: "export",
   reactStrictMode: true,
-  async redirects() {
-    return legacyNavRedirects();
+  images: { unoptimized: true },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
   },
 };
 

@@ -1,10 +1,11 @@
-"use client";
+import { SiteAlbumClient } from "./client";
+import { createSeed } from "@/lib/seed";
 
-import { useParams } from "next/navigation";
-import { SiteAlbumView } from "@/components/site/site-views";
+export function generateStaticParams() {
+  const seed = createSeed();
+  return seed.albums.map((a) => ({ id: a.id }));
+}
 
 export default function PublicAlbumPage() {
-  const params = useParams<{ id: string }>();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  return <SiteAlbumView id={id} />;
+  return <SiteAlbumClient />;
 }

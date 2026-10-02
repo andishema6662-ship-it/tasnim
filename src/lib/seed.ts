@@ -1186,7 +1186,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     next.productChangelog = base.productChangelog;
   }
   if (!next.systemVersion) {
-    next.systemVersion = next.productChangelog[0]?.version ?? base.systemVersion;
+    next.systemVersion = next.productChangelog?.[0]?.version ?? base.systemVersion;
   }
   if (!Array.isArray(next.adminTemplates) || next.adminTemplates.length === 0) next.adminTemplates = base.adminTemplates;
   if (!Array.isArray(next.specialDossiers)) next.specialDossiers = base.specialDossiers;

@@ -1,10 +1,11 @@
-"use client";
+import { PublicStoryClient } from "./client";
+import { createSeed } from "@/lib/seed";
 
-import { useParams } from "next/navigation";
-import { SiteArticleView } from "@/components/site/site-views";
+export function generateStaticParams() {
+  const seed = createSeed();
+  return seed.stories.map((s) => ({ id: s.id }));
+}
 
 export default function PublicStoryPage() {
-  const params = useParams();
-  const id = typeof params.id === "string" ? params.id : "";
-  return <SiteArticleView id={id} />;
+  return <PublicStoryClient />;
 }

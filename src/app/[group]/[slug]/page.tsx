@@ -1,12 +1,13 @@
-"use client";
+import { ModuleRouteClient } from "./client";
+import { modules } from "@/lib/modules";
 
-import { Suspense } from "react";
-import { ModuleScreen } from "@/components/registry";
+export function generateStaticParams() {
+  return modules.map((m) => ({
+    group: m.group,
+    slug: m.slug,
+  }));
+}
 
 export default function ModuleRoute() {
-  return (
-    <Suspense fallback={<p className="p-6 text-sm">در حال بارگذاری بخش…</p>}>
-      <ModuleScreen />
-    </Suspense>
-  );
+  return <ModuleRouteClient />;
 }
