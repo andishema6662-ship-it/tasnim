@@ -2,6 +2,27 @@ import { expect, test } from "@playwright/test";
 import { createSeed } from "../src/lib/seed";
 import { STORAGE_KEY } from "../src/lib/storage";
 
+test("chief sidebar shows media people module", async ({ page }) => {
+  const data = createSeed();
+  data.currentRoleId = "chief";
+  data.roleModuleAccess = {
+    ...data.roleModuleAccess,
+    chief: (data.roleModuleAccess.chief ?? []).filter((key) => key !== "media/people"),
+  };
+  await page.addInitScript(
+    ([key, value]) => {
+      window.localStorage.setItem(key, value);
+    },
+    [STORAGE_KEY, JSON.stringify(data)],
+  );
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "خط تولید خبر" })).toBeVisible({ timeout: 12_000 });
+  await page.getByRole("button", { name: /رسانه‌های مکمل/ }).click();
+  await expect(page.getByRole("link", { name: "همکاران رسانه‌ای" })).toBeVisible();
+  await page.getByRole("link", { name: "همکاران رسانه‌ای" }).click();
+  await expect(page).toHaveURL(/\/media\/people/);
+});
+
 test("admin people HexaDash cards and add member", async ({ page }) => {
   const data = createSeed();
   data.currentRoleId = "publisher";

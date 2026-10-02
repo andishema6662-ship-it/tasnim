@@ -287,6 +287,16 @@ export function ReporterFileManagerScreen() {
   const visible = userId ? filesForUser(data, userId).filter((file) => file.parentId === folderId) : [];
   const folders = userId ? filesForUser(data, userId).filter((file) => file.kind === "folder") : [];
 
+  function resolveUploadParentId(): string | null {
+    if (folders.length > 0) return uploadFolderId;
+    return folderId;
+  }
+
+  function openFolder(id: string | null) {
+    setFolderId(id);
+    setUploadFolderId(id);
+  }
+
   function addFolder() {
     if (!user || !newName.trim()) return;
     const entry: ReporterFileEntry = {
@@ -307,9 +317,10 @@ export function ReporterFileManagerScreen() {
 
   function ingestFiles(fileList: FileList | File[]) {
     if (!user) return;
-    const targetParentId = folders.length > 0 ? uploadFolderId : folderId;
+    const targetParentId = resolveUploadParentId();
     const files = Array.from(fileList);
     let added = 0;
+    const folderName = targetParentId ? folders.find((folder) => folder.id === targetParentId)?.name : "ریشه";
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -334,7 +345,11 @@ export function ReporterFileManagerScreen() {
         };
         update((current) => ({ ...current, reporterFiles: [...current.reporterFiles, entry] }));
         added += 1;
-        if (added === files.length) setFlash(`${faNum(added)} فایل از رایانه بارگذاری شد.`);
+        if (added === files.length) {
+          setFolderId(targetParentId);
+          setUploadFolderId(targetParentId);
+          setFlash(`${faNum(added)} فایل در پوشه «${folderName ?? "ریشه"}» بارگذاری شد.`);
+        }
       };
       reader.readAsDataURL(file);
     });
@@ -399,10 +414,7 @@ export function ReporterFileManagerScreen() {
           <button
             type="button"
             className="mt-2 block w-full text-right text-primary hover:underline"
-            onClick={() => {
-              setFolderId(null);
-              setUploadFolderId(null);
-            }}
+            onClick={() => openFolder(null)}
           >
             ریشه
           </button>
@@ -412,10 +424,7 @@ export function ReporterFileManagerScreen() {
                 <button
                   type="button"
                   className="hover:text-primary"
-                  onClick={() => {
-                    setFolderId(folder.id);
-                    setUploadFolderId(folder.id);
-                  }}
+                  onClick={() => openFolder(folder.id)}
                 >
                   {folder.name}
                 </button>

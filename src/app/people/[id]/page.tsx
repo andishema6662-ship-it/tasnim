@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PersonProfileView } from "@/components/people/person-ui";
 import { useNewsroom } from "@/lib/store";
-import { canPerm } from "@/lib/workflow";
+import { canPerm, currentUser } from "@/lib/workflow";
 import { Page } from "@/components/ui";
 
 export default function AdminPersonProfilePage() {
@@ -13,6 +13,8 @@ export default function AdminPersonProfilePage() {
   const { data, update } = useNewsroom();
   const person = data.people.find((item) => item.id === id);
   const canEditTier = canPerm(data, "review") || canPerm(data, "publish");
+  const me = currentUser(data);
+  const canEditAvatar = Boolean(me && person && person.userId === me.id);
 
   if (!person) {
     return (
@@ -30,6 +32,8 @@ export default function AdminPersonProfilePage() {
         person={person}
         mode="admin"
         canEditTier={canEditTier}
+        canEditAvatar={canEditAvatar}
+        avatarUserId={me?.id}
         onSaveTier={(tier, note) =>
           update((current) => ({
             ...current,

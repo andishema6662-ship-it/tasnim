@@ -3,6 +3,8 @@ import type { NewsroomData, RoleBase } from "./types";
 import { canPerm, currentRole, currentUser } from "./workflow";
 
 export const DASHBOARD_MODULE_KEY = "dashboard";
+/** همکاران رسانه‌ای — must stay enabled for سردبیر and مدیر مسئول */
+export const MEDIA_PEOPLE_MODULE_KEY = "media/people";
 
 export function allNavModuleKeys(): string[] {
   return [DASHBOARD_MODULE_KEY, ...allModuleKeys()];
@@ -155,6 +157,13 @@ export function mergeRoleModuleAccess(
   const known = new Set(all);
   roles.forEach((role) => {
     next[role.id] = (next[role.id] ?? []).filter((key) => known.has(key));
+  });
+  roles.forEach((role) => {
+    if (role.base !== "chief" && role.base !== "publisher") return;
+    const list = next[role.id] ?? [];
+    if (!list.includes(MEDIA_PEOPLE_MODULE_KEY)) {
+      next[role.id] = [...list, MEDIA_PEOPLE_MODULE_KEY];
+    }
   });
   return next;
 }

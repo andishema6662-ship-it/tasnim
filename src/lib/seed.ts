@@ -1177,6 +1177,7 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
   const aiHubKey = "editorial/ai-hub";
   const chiefEnterpriseKeys = [
     aiHubKey,
+    "media/people",
     "reports/pitch-performance",
     "reports/payroll",
     "reports/reporter-period",

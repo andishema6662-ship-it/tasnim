@@ -10,8 +10,11 @@ import {
   reporterTierStars,
   workedCountForPerson,
 } from "@/lib/people";
+import { applyUserAvatar, avatarUrlForPerson } from "@/lib/user-avatar";
+import { useNewsroom } from "@/lib/store";
 import type { NewsroomData, Person } from "@/lib/types";
-import { Button, cn } from "../ui";
+import { MediaLibraryModal } from "../media/media-library-modal";
+import { Button, cn, Flash } from "../ui";
 
 function IconPhone({ className }: { className?: string }) {
   return (
@@ -49,11 +52,12 @@ function IconDots({ className }: { className?: string }) {
   );
 }
 
-export function PersonAvatar({ person, className }: { person: Person; className?: string }) {
-  if (person.avatarUrl) {
+export function PersonAvatar({ person, className, src }: { person: Person; className?: string; src?: string }) {
+  const image = src ?? person.avatarUrl;
+  if (image) {
     return (
       <img
-        src={person.avatarUrl}
+        src={image}
         alt=""
         className={cn(
           "h-[90px] w-[90px] shrink-0 rounded-full object-cover shadow-sm ring-4 ring-violet-50",
@@ -177,7 +181,7 @@ export function PersonHexaCard({ data, person, mode, canManage, onEdit, onDelete
         <CardActionMenu person={person} mode={mode} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
       </div>
       <div className="flex flex-col items-center px-4 pb-4 text-center">
-        <PersonAvatar person={person} />
+        <PersonAvatar person={person} src={avatarUrlForPerson(data, person)} />
         <h2 className="mt-4 text-base font-bold text-slate-800">{person.name}</h2>
         <span className="mt-2 inline-flex rounded-full bg-violet-50 px-3 py-0.5 text-xs font-semibold text-violet-700">
           {person.title || person.kind}
@@ -225,18 +229,87 @@ export function PersonHexaCard({ data, person, mode, canManage, onEdit, onDelete
   );
 }
 
+function PersonAvatarEditor({
+  person,
+  userId,
+}: {
+  person: Person;
+  userId: string;
+}) {
+  const { data, update } = useNewsroom();
+  const [preview, setPreview] = useState<string | undefined>(() => avatarUrlForPerson(data, person));
+  const [flash, setFlash] = useState("");
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function saveAvatar(url: string) {
+    setPreview(url);
+    update((current) => applyUserAvatar(current, userId, url));
+    setFlash("عکس پرسنلی ذخیره شد.");
+  }
+
+  function onFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setFlash("فقط فایل تصویر مجاز است.");
+      return;
+    }
+    if (file.size > 2_500_000) {
+      setFlash("حجم تصویر زیاد است. کمتر از ۲٫۵ مگابایت انتخاب کنید.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") saveAvatar(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3" data-testid="person-avatar-editor">
+      <PersonAvatar person={person} src={preview} className="h-28 w-28" />
+      <Flash>{flash}</Flash>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" data-testid="person-avatar-file" onChange={onFile} />
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button type="button" className="text-xs" data-testid="person-avatar-upload-btn" onClick={() => fileRef.current?.click()}>
+          تغییر عکس پرسنلی / بارگذاری تصویر
+        </Button>
+        <Button type="button" tone="ghost" className="text-xs" onClick={() => setMediaOpen(true)}>
+          انتخاب از کتابخانه
+        </Button>
+      </div>
+      <MediaLibraryModal
+        open={mediaOpen}
+        title="عکس پرسنلی"
+        confirmLabel="استفاده به‌عنوان عکس"
+        onClose={() => setMediaOpen(false)}
+        onPick={(src) => {
+          saveAvatar(src);
+          setMediaOpen(false);
+        }}
+      />
+    </div>
+  );
+}
+
 export function PersonProfileView({
   data,
   person,
   mode,
   canEditTier,
   onSaveTier,
+  canEditAvatar,
+  avatarUserId,
 }: {
   data: NewsroomData;
   person: Person;
   mode: "admin" | "portal";
   canEditTier?: boolean;
   onSaveTier?: (tier: number, note: string) => void;
+  canEditAvatar?: boolean;
+  avatarUserId?: string;
 }) {
   const published = publishedCountForPerson(data, person);
   const worked = workedCountForPerson(data, person);
@@ -254,7 +327,11 @@ export function PersonProfileView({
     <div className="mx-auto max-w-4xl space-y-6" data-testid="person-profile">
       <div className="rounded-2xl border border-line bg-sheet p-6 shadow-sm">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:text-right">
-          <PersonAvatar person={person} className="h-28 w-28" />
+          {canEditAvatar && avatarUserId ? (
+            <PersonAvatarEditor person={person} userId={avatarUserId} />
+          ) : (
+            <PersonAvatar person={person} src={avatarUrlForPerson(data, person)} className="h-28 w-28" />
+          )}
           <div className="flex-1 text-center sm:text-right">
             <h1 className="text-2xl font-bold">{person.name}</h1>
             <p className="mt-1 text-sm font-semibold text-violet-600">{person.title}</p>

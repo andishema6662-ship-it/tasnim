@@ -28,7 +28,13 @@ export function ReporterMyProfileScreen() {
 
   return (
     <ModulePage slug="my-profile">
-      <PersonProfileView data={data} person={person} mode="admin" />
+      <PersonProfileView
+        data={data}
+        person={person}
+        mode="admin"
+        canEditAvatar={Boolean(user)}
+        avatarUserId={user?.id}
+      />
       {user ? <ReporterPerformancePanel data={data} user={user} /> : null}
     </ModulePage>
   );

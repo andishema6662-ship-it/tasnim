@@ -9,6 +9,7 @@ import { canAccessPath, DASHBOARD_MODULE_KEY, effectiveModuleKeys } from "@/lib/
 import { type GroupId, groups, hrefFor, moduleKey, modules } from "@/lib/modules";
 import { activeNavGroup, loadNavSections, saveNavSections } from "@/lib/nav-sections";
 import { useNewsroom } from "@/lib/store";
+import { avatarUrlForUser } from "@/lib/user-avatar";
 import { currentRole, currentUser } from "@/lib/workflow";
 import { NotificationPreviewList } from "./dashboard/dashboard-alerts";
 import { LiveClock } from "./live-clock";
@@ -308,6 +309,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const open = menuPath === path;
   const role = currentRole(data);
   const user = currentUser(data);
+  const userAvatar = avatarUrlForUser(data, user);
   const dates = useMemo(() => todayTriCalendar(), []);
   const panelTitle = (data.settings.mediaName ?? "").trim() || data.settings.newsroomName;
   const panelSubtitle = (data.settings.mediaDisplayTitle ?? "").trim() || data.settings.tagline;
@@ -405,8 +407,8 @@ export function Shell({ children }: { children: ReactNode }) {
         ) : null}
         <div className={cn("border-t border-line px-3 py-3", sidebarCollapsed && "px-2")}>
           <div className={cn("flex items-center gap-2 rounded-xl bg-paper px-2 py-2", sidebarCollapsed && "justify-center")}>
-            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-              {user?.name?.slice(0, 1) ?? "؟"}
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-bold text-white">
+              {userAvatar ? <img src={userAvatar} alt="" className="h-full w-full object-cover" data-testid="shell-user-avatar" /> : user?.name?.slice(0, 1) ?? "؟"}
               <span className="absolute bottom-0 left-0 h-2.5 w-2.5 rounded-full border-2 border-sheet bg-emerald-500" title="فعال" />
             </span>
             {!sidebarCollapsed ? (
@@ -527,8 +529,8 @@ export function Shell({ children }: { children: ReactNode }) {
                   aria-expanded={userOpen}
                   aria-haspopup="menu"
                 >
-                  <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    {user?.name?.slice(0, 1) ?? "؟"}
+                  <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold text-white">
+                    {userAvatar ? <img src={userAvatar} alt="" className="h-full w-full object-cover" /> : user?.name?.slice(0, 1) ?? "؟"}
                     <span className="absolute bottom-0 left-0 h-2 w-2 rounded-full border border-sheet bg-emerald-500" />
                   </span>
                   <span className="hidden max-w-[6rem] truncate text-xs font-semibold lg:inline">{user?.name}</span>

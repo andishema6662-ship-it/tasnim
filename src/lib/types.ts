@@ -27,6 +27,8 @@ export interface User {
   roleId: string;
   active: boolean;
   reporterGrade?: ReporterGrade;
+  /** تصویر پرسنلی (data URL یا آدرس کتابخانه) */
+  avatar?: string;
 }
 
 export interface AccessRule {
