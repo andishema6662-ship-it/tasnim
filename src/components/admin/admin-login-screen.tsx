@@ -3,12 +3,35 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { DEMO_ADMIN_PASSWORD } from "@/lib/admin-auth";
+import { DEFAULT_USER_PASSWORD } from "@/lib/password";
 import { useAdminAuth } from "@/lib/admin-auth-context";
-import { resolveBrandMark, SHAMSEH_ADMIN_HEADER, SHAMSEH_MEDIA_NAME, SHAMSEH_TAGLINE } from "@/lib/branding";
+import { resolveBrandMark, SHAMSEH_MEDIA_NAME, SHAMSEH_TAGLINE } from "@/lib/branding";
 import { publicHomePath } from "@/lib/routes";
 import { useNewsroom } from "@/lib/store";
-import { cn } from "@/components/ui";
+import "./admin-login-codepen.css";
+
+const SLIDES = [
+  {
+    tag: "تحریریه",
+    title: "خط تولید خبر",
+    text: "کارتابل، سردبیری و انتشار در یک میز واحد شمسه",
+  },
+  {
+    tag: "پورتال",
+    title: "خروجی عمومی",
+    text: "صفحه اصلی خبرگزاری و پورتال خوانندگان در یک کلیک",
+  },
+  {
+    tag: "تیم",
+    title: "نقش‌ها و دسترسی",
+    text: "مدیر مسئول، سردبیر و خبرنگار با منوی متناسب",
+  },
+  {
+    tag: "شمسه",
+    title: "سامانه جامع",
+    text: "میز یکپارچه تولید و انتشار خبر با هویت بصری شمسه",
+  },
+] as const;
 
 export function AdminLoginScreen() {
   const { data } = useNewsroom();
@@ -20,6 +43,7 @@ export function AdminLoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [slide, setSlide] = useState(0);
 
   const mark = resolveBrandMark(data.settings.brandMark);
   const panelTitle = (data.settings.mediaName ?? "").trim() || data.settings.newsroomName;
@@ -28,6 +52,13 @@ export function AdminLoginScreen() {
     if (!authenticated) return;
     router.replace(next.startsWith("/admin") ? next : "/admin");
   }, [authenticated, next, router]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setSlide((current) => (current + 1) % SLIDES.length);
+    }, 4200);
+    return () => window.clearInterval(id);
+  }, []);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -43,76 +74,85 @@ export function AdminLoginScreen() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#f0eeea] to-paper">
-      <header className="border-b border-line/80 bg-sheet/90 px-4 py-3 backdrop-blur">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          <Link href={publicHomePath()} className="text-sm text-muted hover:text-primary">
-            ← بازگشت به سایت خبری
-          </Link>
-          <span className="text-xs text-muted">{SHAMSEH_ADMIN_HEADER}</span>
-        </div>
-      </header>
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <div
-          className="w-full max-w-md rounded-2xl border border-line bg-sheet p-8 shadow-lg"
-          data-testid="admin-login-page"
-        >
-          <div className="flex flex-col items-center text-center">
-            <img src={mark} alt={SHAMSEH_MEDIA_NAME} className="h-16 w-16 object-contain" />
-            <h1 className="mt-4 text-xl font-black text-primary">{panelTitle}</h1>
-            <p className="mt-1 text-sm text-muted">{SHAMSEH_TAGLINE}</p>
-            <p className="mt-4 text-sm font-semibold text-ink">ورود به پنل مدیریت</p>
+    <div className="dp-login" data-testid="admin-login-page">
+      <div className="dp-login__wrap">
+        <section className="dp-login__content" aria-label="معرفی شمسه">
+          <div className="dp-login__logo">
+            <img src={mark} alt={SHAMSEH_MEDIA_NAME} />
           </div>
-          <form className="mt-8 space-y-4" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-ink">نام کاربری</span>
-              <input
-                data-testid="admin-login-username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="مثلاً rezaei"
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-ink">رمز عبور</span>
-              <input
-                data-testid="admin-login-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </label>
-            {error ? (
-              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <button
-              type="submit"
-              data-testid="admin-login-submit"
-              disabled={pending}
-              className={cn(
-                "w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white shadow-sm transition-opacity",
-                pending && "opacity-70",
-              )}
-            >
-              {pending ? "در حال ورود…" : "ورود"}
-            </button>
-          </form>
-          <p className="mt-6 text-center text-[11px] leading-5 text-muted">
-            نسخه نمایشی: کاربران seed (مثلاً <span className="font-mono">rezaei</span>،{" "}
-            <span className="font-mono">shamsaei</span>) — رمز یکسان{" "}
-            <span className="font-mono">{DEMO_ADMIN_PASSWORD}</span>
-          </p>
-        </div>
-      </main>
+          <div className="dp-login__slideshow">
+            <h1 className="dp-login__hero-brand">{SHAMSEH_MEDIA_NAME}</h1>
+            <p className="sr-only">{panelTitle}</p>
+            {SLIDES.map((item, index) => (
+              <div
+                key={item.tag}
+                className={`dp-login__slide${index === slide ? " is-active" : ""}`}
+                aria-hidden={index !== slide}
+              >
+                <h2>
+                  <span>{item.tag}</span>
+                  {item.title}
+                </h2>
+                <p>{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="dp-login__user" aria-label="ورود به پنل">
+          <div className="dp-login__form-wrap">
+            <p className="dp-login__tab">ورود به پنل</p>
+            <p className="mb-4 text-xs text-[#9aa3b2]">{SHAMSEH_TAGLINE}</p>
+            <form onSubmit={onSubmit}>
+              <div className="dp-login__field">
+                <label htmlFor="admin-login-username">نام کاربری</label>
+                <input
+                  id="admin-login-username"
+                  data-testid="admin-login-username"
+                  type="text"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="dp-login__input"
+                  placeholder="Email or Username"
+                  dir="ltr"
+                  required
+                />
+              </div>
+              <div className="dp-login__field">
+                <label htmlFor="admin-login-password">رمز عبور</label>
+                <input
+                  id="admin-login-password"
+                  data-testid="admin-login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="dp-login__input"
+                  placeholder="Password"
+                  dir="ltr"
+                  required
+                />
+              </div>
+              {error ? (
+                <p className="dp-login__error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <button type="submit" data-testid="admin-login-submit" className="dp-login__submit" disabled={pending}>
+                {pending ? "در حال ورود…" : "ورود"}
+              </button>
+            </form>
+            <p className="dp-login__help">
+              <Link href={publicHomePath()}>← بازگشت به سایت خبری</Link>
+            </p>
+            <p className="dp-login__demo">
+              نسخه نمایشی: کاربران seed (مثلاً <code>rezaei</code>، <code>shamsaei</code>) — رمز پیش‌فرض{" "}
+              <code>{DEFAULT_USER_PASSWORD}</code> (هش SHA-256 در localStorage)
+            </p>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

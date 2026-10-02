@@ -3,13 +3,14 @@ import { migrateModuleAccessList } from "./nav-migration";
 import { CHAT_THREAD_IT_SUPPORT } from "./chat-support";
 import { seedChangelogReleases } from "./changelog";
 import { IRAN_MAP_CENTER, normalizeEventMapProject, TEHRAN_MAP_CENTER } from "./event-map-geo";
+import { DEFAULT_USER_PASSWORD, hashPassword } from "./password";
 import { defaultUserIdForRole } from "./session-user";
 import { createDefaultRoleModuleAccess, mergeRoleModuleAccess } from "./module-access";
 import { defaultTemplateSettings, resolveTemplateSettings } from "./template";
 import { normalizeAlbum } from "./albums";
 import { createSeedMediaLibrary } from "./media-seed";
 import { seedPendingApprovals } from "./payroll-approval";
-import type { Album, NewsroomData, ReporterAgendaItem, Settings, Story } from "./types";
+import type { Album, NewsroomData, ReporterAgendaItem, Settings, Story, User } from "./types";
 
 const iso = (value: string) => new Date(value).toISOString();
 
@@ -60,6 +61,12 @@ function seedReporterAgenda(): ReporterAgendaItem[] {
 
 function story(partial: Story): Story {
   return partial;
+}
+
+const defaultPasswordHash = hashPassword(DEFAULT_USER_PASSWORD);
+
+function seedUser(partial: Omit<User, "passwordHash"> & { passwordHash?: string }): User {
+  return { ...partial, passwordHash: partial.passwordHash ?? defaultPasswordHash };
 }
 
 export function createSeed(): NewsroomData {
@@ -117,12 +124,12 @@ export function createSeed(): NewsroomData {
     ]),
     userModuleAccess: {},
     users: [
-      { id: "u-leila", name: "محمدحسین شمسایی", username: "shamsaei", roleId: "publisher", active: true },
-      { id: "u-kamran", name: "علیرضا رضایی", username: "rezaei", roleId: "chief", active: true },
-      { id: "u-sara", name: "سارا محمدی", username: "sara", roleId: "reporter", active: true, reporterGrade: "senior" },
-      { id: "u-pouria", name: "مهدی پوریا", username: "pouria", roleId: "reporter", active: true, reporterGrade: "junior" },
-      { id: "u-ali", name: "علی رضایی", username: "ali", roleId: "reporter", active: true, reporterGrade: "junior" },
-      { id: "u-narges", name: "نرگس کاظمی", username: "narges", roleId: "reporter", active: true, reporterGrade: "trainee" },
+      seedUser({ id: "u-leila", name: "محمدحسین شمسایی", username: "shamsaei", roleId: "publisher", active: true }),
+      seedUser({ id: "u-kamran", name: "علیرضا رضایی", username: "rezaei", roleId: "chief", active: true }),
+      seedUser({ id: "u-sara", name: "سارا محمدی", username: "sara", roleId: "reporter", active: true, reporterGrade: "senior" }),
+      seedUser({ id: "u-pouria", name: "مهدی پوریا", username: "pouria", roleId: "reporter", active: true, reporterGrade: "junior" }),
+      seedUser({ id: "u-ali", name: "علی رضایی", username: "ali", roleId: "reporter", active: true, reporterGrade: "junior" }),
+      seedUser({ id: "u-narges", name: "نرگس کاظمی", username: "narges", roleId: "reporter", active: true, reporterGrade: "trainee" }),
     ],
     access,
     categories,

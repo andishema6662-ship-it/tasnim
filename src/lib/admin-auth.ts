@@ -1,9 +1,10 @@
+import { DEFAULT_USER_PASSWORD, verifyUserPassword } from "./password";
 import type { NewsroomData, User } from "./types";
 
 export const ADMIN_SESSION_KEY = "tasnim-admin-session-v1";
 
-/** Demo password for seeded newsroom users (static hosting — not production security). */
-export const DEMO_ADMIN_PASSWORD = "shams1404";
+/** @deprecated use DEFAULT_USER_PASSWORD from ./password */
+export const DEMO_ADMIN_PASSWORD = DEFAULT_USER_PASSWORD;
 
 export interface AdminSession {
   userId: string;
@@ -44,9 +45,10 @@ export function verifyAdminCredentials(
   username: string,
   password: string,
 ): User | null {
-  if (password !== DEMO_ADMIN_PASSWORD) return null;
   const user = findUserByUsername(data, username);
-  return user ?? null;
+  if (!user) return null;
+  if (!verifyUserPassword(user, password)) return null;
+  return user;
 }
 
 export function sessionMatchesUser(session: AdminSession | null, data: NewsroomData): boolean {

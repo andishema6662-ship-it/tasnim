@@ -31,6 +31,8 @@ export interface User {
   reporterGrade?: ReporterGrade;
   /** تصویر پرسنلی (data URL یا آدرس کتابخانه) */
   avatar?: string;
+  /** SHA-256 hash (client-side demo); if absent, default demo password applies */
+  passwordHash?: string;
 }
 
 export interface AccessRule {

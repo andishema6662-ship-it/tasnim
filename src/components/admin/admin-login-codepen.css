@@ -1,0 +1,301 @@
+/* Inspired by https://codepen.io/dpinnick/pen/LjdLmo — scoped to admin login */
+
+.dp-login {
+  --dp-teal: #4fc1b7;
+  --dp-teal-light: #6fe2cc;
+  --dp-teal-dark: #3eb5a9;
+  --dp-ink: #2a2e36;
+  --dp-slate: #616b7d;
+  --dp-line: #5a6374;
+  --dp-btn-top: #69ddc9;
+  --dp-btn-bottom: #4ec1b6;
+  --dp-sky-top: #222e40;
+  --dp-sky-bottom: #51c3b8;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--dp-sky-top) 0%, var(--dp-sky-bottom) 100%);
+  color: #e8ecef;
+  overflow-x: hidden;
+}
+
+.dp-login__wrap {
+  margin: 0 auto;
+  min-height: 100vh;
+  width: 100%;
+}
+
+@media (min-width: 48rem) {
+  .dp-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .dp-login__wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 31.25rem;
+    max-width: 37.5rem;
+    width: 100%;
+    border-radius: 0.625rem;
+    overflow: hidden;
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (min-width: 64rem) {
+  .dp-login__wrap {
+    max-width: 42rem;
+    min-height: 33rem;
+  }
+}
+
+/* Hero / slideshow panel */
+.dp-login__content {
+  position: relative;
+  min-height: 11rem;
+  background: linear-gradient(0deg, var(--dp-teal-dark) 0%, var(--dp-teal-light) 100%);
+  overflow: hidden;
+}
+
+@media (min-width: 48rem) {
+  .dp-login__content {
+    min-height: auto;
+    border-radius: 0 0.625rem 0.625rem 0;
+  }
+}
+
+.dp-login__logo {
+  position: absolute;
+  z-index: 2;
+  top: 0.625rem;
+  inset-inline-start: 0.625rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--dp-teal);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.dp-login__logo img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.dp-login__slideshow {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 11rem;
+  padding: 3.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+@media (min-width: 48rem) {
+  .dp-login__slideshow {
+    min-height: 100%;
+    padding: 3.25rem 1.75rem 2rem;
+    justify-content: center;
+  }
+}
+
+.dp-login__slide {
+  position: absolute;
+  inset: 0;
+  padding: 3.5rem 1.5rem 1.5rem;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+@media (min-width: 48rem) {
+  .dp-login__slide {
+    padding: 3.25rem 1.75rem 2rem;
+  }
+}
+
+.dp-login__slide.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dp-login__hero-brand {
+  position: relative;
+  z-index: 3;
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.75rem, 5vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dp-login__slide h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+}
+
+.dp-login__slide h2 span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+  margin-bottom: 0.15rem;
+}
+
+.dp-login__slide p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 16rem;
+}
+
+/* Form panel */
+.dp-login__user {
+  position: relative;
+  min-height: 22rem;
+  padding: 2.5rem 1.25rem 1.5rem;
+  background: linear-gradient(42deg, var(--dp-ink) 0%, var(--dp-slate) 100%);
+  border-top: 3px solid var(--dp-teal);
+  overflow: auto;
+}
+
+@media (min-width: 48rem) {
+  .dp-login__user {
+    min-height: auto;
+    border-top: none;
+    border-inline-start: 1px solid rgba(79, 193, 183, 0.35);
+    border-radius: 0.625rem 0 0 0.625rem;
+    padding: 2.75rem 2rem 2rem;
+  }
+}
+
+.dp-login__form-wrap {
+  max-width: 20rem;
+  margin: 0 auto;
+  text-align: start;
+}
+
+.dp-login__tab {
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ccc;
+  border-bottom: 1px solid var(--dp-teal);
+  display: inline-block;
+}
+
+.dp-login__field {
+  margin: 0 0 1rem;
+}
+
+.dp-login__field label {
+  display: block;
+  font-size: 0.72rem;
+  color: #9aa3b2;
+  margin-bottom: 0.35rem;
+}
+
+.dp-login__input {
+  width: 100%;
+  padding: 0.65rem 0 0.5rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--dp-line);
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dp-login__input::placeholder {
+  color: #8b95a5;
+}
+
+.dp-login__input:focus {
+  border-bottom-color: var(--dp-teal);
+  box-shadow: 0 1px 0 0 var(--dp-teal);
+}
+
+.dp-login__submit {
+  margin: 1.35rem 0 0.75rem;
+  padding: 0.65rem 2.5rem;
+  display: inline-block;
+  border: none;
+  border-radius: 1.875rem;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(180deg, var(--dp-btn-top) 0%, var(--dp-btn-bottom) 100%);
+  box-shadow: 0 0 2.3rem -0.55rem rgba(0, 0, 0, 0.75);
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.dp-login__submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.dp-login__submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.dp-login__submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.dp-login__error {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.82rem;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.35);
+  border-radius: 0.35rem;
+}
+
+.dp-login__help {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: #9aa3b2;
+  line-height: 1.6;
+}
+
+.dp-login__help a {
+  color: #ccc;
+  border-bottom: 1px solid #5fd1c1;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dp-login__help a:hover {
+  color: #fff;
+}
+
+.dp-login__demo {
+  margin-top: 1.25rem;
+  font-size: 0.68rem;
+  line-height: 1.55;
+  color: #7d8796;
+}
+
+.dp-login__demo code {
+  font-family: ui-monospace, monospace;
+  color: #a8b4c4;
+}

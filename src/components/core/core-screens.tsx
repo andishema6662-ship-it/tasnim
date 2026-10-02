@@ -9,6 +9,7 @@ import { STORAGE_KEY } from "@/lib/storage";
 import { useNewsroom } from "@/lib/store";
 import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User, VersionEntry } from "@/lib/types";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
+import { hashPassword, validateNewPassword, usernameTaken } from "@/lib/password";
 import { canManageModuleAccess } from "@/lib/module-access";
 import { defaultTicketRecipient, TICKET_RECIPIENT_PRESETS, ticketRecipientLabel } from "@/lib/ticket-recipients";
 import { ACTORS, canPerm, categoryName, currentRole } from "@/lib/workflow";
@@ -95,8 +96,10 @@ function blocksLastPublisher(users: User[], userId: string, nextRoleId?: string)
 export function UsersScreen() {
   const { data, update } = useNewsroom();
   const allowed = canPerm(data, "manageUsers");
-  const [form, setForm] = useState({ name: "", username: "", roleId: "reporter" });
+  const [form, setForm] = useState({ name: "", username: "", roleId: "reporter", password: "", passwordConfirm: "" });
   const [editing, setEditing] = useState<User | null>(null);
+  const [editPassword, setEditPassword] = useState("");
+  const [editPasswordConfirm, setEditPasswordConfirm] = useState("");
   const [editingCustomMenu, setEditingCustomMenu] = useState(false);
   const [editingMenuKeys, setEditingMenuKeys] = useState<string[]>([]);
   const [flash, setFlash] = useState("");
@@ -113,9 +116,22 @@ export function UsersScreen() {
       setFlash("نام و نام کاربری لازم است.");
       return;
     }
-    if (data.users.some((user) => user.id !== editing.id && user.username === username)) {
+    if (usernameTaken(data, username, editing.id)) {
       setFlash("این نام کاربری وجود دارد.");
       return;
+    }
+    let passwordHash = editing.passwordHash;
+    if (editPassword.trim()) {
+      const validation = validateNewPassword(editPassword);
+      if (validation) {
+        setFlash(validation);
+        return;
+      }
+      if (editPassword !== editPasswordConfirm) {
+        setFlash("تکرار رمز با رمز جدید یکسان نیست.");
+        return;
+      }
+      passwordHash = hashPassword(editPassword);
     }
     if (blocksLastPublisher(data.users, editing.id, editing.roleId)) {
       setFlash("حداقل یک مدیر مسئول باید بماند.");
@@ -129,12 +145,16 @@ export function UsersScreen() {
         {
           ...current,
           userModuleAccess,
-          users: current.users.map((item) => (item.id === editing.id ? { ...editing, name, username } : item)),
+          users: current.users.map((item) =>
+            item.id === editing.id ? { ...editing, name, username, passwordHash } : item,
+          ),
         },
         `کاربر ${name} ویرایش شد`,
       );
     });
     setEditing(null);
+    setEditPassword("");
+    setEditPasswordConfirm("");
     setEditingCustomMenu(false);
     setFlash("تغییرات کاربر ذخیره شد.");
   }
@@ -162,7 +182,7 @@ export function UsersScreen() {
       {!allowed ? <Notice>افزودن کاربر با مدیر مسئول است.</Notice> : null}
       <Flash>{flash}</Flash>
       <form
-        className="grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-4"
+        className="grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-2 lg:grid-cols-3"
         onSubmit={(event) => {
           event.preventDefault();
           if (!allowed) return;
@@ -170,17 +190,41 @@ export function UsersScreen() {
             setFlash("نام و نام کاربری لازم است.");
             return;
           }
-          if (data.users.some((user) => user.username === form.username.trim())) {
+          if (usernameTaken(data, form.username.trim())) {
             setFlash("این نام کاربری وجود دارد.");
             return;
           }
+          const validation = validateNewPassword(form.password);
+          if (validation) {
+            setFlash(validation);
+            return;
+          }
+          if (form.password !== form.passwordConfirm) {
+            setFlash("تکرار رمز با رمز ورود یکسان نیست.");
+            return;
+          }
+          const passwordHash = hashPassword(form.password);
           update((current) =>
             pushActivity(
-              { ...current, users: [...current.users, { id: uid("user"), name: form.name.trim(), username: form.username.trim(), roleId: form.roleId, active: true, reporterGrade: form.roleId === "reporter" ? "junior" : undefined }] },
+              {
+                ...current,
+                users: [
+                  ...current.users,
+                  {
+                    id: uid("user"),
+                    name: form.name.trim(),
+                    username: form.username.trim(),
+                    roleId: form.roleId,
+                    active: true,
+                    reporterGrade: form.roleId === "reporter" ? "junior" : undefined,
+                    passwordHash,
+                  },
+                ],
+              },
               `کاربر ${form.name.trim()} اضافه شد`,
             ),
           );
-          setForm({ name: "", username: "", roleId: "reporter" });
+          setForm({ name: "", username: "", roleId: "reporter", password: "", passwordConfirm: "" });
           setFlash("کاربر اضافه شد.");
         }}
       >
@@ -188,7 +232,31 @@ export function UsersScreen() {
           <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
         </Field>
         <Field label="نام کاربری">
-          <Input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} dir="ltr" />
+          <Input
+            value={form.username}
+            onChange={(event) => setForm({ ...form, username: event.target.value })}
+            dir="ltr"
+            data-testid="user-create-username"
+          />
+        </Field>
+        <Field label="رمز عبور">
+          <Input
+            type="password"
+            value={form.password}
+            onChange={(event) => setForm({ ...form, password: event.target.value })}
+            dir="ltr"
+            autoComplete="new-password"
+            data-testid="user-create-password"
+          />
+        </Field>
+        <Field label="تکرار رمز">
+          <Input
+            type="password"
+            value={form.passwordConfirm}
+            onChange={(event) => setForm({ ...form, passwordConfirm: event.target.value })}
+            dir="ltr"
+            autoComplete="new-password"
+          />
         </Field>
         <Field label="نقش">
           <Select value={form.roleId} onChange={(event) => setForm({ ...form, roleId: event.target.value })}>
@@ -199,10 +267,11 @@ export function UsersScreen() {
             ))}
           </Select>
         </Field>
-        <Button type="submit" disabled={!allowed} className="self-end">
+        <Button type="submit" disabled={!allowed} className="self-end md:col-span-2">
           افزودن کاربر
         </Button>
       </form>
+      <p className="text-xs text-muted">رمزها به‌صورت هش SHA-256 در localStorage ذخیره می‌شوند (دمو استاتیک، نه امنیت واقعی).</p>
       <div className="overflow-x-auto rounded-lg border border-line bg-sheet">
         <table className="w-full min-w-[36rem] text-sm">
           <thead className="border-b border-line text-xs text-muted">
@@ -220,6 +289,7 @@ export function UsersScreen() {
               const isEditing = editing?.id === user.id;
               const row = isEditing ? editing : user;
               return (
+                <>
                 <tr key={user.id} className="border-b border-line last:border-0">
                   <td className="px-3 py-2">
                     {isEditing ? (
@@ -284,7 +354,14 @@ export function UsersScreen() {
                           <Button tone="primary" disabled={!allowed} onClick={saveEdit}>
                             ذخیره
                           </Button>
-                          <Button tone="ghost" onClick={() => setEditing(null)}>
+                          <Button
+                            tone="ghost"
+                            onClick={() => {
+                              setEditing(null);
+                              setEditPassword("");
+                              setEditPasswordConfirm("");
+                            }}
+                          >
                             انصراف
                           </Button>
                         </>
@@ -314,6 +391,8 @@ export function UsersScreen() {
                             disabled={!allowed}
                             onClick={() => {
                               setEditing({ ...user });
+                              setEditPassword("");
+                              setEditPasswordConfirm("");
                               const custom = Object.prototype.hasOwnProperty.call(data.userModuleAccess, user.id);
                               setEditingCustomMenu(custom);
                               setEditingMenuKeys(
@@ -333,6 +412,35 @@ export function UsersScreen() {
                     </div>
                   </td>
                 </tr>
+                {isEditing ? (
+                  <tr key={`${user.id}-password`} className="border-b border-line bg-sand/20">
+                    <td colSpan={6} className="px-3 py-3">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <Field label="رمز عبور جدید (خالی = بدون تغییر)">
+                          <Input
+                            type="password"
+                            value={editPassword}
+                            onChange={(event) => setEditPassword(event.target.value)}
+                            dir="ltr"
+                            autoComplete="new-password"
+                            data-testid="user-edit-password"
+                          />
+                        </Field>
+                        <Field label="تکرار رمز جدید">
+                          <Input
+                            type="password"
+                            value={editPasswordConfirm}
+                            onChange={(event) => setEditPasswordConfirm(event.target.value)}
+                            dir="ltr"
+                            autoComplete="new-password"
+                            data-testid="user-edit-password-confirm"
+                          />
+                        </Field>
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
+                </>
               );
             })}
           </tbody>
