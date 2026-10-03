@@ -64,7 +64,7 @@ export function Dashboard() {
   const waiting = [
     { label: "ارسال تازه‌خبر", value: data.submissions.filter((item) => item.status === "new").length, href: "/admin/editorial/submissions" },
     { label: "پیشنهاد باز", value: data.suggestions.filter((item) => item.status === "pending").length, href: "/admin/editorial/suggestions" },
-    { label: "نظر در انتظار", value: data.comments.filter((item) => item.status === "pending").length, href: "/audience/comments" },
+    { label: "نظر در انتظار", value: data.comments.filter((item) => item.status === "pending").length, href: "/admin/audience/comments" },
   ];
 
   const reporterCount = data.users.filter((user) => {

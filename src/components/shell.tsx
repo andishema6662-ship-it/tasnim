@@ -20,6 +20,7 @@ import { NotificationPreviewList } from "./dashboard/dashboard-alerts";
 import { LiveClock } from "./live-clock";
 import { dashboardAlertCount } from "@/lib/reporter-workspace";
 import { AdminAuthFallback } from "./admin/admin-auth-fallback";
+import { AdminStaticLink } from "./admin/admin-static-link";
 import { UnauthorizedPanel } from "./unauthorized-panel";
 import { cn } from "./ui";
 
@@ -184,7 +185,7 @@ function NavList({
   return (
     <div className="space-y-2">
       {allowedKeys.has(DASHBOARD_MODULE_KEY) ? (
-        <Link
+        <AdminStaticLink
           href={ADMIN_BASE}
           onClick={onNavigate}
           title="پیشخوان"
@@ -203,7 +204,7 @@ function NavList({
             <IconHome className="h-4 w-4" />
           </span>
           {!collapsed ? <span>پیشخوان</span> : null}
-        </Link>
+        </AdminStaticLink>
       ) : null}
       {groups.map((group) => {
         const items = visible.filter((item) => item.group === group.id);
@@ -236,7 +237,7 @@ function NavList({
                   const active = path === href || path.startsWith(`${href}/`);
                   return (
                     <li key={href}>
-                      <Link
+                      <AdminStaticLink
                         href={href}
                         onClick={onNavigate}
                         title={item.title}
@@ -254,7 +255,7 @@ function NavList({
                             {item.title}
                           </>
                         )}
-                      </Link>
+                      </AdminStaticLink>
                     </li>
                   );
                 })}
@@ -294,9 +295,9 @@ function HeaderIconButton({
     "relative flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-sand hover:text-ink";
   if (href) {
     return (
-      <Link href={href} className={className} aria-label={label} title={label}>
+      <AdminStaticLink href={href} className={className} aria-label={label} title={label}>
         {inner}
-      </Link>
+      </AdminStaticLink>
     );
   }
   return (
@@ -422,12 +423,12 @@ export function Shell({ children }: { children: ReactNode }) {
             <p className="font-bold text-ink">پشتیبانی و ارتباط با سردبیری</p>
             <p className="mt-1 text-muted">به‌جای تیکتینگ قدیمی، از پیام‌رسان تحریریه برای پشتیبانی فنی یا هماهنگی با میز سردبیری استفاده کنید.</p>
             <div className="mt-2 flex flex-col gap-1.5">
-              <Link href={CHAT_SUPPORT_IT_HREF} className="font-semibold text-primary hover:underline" data-testid="sidebar-support-it-link">
+              <AdminStaticLink href={CHAT_SUPPORT_IT_HREF} className="font-semibold text-primary hover:underline" data-testid="sidebar-support-it-link">
                 پیام به پشتیبانی فنی
-              </Link>
-              <Link href={CHAT_SUPPORT_CHIEF_HREF} className="font-semibold text-primary hover:underline" data-testid="sidebar-support-chief-link">
+              </AdminStaticLink>
+              <AdminStaticLink href={CHAT_SUPPORT_CHIEF_HREF} className="font-semibold text-primary hover:underline" data-testid="sidebar-support-chief-link">
                 گفتگو با میز تحریریه
-              </Link>
+              </AdminStaticLink>
             </div>
           </div>
         ) : null}
@@ -461,13 +462,13 @@ export function Shell({ children }: { children: ReactNode }) {
             <button type="button" className="rounded-lg px-2 py-2 text-sm lg:hidden hover:bg-sand" onClick={() => setOpen(true)} aria-label="بخش‌ها">
               <IconMenu className="h-5 w-5" />
             </button>
-            <Link href={ADMIN_BASE} className="flex min-w-0 items-center gap-2 lg:gap-2.5" data-testid="admin-header-brand">
+            <AdminStaticLink href={ADMIN_BASE} className="flex min-w-0 items-center gap-2 lg:gap-2.5" data-testid="admin-header-brand">
               <img src={panelMark} alt={SHAMSEH_MEDIA_NAME} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
               <div className="min-w-0 max-w-[11rem] sm:max-w-xs lg:max-w-sm">
                 <p className="truncate text-xs font-bold leading-5 text-ink sm:text-sm">{headerBrandTitle}</p>
                 <p className="hidden truncate text-[10px] text-muted sm:block">{panelTitle}</p>
               </div>
-            </Link>
+            </AdminStaticLink>
             <form
               className="order-3 w-full min-w-0 flex-1 sm:order-none sm:max-w-md"
               onSubmit={(event) => {
@@ -567,7 +568,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <div className="absolute left-0 top-full z-40 mt-2 w-52 rounded-xl border border-line bg-sheet py-2 shadow-lg" role="menu">
                     <p className="px-3 py-1 text-xs text-muted">نقش: {role.name}</p>
                     <p className="px-3 pb-1 text-sm font-semibold">{user?.name}</p>
-                    <Link
+                    <AdminStaticLink
                       href="/admin/reporters/my-profile"
                       className="block px-3 py-2 text-sm font-medium text-primary hover:bg-sand"
                       role="menuitem"
@@ -575,7 +576,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       onClick={() => setUserOpen(false)}
                     >
                       پروفایل کاربری
-                    </Link>
+                    </AdminStaticLink>
                     {usersForRole(data, role.id).length > 1 ? (
                       <div className="border-t border-line py-1">
                         <p className="px-3 py-1 text-[11px] font-semibold text-muted">تغییر کاربر این نقش</p>
@@ -618,15 +619,15 @@ export function Shell({ children }: { children: ReactNode }) {
                     <Link href={publicHomePath()} className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       خروجی سایت
                     </Link>
-                    <Link href={ADMIN_BASE} className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    <AdminStaticLink href={ADMIN_BASE} className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       پیشخوان تحریریه
-                    </Link>
-                    <Link href="/admin/infra/changelog" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    </AdminStaticLink>
+                    <AdminStaticLink href="/admin/infra/changelog" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       گزارش تغییرات سامانه
-                    </Link>
-                    <Link href="/admin/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
+                    </AdminStaticLink>
+                    <AdminStaticLink href="/admin/infra/system" className="block px-3 py-2 text-sm hover:bg-sand" role="menuitem" onClick={() => setUserOpen(false)}>
                       تنظیمات سیستم
-                    </Link>
+                    </AdminStaticLink>
                     <button
                       type="button"
                       className="block w-full px-3 py-2 text-right text-sm text-rose-700 hover:bg-rose-50"
