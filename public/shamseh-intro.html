@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>شمسه — انیمیشن لوگو</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/shamseh-splash/splash.css" />
+  </head>
+  <body>
+    <main class="stage" aria-label="انیمیشن لوگوی شمسه">
+      <div class="emblem" id="emblem"></div>
+      <div class="shamseh-titles">
+        <p class="shamseh-brand-title" data-testid="shamseh-brand-title">شمسه</p>
+        <p class="shamseh-tagline" data-testid="shamseh-tagline">سامانه جامع تحریریه خبر</p>
+      </div>
+    </main>
+    <script>
+      const base = "/shamseh-splash";
+      const emblem = document.getElementById("emblem");
+      for (let i = 0; i < 12; i++) {
+        const img = document.createElement("img");
+        img.src = `${base}/wedge-${String(i).padStart(2, "0")}.png`;
+        img.alt = "";
+        img.className = "shamseh-wedge";
+        img.style.animationDelay = `${0.08 + i * 0.045}s`;
+        img.draggable = false;
+        emblem.appendChild(img);
+      }
+      ["ring", "sun", "core"].forEach((name) => {
+        const img = document.createElement("img");
+        img.src = `${base}/layer-${name}.png`;
+        img.alt = "";
+        img.className = `shamseh-layer-${name === "core" ? "core-img" : name}`;
+        img.draggable = false;
+        emblem.appendChild(img);
+      });
+    </script>
+  </body>
+</html>

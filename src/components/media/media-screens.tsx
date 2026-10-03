@@ -1,0 +1,695 @@
+"use client";
+
+import { useState } from "react";
+import { PRESETS } from "@/lib/cover";
+import { faDate } from "@/lib/format";
+import { uid } from "@/lib/id";
+import { pushActivity } from "@/lib/activity";
+import { useNewsroom } from "@/lib/store";
+import type { Feed, Mail, SocialBotCredentials, Story } from "@/lib/types";
+import { blankStory, placeStory } from "@/lib/workflow";
+import { CoverThumb } from "../cover-thumb";
+import { Button, Empty, Field, Flash, Input, ModulePage, Notice, Select, TextArea } from "../ui";
+
+export { AlbumsScreen } from "./albums-screen";
+
+export function VideosScreen() {
+  const { data, update } = useNewsroom();
+  const [form, setForm] = useState({ title: "", url: "", duration: "", summary: "" });
+  const [flash, setFlash] = useState("");
+  const [uploadName, setUploadName] = useState("");
+
+  function onVideoFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setFlash("فقط فایل ویدیویی مجاز است.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setForm((current) => ({ ...current, url, title: current.title || file.name.replace(/\.[^.]+$/, "") }));
+    setUploadName(file.name);
+    setFlash("فایل ویدیو برای پیش‌نمایش محلی آماده شد.");
+  }
+
+  return (
+    <ModulePage slug="videos">
+      <Notice>ویدیو با لینک بیرونی یا بارگذاری محلی (آدرس object در مرورگر) ثبت می‌شود.</Notice>
+      <Flash>{flash}</Flash>
+      <form
+        className="grid gap-3 rounded-lg border border-line bg-sheet p-4 md:grid-cols-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!form.title.trim()) return;
+          if (!form.url.trim()) {
+            setFlash("لینک یا فایل ویدیو لازم است.");
+            return;
+          }
+          update((current) => ({
+            ...current,
+            videos: [
+              {
+                id: uid("vid"),
+                ...form,
+                title: form.title.trim(),
+                published: false,
+                source: uploadName ? "upload" : "url",
+                fileName: uploadName || undefined,
+              },
+              ...current.videos,
+            ],
+          }));
+          setForm({ title: "", url: "", duration: "", summary: "" });
+          setUploadName("");
+          setFlash("ویدئو ثبت شد.");
+        }}
+      >
+        <Field label="عنوان">
+          <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+        </Field>
+        <Field label="نشانی">
+          <Input value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} placeholder="https://" dir="ltr" />
+        </Field>
+        <Field label="بارگذاری از رایانه">
+          <input type="file" accept="video/*" data-testid="video-file-upload" onChange={onVideoFile} className="text-sm" />
+          {uploadName ? <p className="text-xs text-muted">{uploadName}</p> : null}
+        </Field>
+        <Field label="مدت">
+          <Input value={form.duration} onChange={(event) => setForm({ ...form, duration: event.target.value })} placeholder="۰۲:۰۰" />
+        </Field>
+        <Field label="خلاصه">
+          <Input value={form.summary} onChange={(event) => setForm({ ...form, summary: event.target.value })} />
+        </Field>
+        <Button type="submit">ثبت ویدئو</Button>
+      </form>
+      <div className="space-y-2">
+        {data.videos.map((video) => (
+          <article key={video.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-sheet px-4 py-3">
+            <div>
+              <h2 className="font-semibold">{video.title}</h2>
+              <p className="text-xs text-muted">
+                {video.duration} · {video.summary} {video.source === "upload" ? "· بارگذاری محلی" : ""}
+              </p>
+              {video.url.startsWith("blob:") ? <video src={video.url} controls className="mt-2 max-h-40 w-full rounded" /> : null}
+            </div>
+            <Button
+              tone={video.published ? "ghost" : "primary"}
+              onClick={() =>
+                update((current) => ({
+                  ...current,
+                  videos: current.videos.map((item) => (item.id === video.id ? { ...item, published: !item.published } : item)),
+                }))
+              }
+            >
+              {video.published ? "برداشتن از خروجی" : "آماده خروجی"}
+            </Button>
+          </article>
+        ))}
+      </div>
+    </ModulePage>
+  );
+}
+
+export function RssScreen() {
+  const { data, update } = useNewsroom();
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [flash, setFlash] = useState("");
+  const [busy, setBusy] = useState("");
+
+  async function refresh(feed: Feed) {
+    setBusy(feed.id);
+    setFlash("در حال خواندن منبع…");
+    try {
+      const response = await fetch(feed.url);
+      if (!response.ok) throw new Error(String(response.status));
+      const xml = await response.text();
+      const titles = [...xml.matchAll(/<title>([^<]+)<\/title>/g)].map((match) => match[1].trim()).slice(1, 6);
+      if (!titles.length) throw new Error("empty");
+      update((current) => ({
+        ...current,
+        feeds: current.feeds.map((item) =>
+          item.id === feed.id
+            ? { ...item, items: titles.map((itemTitle) => ({ id: uid("fi"), title: itemTitle, summary: "از تلاش خواندن زنده" })) }
+            : item,
+        ),
+      }));
+      setFlash("عنوان‌ها از پاسخ منبع جایگزین نمونه‌ها شد.");
+    } catch {
+      setFlash("خواندن زنده انجام نشد. بسیاری از خوراک‌ها از داخل مرورگر بسته می‌شوند. نمونه‌های محلی سر جایشان ماندند.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  function toDraft(itemTitle: string, summary: string) {
+    const ts = new Date().toISOString();
+    const story: Story = { ...blankStory(data), id: uid("story"), title: itemTitle, lead: summary, body: summary, createdAt: ts, updatedAt: ts };
+    update((current) => placeStory(current, story, { log: `انتقال از فید: ${itemTitle}` }));
+    setFlash("به پیش‌نویس کارتابل رفت.");
+  }
+
+  return (
+    <ModulePage slug="rss">
+      <Notice>نمونه‌ها محلی‌اند. دکمه خواندن، منبع را از مرورگر صدا می‌زند و اگر بسته باشد همان را می‌گوید.</Notice>
+      <Flash>{flash}</Flash>
+      <form
+        className="flex flex-wrap gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!title.trim() || !url.trim()) return;
+          update((current) => ({ ...current, feeds: [{ id: uid("feed"), title: title.trim(), url: url.trim(), items: [] }, ...current.feeds] }));
+          setTitle("");
+          setUrl("");
+          setFlash("منبع اضافه شد.");
+        }}
+      >
+        <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="نام منبع" className="max-w-xs" />
+        <Input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com/rss" className="max-w-md" />
+        <Button type="submit">افزودن منبع</Button>
+      </form>
+      {data.feeds.map((feed) => (
+        <section key={feed.id} className="rounded-lg border border-line bg-sheet p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="font-bold">{feed.title}</h2>
+              <p className="text-xs text-muted" dir="ltr">
+                {feed.url}
+              </p>
+            </div>
+            <Button tone="ghost" disabled={busy === feed.id} onClick={() => refresh(feed)}>
+              خواندن دوباره
+            </Button>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {feed.items.length === 0 ? <li className="text-sm text-muted">موردی ذخیره نشده است.</li> : null}
+            {feed.items.map((item) => (
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
+                <div>
+                  <p className="font-medium">{item.title}</p>
+                  <p className="text-xs text-muted">{item.summary}</p>
+                </div>
+                <Button tone="ghost" onClick={() => toDraft(item.title, item.summary)}>
+                  انتقال به کارتابل
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </ModulePage>
+  );
+}
+
+export function NewsletterScreen() {
+  const { data, update } = useNewsroom();
+  const [person, setPerson] = useState({ name: "", email: "" });
+  const [issue, setIssue] = useState({ subject: "", body: "" });
+  const [flash, setFlash] = useState("");
+
+  return (
+    <ModulePage slug="newsletter">
+      <Notice>شماره در صف محلی می‌ماند و ایمیلی فرستاده نمی‌شود.</Notice>
+      <Flash>{flash}</Flash>
+      <form
+        className="flex flex-wrap gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!person.name.trim() || !person.email.includes("@")) {
+            setFlash("نام و ایمیل معتبر لازم است.");
+            return;
+          }
+          update((current) => ({
+            ...current,
+            subscribers: [{ id: uid("subr"), name: person.name.trim(), email: person.email.trim(), active: true }, ...current.subscribers],
+          }));
+          setPerson({ name: "", email: "" });
+          setFlash("مخاطب اضافه شد.");
+        }}
+      >
+        <Input value={person.name} onChange={(event) => setPerson({ ...person, name: event.target.value })} placeholder="نام" />
+        <Input value={person.email} onChange={(event) => setPerson({ ...person, email: event.target.value })} placeholder="ایمیل" dir="ltr" />
+        <Button type="submit">افزودن مخاطب</Button>
+      </form>
+      <ul className="divide-y divide-line rounded-lg border border-line bg-sheet">
+        {data.subscribers.map((subscriber) => (
+          <li key={subscriber.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+            <span>
+              {subscriber.name} · <span dir="ltr">{subscriber.email}</span>
+            </span>
+            <Button
+              tone="quiet"
+              onClick={() =>
+                update((current) => ({
+                  ...current,
+                  subscribers: current.subscribers.map((item) => (item.id === subscriber.id ? { ...item, active: !item.active } : item)),
+                }))
+              }
+            >
+              {subscriber.active ? "فعال" : "متوقف"}
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <form
+        className="space-y-3 rounded-lg border border-line bg-sheet p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!issue.subject.trim()) return;
+          update((current) => ({
+            ...current,
+            issues: [{ id: uid("iss"), subject: issue.subject.trim(), body: issue.body.trim(), status: "draft", createdAt: new Date().toISOString() }, ...current.issues],
+          }));
+          setIssue({ subject: "", body: "" });
+          setFlash("پیش‌نویس خبرنامه ذخیره شد.");
+        }}
+      >
+        <h2 className="font-bold">شماره تازه</h2>
+        <Field label="موضوع">
+          <Input value={issue.subject} onChange={(event) => setIssue({ ...issue, subject: event.target.value })} />
+        </Field>
+        <Field label="متن">
+          <TextArea value={issue.body} onChange={(event) => setIssue({ ...issue, body: event.target.value })} />
+        </Field>
+        <Button type="submit">ذخیره پیش‌نویس</Button>
+      </form>
+      {data.issues.map((item) => (
+        <article key={item.id} className="rounded-lg border border-line bg-sheet p-4">
+          <p className="text-xs text-muted">
+            {item.status === "queued" ? "در صف محلی" : "پیش‌نویس"} · {faDate(item.createdAt)}
+          </p>
+          <h2 className="font-bold">{item.subject}</h2>
+          <p className="text-sm text-muted">{item.body}</p>
+          {item.status === "draft" ? (
+            <Button
+              className="mt-3"
+              onClick={() => {
+                update((current) => ({
+                  ...current,
+                  issues: current.issues.map((issueItem) => (issueItem.id === item.id ? { ...issueItem, status: "queued" } : issueItem)),
+                }));
+                setFlash("در صف محلی ثبت شد. ایمیلی ارسال نشده است.");
+              }}
+            >
+              گذاشتن در صف محلی
+            </Button>
+          ) : null}
+        </article>
+      ))}
+    </ModulePage>
+  );
+}
+
+function patchSocialBots(update: ReturnType<typeof useNewsroom>["update"], patch: Partial<SocialBotCredentials>) {
+  update((current) => ({
+    ...current,
+    socialBots: { ...current.socialBots, ...patch },
+  }));
+}
+
+export function SocialScreen() {
+  const { data, update } = useNewsroom();
+  const [form, setForm] = useState({ channel: "تلگرام", text: "", storyId: data.stories.find((story) => story.status === "published")?.id ?? "" });
+  const [flash, setFlash] = useState("");
+  const [botFlash, setBotFlash] = useState("");
+  const channels = ["تلگرام", "بله", "اینستاگرام", "ایکس"];
+  const bots = data.socialBots;
+
+  function testBotConnection() {
+    const hasAny =
+      bots.telegram.token.trim() ||
+      bots.bale.token.trim() ||
+      bots.eitaa.token.trim() ||
+      bots.rubika.token.trim() ||
+      bots.twitter.bearerToken.trim();
+    const ok = Boolean(hasAny);
+    patchSocialBots(update, { lastTestAt: new Date().toISOString(), lastTestOk: ok });
+    setBotFlash(ok ? "اتصال آزمایشی موفق بود (شبیه‌سازی محلی)." : "حداقل یک توکن یا کلید API وارد کنید.");
+  }
+
+  return (
+    <ModulePage slug="social">
+      <Notice>پیش‌نویس در مرورگر می‌ماند و به شبکه‌ای فرستاده نمی‌شود. الگوهای کانال در کارتابل برای انتشار مستقیم استفاده می‌شوند.</Notice>
+      <Flash>{flash}</Flash>
+      <Flash>{botFlash}</Flash>
+      <section className="mb-4 rounded-lg border border-line bg-sheet p-4" data-testid="social-bots-config">
+        <h2 className="font-bold">ربات‌های شبکه‌های اجتماعی (انتشار خودکار)</h2>
+        <p className="mt-1 text-xs text-muted">توکن‌ها فقط در localStorage مرورگر ذخیره می‌شوند و در این نسخه به API واقعی متصل نیستند.</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">ربات تلگرام</h3>
+            <Field label="توکن ربات تلگرام">
+              <Input
+                value={bots.telegram.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, telegram: { ...current.socialBots.telegram, token: event.target.value } },
+                  }))
+                }
+                data-testid="bot-telegram-token"
+              />
+            </Field>
+            <Field label="شناسه کانال (مثلاً @channel)">
+              <Input
+                value={bots.telegram.channelId}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, telegram: { ...current.socialBots.telegram, channelId: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">پیام‌رسان بله</h3>
+            <Field label="توکن بازوی بله">
+              <Input
+                value={bots.bale.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, bale: { ...current.socialBots.bale, token: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="شناسه کانال">
+              <Input
+                value={bots.bale.channelId}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, bale: { ...current.socialBots.bale, channelId: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">پیام‌رسان ایتا</h3>
+            <Field label="کلید API / توکن ایتا">
+              <Input
+                value={bots.eitaa.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, eitaa: { ...current.socialBots.eitaa, token: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="شناسه کانال">
+              <Input
+                value={bots.eitaa.channelId}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, eitaa: { ...current.socialBots.eitaa, channelId: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <h3 className="text-sm font-bold">پیام‌رسان روبیکا</h3>
+            <Field label="توکن احراز هویت">
+              <Input
+                value={bots.rubika.token}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialBots: { ...current.socialBots, rubika: { ...current.socialBots.rubika, token: event.target.value } },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="شناسه کانال">
+              <Input
+                value={bots.rubika.channelId}
+                onChange={(event) =>
+                  update((current) =>
+                    ({
+                      ...current,
+                      socialBots: { ...current.socialBots, rubika: { ...current.socialBots.rubika, channelId: event.target.value } },
+                    }),
+                  )
+                }
+              />
+            </Field>
+          </div>
+          <div className="rounded-xl border border-line bg-paper p-3 lg:col-span-2">
+            <h3 className="text-sm font-bold">توییتر / X</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="API Key">
+                <Input
+                  value={bots.twitter.apiKey}
+                  onChange={(event) =>
+                    update((current) => ({
+                      ...current,
+                      socialBots: { ...current.socialBots, twitter: { ...current.socialBots.twitter, apiKey: event.target.value } },
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Bearer Token">
+                <Input
+                  value={bots.twitter.bearerToken}
+                  onChange={(event) =>
+                    update((current) => ({
+                      ...current,
+                      socialBots: { ...current.socialBots, twitter: { ...current.socialBots.twitter, bearerToken: event.target.value } },
+                    }))
+                  }
+                  data-testid="bot-twitter-bearer"
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Field label="قالب ارسال پیام (تیتر + لید + هشتگ + لینک)">
+            <TextArea
+              rows={3}
+              value={bots.messageTemplate}
+              onChange={(event) => patchSocialBots(update, { messageTemplate: event.target.value })}
+              data-testid="bot-message-template"
+            />
+          </Field>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={testBotConnection} data-testid="bot-test-connection">
+            تست اتصال به ربات
+          </Button>
+          {bots.lastTestAt ? (
+            <span className="text-xs text-muted" data-testid="bot-test-result">
+              آخرین تست: {faDate(bots.lastTestAt)} — {bots.lastTestOk ? "موفق" : "ناموفق"}
+            </span>
+          ) : null}
+        </div>
+      </section>
+      <section className="mb-4 rounded-lg border border-line bg-sheet p-4" data-testid="social-channel-templates">
+        <h2 className="font-bold">الگوی کانال‌های متصل</h2>
+        <p className="text-xs text-muted">متغیرها: {"{title}"}، {"{lead}"}، {"{hashtags}"}، {"{link}"}</p>
+        <div className="mt-3 space-y-3">
+          {(data.socialChannels ?? []).map((channel) => (
+            <div key={channel.id} className="grid gap-2 border-b border-line/60 pb-3 last:border-0">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={channel.enabled}
+                  onChange={(event) =>
+                    update((current) => ({
+                      ...current,
+                      socialChannels: current.socialChannels.map((item) => (item.id === channel.id ? { ...item, enabled: event.target.checked } : item)),
+                    }))
+                  }
+                />
+                {channel.channel}
+              </label>
+              <TextArea
+                rows={2}
+                value={channel.template}
+                onChange={(event) =>
+                  update((current) => ({
+                    ...current,
+                    socialChannels: current.socialChannels.map((item) => (item.id === channel.id ? { ...item, template: event.target.value } : item)),
+                  }))
+                }
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+      <form
+        className="space-y-3 rounded-lg border border-line bg-sheet p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!form.text.trim()) return;
+          update((current) => ({
+            ...current,
+            social: [{ id: uid("soc"), channel: form.channel, text: form.text.trim(), storyId: form.storyId, status: "draft", createdAt: new Date().toISOString() }, ...current.social],
+          }));
+          setFlash("پیش‌نویس شبکه ذخیره شد.");
+        }}
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="شبکه">
+            <Select value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}>
+              {channels.map((channel) => (
+                <option key={channel}>{channel}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="خبر مبدأ">
+            <Select
+              value={form.storyId}
+              onChange={(event) => {
+                const storyId = event.target.value;
+                const story = data.stories.find((item) => item.id === storyId);
+                setForm({ ...form, storyId, text: story ? `${story.title}\n${story.lead}` : form.text });
+              }}
+            >
+              <option value="">بدون خبر</option>
+              {data.stories.map((story) => (
+                <option key={story.id} value={story.id}>
+                  {story.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+        <Field label="متن">
+          <TextArea value={form.text} onChange={(event) => setForm({ ...form, text: event.target.value })} />
+        </Field>
+        <Button type="submit">ذخیره پیش‌نویس</Button>
+      </form>
+      {data.social.map((post) => (
+        <article key={post.id} className="rounded-lg border border-line bg-sheet p-4">
+          <p className="text-xs text-muted">
+            {post.channel} · {post.status === "ready" ? "آماده در صف محلی" : "پیش‌نویس"}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm">{post.text}</p>
+          {post.status === "draft" ? (
+            <Button
+              className="mt-3"
+              tone="ghost"
+              onClick={() =>
+                update((current) => ({
+                  ...current,
+                  social: current.social.map((item) => (item.id === post.id ? { ...item, status: "ready" } : item)),
+                }))
+              }
+            >
+              علامت آماده
+            </Button>
+          ) : null}
+        </article>
+      ))}
+    </ModulePage>
+  );
+}
+
+export function EmailScreen() {
+  const { data, update } = useNewsroom();
+  const [folder, setFolder] = useState<Mail["folder"]>("inbox");
+  const [open, setOpen] = useState(data.mail[0]?.id ?? "");
+  const [form, setForm] = useState({ to: "", subject: "", body: "" });
+  const [flash, setFlash] = useState("");
+  const items = data.mail.filter((mail) => mail.folder === folder);
+
+  return (
+    <ModulePage slug="email">
+      <Notice>صندوق محلی است. نامه‌ای از سرور پست رد و بدل نمی‌شود.</Notice>
+      <Flash>{flash}</Flash>
+      <div className="flex gap-2">
+        {(["inbox", "drafts", "outbox"] as const).map((item) => (
+          <Button key={item} tone={folder === item ? "primary" : "ghost"} onClick={() => setFolder(item)}>
+            {item === "inbox" ? "صندوق" : item === "drafts" ? "پیش‌نویس" : "ارسالی محلی"}
+          </Button>
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <ul className="rounded-lg border border-line bg-sheet">
+          {items.length === 0 ? <li className="p-4 text-sm text-muted">نامه‌ای در این پوشه نیست.</li> : null}
+          {items.map((mail) => (
+            <li key={mail.id}>
+              <button type="button" className={`block w-full px-3 py-2 text-right text-sm ${open === mail.id ? "bg-sand" : ""}`} onClick={() => {
+                setOpen(mail.id);
+                update((current) => ({ ...current, mail: current.mail.map((item) => (item.id === mail.id ? { ...item, read: true } : item)) }));
+              }}>
+                <span className={mail.read ? "text-muted" : "font-semibold"}>{mail.subject}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="rounded-lg border border-line bg-sheet p-4">
+          {data.mail.find((mail) => mail.id === open && mail.folder === folder) ? (
+            <article>
+              {(() => {
+                const mail = data.mail.find((item) => item.id === open)!;
+                return (
+                  <>
+                    <h2 className="font-bold">{mail.subject}</h2>
+                    <p className="text-xs text-muted">
+                      از {mail.from} به {mail.to} · {faDate(mail.createdAt)}
+                    </p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7">{mail.body}</p>
+                  </>
+                );
+              })()}
+            </article>
+          ) : (
+            <p className="text-sm text-muted">نامه‌ای را انتخاب کنید.</p>
+          )}
+        </div>
+      </div>
+      <form
+        className="space-y-3 rounded-lg border border-line bg-sheet p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!form.subject.trim()) return;
+          update((current) =>
+            pushActivity(
+              {
+                ...current,
+                mail: [
+                  {
+                    id: uid("mail"),
+                    folder: "outbox",
+                    from: "desk@newsroom.local",
+                    to: form.to.trim() || "desk@newsroom.local",
+                    subject: form.subject.trim(),
+                    body: form.body.trim(),
+                    read: true,
+                    createdAt: new Date().toISOString(),
+                  },
+                  ...current.mail,
+                ],
+              },
+              `نامه محلی: ${form.subject.trim()}`,
+            ),
+          );
+          setForm({ to: "", subject: "", body: "" });
+          setFolder("outbox");
+          setFlash("در صندوق ارسالی محلی ثبت شد.");
+        }}
+      >
+        <h2 className="font-bold">نامه تازه</h2>
+        <Field label="گیرنده">
+          <Input value={form.to} onChange={(event) => setForm({ ...form, to: event.target.value })} dir="ltr" />
+        </Field>
+        <Field label="موضوع">
+          <Input value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} />
+        </Field>
+        <Field label="متن">
+          <TextArea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} />
+        </Field>
+        <Button type="submit">ثبت در ارسالی محلی</Button>
+      </form>
+    </ModulePage>
+  );
+}
+

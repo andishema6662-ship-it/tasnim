@@ -1,0 +1,265 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  /* HexaDash-style admin palette (portal /site uses inline theme where needed) */
+  --color-paper: #f4f5f7;
+  --color-sheet: #ffffff;
+  --color-ink: #272b41;
+  --color-muted: #8c90a4;
+  --color-line: #e3e6ef;
+  --color-rule: #8231d3;
+  --color-mast: #ffffff;
+  --color-sand: #edeef3;
+  --color-pine: #5f63f2;
+  --color-primary: #8231d3;
+  --color-primary-light: #f4e8ff;
+  --color-accent-blue: #5f63f2;
+  --font-sans: var(--font-vazir), sans-serif;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+}
+
+::selection {
+  background: #e8daf9;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.admin-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c5c9d6 transparent;
+}
+
+.admin-nav-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-nav-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c5c9d6;
+}
+
+@keyframes ticker-move {
+  from {
+    transform: translateX(40%);
+  }
+  to {
+    transform: translateX(-70%);
+  }
+}
+
+.ticker-track {
+  display: inline-block;
+  min-width: 100%;
+  animation: ticker-move 22s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+/* Shamseh splash — real artwork layers (GPU transforms) */
+.shamseh-wedge {
+  opacity: 0;
+  transform: scale(0.35) rotate(calc(var(--wedge-rot, 18deg) * -1));
+  transform-origin: 50% 50%;
+  animation: shamseh-wedge-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+@keyframes shamseh-wedge-in {
+  0% {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+}
+.shamseh-layer-ring {
+  opacity: 0;
+  transform: scale(0.2);
+  transform-origin: 50% 50%;
+  animation: shamseh-layer-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) 0.62s forwards;
+  will-change: transform, opacity;
+}
+.shamseh-layer-sun {
+  opacity: 0;
+  transform: scale(0);
+  transform-origin: 50% 50%;
+  animation: shamseh-layer-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.78s forwards;
+}
+.shamseh-layer-core-img {
+  opacity: 0;
+  transform: translateY(-12%) scale(0.65);
+  transform-origin: 50% 55%;
+  animation: shamseh-nib-drop 0.5s cubic-bezier(0.34, 1.35, 0.64, 1) 0.95s forwards;
+}
+@keyframes shamseh-layer-pop {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes shamseh-nib-drop {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.shamseh-titles {
+  max-width: 24rem;
+  padding: 0 0.5rem;
+}
+.shamseh-brand-title {
+  margin: 0;
+  font-size: clamp(2.5rem, 11vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+  color: #1e3a8a;
+  opacity: 0;
+  transform: translateY(22px) scale(0.96);
+  animation: shamseh-title-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1.08s forwards;
+  text-shadow: 0 4px 24px rgba(30, 58, 138, 0.18);
+  will-change: transform, opacity;
+}
+.shamseh-tagline {
+  margin: 0.35rem 0 0;
+  font-size: clamp(0.95rem, 3.8vw, 1.15rem);
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: #1e293b;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: shamseh-tagline-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1.28s forwards;
+  text-shadow: 0 0 20px rgba(30, 41, 59, 0.08);
+  will-change: transform, opacity;
+}
+@keyframes shamseh-title-in {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    text-shadow: 0 6px 28px rgba(30, 58, 138, 0.2);
+  }
+}
+@keyframes shamseh-tagline-in {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.event-map-leaflet-marker-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+.event-map-marker-label {
+  transform: translate(-50%, -100%);
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.event-map-marker-label--static {
+  pointer-events: none;
+}
+
+.event-map-pulse-ring {
+  animation: event-map-marker-pulse 1.6s ease-in-out infinite;
+}
+
+.event-map-pulse-origin path {
+  fill: #34d399;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.event-map-pulse-dest path {
+  fill: #fb7185;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.event-map-pulse-waypoint path {
+  fill: #38bdf8;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.event-map-travel-dot-marker path {
+  fill: #fcd34d;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+@keyframes event-map-marker-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.leaflet-overlay-pane .event-map-preview-route {
+  stroke-dasharray: 120;
+  animation: event-map-preview-draw 3s ease-in-out infinite;
+}
+
+@keyframes event-map-preview-draw {
+  0% {
+    stroke-dashoffset: 120;
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shamseh-wedge,
+  .shamseh-layer-ring,
+  .shamseh-layer-sun,
+  .shamseh-layer-core-img,
+  .shamseh-brand-title,
+  .shamseh-tagline {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
