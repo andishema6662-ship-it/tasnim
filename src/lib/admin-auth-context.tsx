@@ -50,13 +50,24 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [clientReady] = useState(() => typeof window !== "undefined");
 
   useEffect(() => {
+    if (!data) return;
     const stored = readStoredSession();
-    if (stored && data && sessionMatchesUser(stored, data)) {
-      setSession(stored);
-      setCurrentUser(stored.userId);
-    } else {
-      if (stored) saveAdminSession(null);
+    if (!stored) {
       setSession(null);
+      return;
+    }
+    if (!sessionMatchesUser(stored, data)) {
+      saveAdminSession(null);
+      setSession(null);
+      if (typeof document !== "undefined") {
+        document.documentElement.removeAttribute("data-admin-session");
+      }
+      return;
+    }
+    setSession(stored);
+    setCurrentUser(stored.userId);
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-admin-session", "1");
     }
   }, [data, setCurrentUser]);
 
@@ -106,7 +117,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const authenticated = clientReady && Boolean(data) && sessionMatchesUser(session, data);
+  const activeSession = session ?? (clientReady ? readStoredSession() : null);
+  const authenticated =
+    clientReady && Boolean(data) && sessionMatchesUser(activeSession, data);
   const ready = clientReady && Boolean(data);
 
   const value = useMemo(

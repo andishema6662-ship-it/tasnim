@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { resolveSystemVersion, versionDisplay } from "@/lib/changelog";
 import { useAdminAuth } from "@/lib/admin-auth-context";
@@ -14,7 +14,6 @@ import "./admin-login-codepen.css";
 export function AdminLoginScreen() {
   const { data } = useNewsroom();
   const { login, authenticated } = useAdminAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/admin";
   const [username, setUsername] = useState("");
@@ -27,8 +26,10 @@ export function AdminLoginScreen() {
 
   useEffect(() => {
     if (!authenticated) return;
-    router.replace(next.startsWith("/admin") ? next : "/admin");
-  }, [authenticated, next, router]);
+    const target = next.startsWith("/admin") ? next : "/admin";
+    if (window.location.pathname + window.location.search === target) return;
+    window.location.assign(target);
+  }, [authenticated, next]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -45,7 +46,8 @@ export function AdminLoginScreen() {
       setError(result.message);
       return;
     }
-    router.replace(next.startsWith("/admin") ? next : "/admin");
+    const target = next.startsWith("/admin") ? next : "/admin";
+    window.location.assign(target);
   }
 
   return (

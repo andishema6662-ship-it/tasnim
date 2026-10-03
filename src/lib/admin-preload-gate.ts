@@ -7,7 +7,7 @@ import { ADMIN_SESSION_TTL_MS } from "./admin-session-policy";
  */
 export const ADMIN_PRELOAD_GATE_SCRIPT = `(function(){try{
 var p=location.pathname;
-if(p.indexOf("/admin/login")===0)return;
+if(p==="/admin/login"||p==="/admin/login/"||p.indexOf("/admin/login/")===0)return;
 if(p!=="/admin"&&p.indexOf("/admin/")!==0)return;
 var raw=localStorage.getItem("${ADMIN_SESSION_KEY}");
 if(!raw){location.replace("/admin/login/?next="+encodeURIComponent(p+location.search));return;}

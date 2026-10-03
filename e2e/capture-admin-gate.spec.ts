@@ -6,7 +6,9 @@ const BASE = process.env.LIVE_SITE_URL ?? process.env.PLAYWRIGHT_BASE_URL ?? "ht
 
 test("admin root shows login when session cleared", async ({ page }) => {
   await page.addInitScript((key) => {
-    window.localStorage.removeItem(key);
+    if (sessionStorage.getItem("tasnim-gate-test-init")) return;
+    sessionStorage.setItem("tasnim-gate-test-init", "1");
+    localStorage.removeItem(key);
   }, ADMIN_SESSION_KEY);
   await page.setViewportSize({ width: 1280, height: 840 });
   await page.goto(`${BASE}/admin/`, { waitUntil: "domcontentloaded" });
