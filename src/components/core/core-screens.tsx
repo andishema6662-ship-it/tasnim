@@ -6,6 +6,7 @@ import { bytesLabel, faDate, faNum } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { mergeSeed } from "@/lib/seed";
 import { STORAGE_KEY } from "@/lib/storage";
+import { estimateStoreBytes, STORAGE_WARN_BYTES } from "@/lib/storage-sanitize";
 import { useNewsroom } from "@/lib/store";
 import type { MenuItem, NewsroomData, Permissions, RoleBase, Settings, User, VersionEntry } from "@/lib/types";
 import { REPORTER_GRADE_LABELS } from "@/lib/reporter-labels";
@@ -32,9 +33,18 @@ export function SystemScreen() {
     ["شروع این نسخه داده", faDate(data.sessionStartedAt)],
     ["مرورگر", typeof navigator === "undefined" ? "—" : navigator.userAgent.slice(0, 80)],
   ];
+  const storeBytes = estimateStoreBytes(data);
+  const storeHeavy = storeBytes >= STORAGE_WARN_BYTES;
   return (
     <ModulePage slug="system">
       <Notice>این صفحه سرور سازمان را نشان نمی‌دهد. عددها از همین مرورگر خوانده شده‌اند.</Notice>
+      {storeHeavy ? (
+        <Notice>
+          حجم داده ذخیره‌شده در این مرورگر زیاد است ({bytesLabel(data)}). اگر Chrome پیام «Aw, Snap» یا کمبود حافظه می‌دهد، از بخش
+          پشتیبان‌گیری نسخه بگیرید، سپس در تنظیمات Chrome برای diyareminoodari.ir داده‌های سایت را پاک کنید یا «بازگردانی داده نمونه» را
+          بزنید. تصاویر کتابخانه رسانه و پیوست‌های چت بیشترین حجم را می‌گیرند.
+        </Notice>
+      ) : null}
       <dl className="divide-y divide-line rounded-lg border border-line bg-sheet">
         {rows.map(([label, value]) => (
           <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">

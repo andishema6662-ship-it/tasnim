@@ -80,7 +80,7 @@ export function ChatScreen() {
     const preview = message.body.slice(0, 80);
     update((current) => ({
       ...current,
-      chatMessages: [...current.chatMessages, message],
+      chatMessages: [...current.chatMessages, message].slice(-400),
       chatThreads: current.chatThreads.map((thread) =>
         thread.id === active.id ? { ...thread, lastPreview: preview, lastAt: message.createdAt } : thread,
       ),
@@ -91,6 +91,10 @@ export function ChatScreen() {
   }
 
   function onPickFile(file: File) {
+    if (file.size > 1_500_000) {
+      setFlash("حجم پیوست زیاد است (حداکثر حدود ۱٫۵ مگابایت).");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       setPendingFile({ name: file.name, dataUrl: String(reader.result) });

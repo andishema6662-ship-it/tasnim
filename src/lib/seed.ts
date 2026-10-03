@@ -675,6 +675,16 @@ export function createSeed(): NewsroomData {
         ],
         placement: "service-sports",
       },
+      {
+        id: "tbl-jihadi",
+        title: "گزارش جهادی",
+        columns: ["ردیف", "عنوان فعالیت", "مسئول", "وضعیت"],
+        rows: [
+          ["۱", "توزیع بسته معیشتی", "گروه جهادی الف", "انجام شد"],
+          ["۲", "بازدید از مناطق آسیب‌دیده", "گروه جهادی ب", "در حال اقدام"],
+        ],
+        placement: "dedicated-page",
+      },
     ],
     ads: [
       {
@@ -1204,6 +1214,11 @@ export function mergeSeed(raw: Partial<NewsroomData>): NewsroomData {
     ...table,
     placement: table.placement ?? "story-attach",
   }));
+  for (const seedTable of base.tables) {
+    if (!next.tables.some((table) => table.id === seedTable.id)) {
+      next.tables.push(seedTable);
+    }
+  }
   next.polls = (next.polls ?? []).map((poll) => ({
     ...poll,
     shortCode: poll.shortCode ?? poll.id.replace(/^poll-/, "poll-"),

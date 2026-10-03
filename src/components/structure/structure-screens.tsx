@@ -358,15 +358,27 @@ export function TablesScreen() {
               کپی کد جاسازی در خبر
             </Button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button tone="ghost" disabled={!allowed} onClick={() => save({ ...table, columns: [...table.columns, "ستون"], rows: table.rows.map((row) => [...row, ""]) })}>
               ستون
             </Button>
             <Button tone="ghost" disabled={!allowed} onClick={() => save({ ...table, rows: [...table.rows, table.columns.map(() => "")] })}>
               ردیف
             </Button>
+            <Button
+              type="button"
+              tone="quiet"
+              disabled={!allowed || table.rows.length === 0}
+              data-testid="tables-clear-all-rows"
+              onClick={() => {
+                if (!window.confirm("همه ردیف‌های این جدول حذف شوند؟ ستون‌ها می‌مانند.")) return;
+                save({ ...table, rows: [] });
+              }}
+            >
+              پاک کردن جدول
+            </Button>
           </div>
-          <table className="w-full min-w-[32rem] text-sm">
+          <table className="w-full min-w-[32rem] text-sm" data-testid="tables-editor">
             <thead>
               <tr>
                 {table.columns.map((column, index) => (
@@ -383,6 +395,7 @@ export function TablesScreen() {
                     />
                   </th>
                 ))}
+                {allowed ? <th className="p-1 w-16 text-xs text-muted">ردیف</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -402,6 +415,22 @@ export function TablesScreen() {
                       />
                     </td>
                   ))}
+                  {allowed ? (
+                    <td className="p-1 align-top">
+                      <Button
+                        type="button"
+                        tone="ghost"
+                        className="text-xs"
+                        data-testid="tables-delete-row"
+                        onClick={() => {
+                          const rows = table.rows.filter((_, index) => index !== rowIndex);
+                          save({ ...table, rows });
+                        }}
+                      >
+                        حذف
+                      </Button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

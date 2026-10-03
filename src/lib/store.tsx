@@ -5,6 +5,7 @@ import { pushActivity } from "./activity";
 import { defaultUserIdForRole } from "./session-user";
 import { createSeed } from "./seed";
 import { loadState, saveState } from "./storage";
+import { sanitizeNewsroomData } from "./storage-sanitize";
 import type { NewsroomData, Story } from "./types";
 import { placeStory } from "./workflow";
 import { ShamsehSplashGate } from "@/components/shamseh-splash";
@@ -36,11 +37,18 @@ export function NewsroomProvider({ children }: { children: ReactNode }) {
   }, [data]);
 
   useEffect(() => {
-    if (data) saveState(data);
+    if (!data) return;
+    const handle = window.setTimeout(() => saveState(data), 350);
+    return () => window.clearTimeout(handle);
   }, [data]);
 
   const update = useCallback((fn: (current: NewsroomData) => NewsroomData) => {
-    setData((prev) => (prev ? fn(prev) : prev));
+    setData((prev) => {
+      if (!prev) return prev;
+      const next = fn(prev);
+      const { data: clean, pruned } = sanitizeNewsroomData(next);
+      return pruned ? clean : next;
+    });
   }, []);
 
   const commitStory = useCallback(
