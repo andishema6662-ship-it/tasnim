@@ -19,6 +19,7 @@ import { SystemVersionFooter } from "./core/system-version-footer";
 import { NotificationPreviewList } from "./dashboard/dashboard-alerts";
 import { LiveClock } from "./live-clock";
 import { dashboardAlertCount } from "@/lib/reporter-workspace";
+import { AdminAuthFallback } from "./admin/admin-auth-fallback";
 import { UnauthorizedPanel } from "./unauthorized-panel";
 import { cn } from "./ui";
 
@@ -358,13 +359,6 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  useEffect(() => {
-    if (!authReady || !path) return;
-    if (isAdminPanelPath(path) && !isAdminLoginPath(path) && !authenticated) {
-      router.replace(adminLoginPath(path));
-    }
-  }, [authReady, authenticated, path, router]);
-
   const notifyCount =
     data.submissions.filter((item) => item.status === "new").length +
     data.suggestions.filter((item) => item.status === "pending").length +
@@ -380,14 +374,11 @@ export function Shell({ children }: { children: ReactNode }) {
   }
 
   if (isAdminPanelPath(path)) {
-    if (!authReady) {
-      return <p className="p-6 text-center text-sm text-muted">در حال بارگذاری…</p>;
-    }
     if (isAdminLoginPath(path)) {
       return <>{children}</>;
     }
-    if (!authenticated) {
-      return <p className="p-6 text-center text-sm text-muted">در حال انتقال به صفحه ورود…</p>;
+    if (!authReady || !authenticated) {
+      return <AdminAuthFallback />;
     }
   }
 

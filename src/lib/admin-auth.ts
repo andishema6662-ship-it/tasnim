@@ -1,3 +1,4 @@
+import { isAdminSessionFresh } from "./admin-session-policy";
 import { DEFAULT_USER_PASSWORD, verifyUserPassword } from "./password";
 import type { NewsroomData, User } from "./types";
 
@@ -54,6 +55,7 @@ export function verifyAdminCredentials(
 
 export function sessionMatchesUser(session: AdminSession | null, data: NewsroomData): boolean {
   if (!session) return false;
+  if (!isAdminSessionFresh(session)) return false;
   const user = data.users.find((u) => u.id === session.userId && u.active);
   return Boolean(user && user.username.toLowerCase() === session.username.toLowerCase());
 }

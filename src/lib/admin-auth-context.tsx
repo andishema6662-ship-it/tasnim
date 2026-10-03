@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   loadAdminSession,
   saveAdminSession,
@@ -8,6 +8,7 @@ import {
   verifyAdminCredentials,
   type AdminSession,
 } from "./admin-auth";
+import { isAdminSessionFresh } from "./admin-session-policy";
 import {
   GENERIC_LOGIN_ERROR,
   checkLoginAllowed,
@@ -31,23 +32,32 @@ interface AdminAuthValue {
 
 const AdminAuthContext = createContext<AdminAuthValue | null>(null);
 
+function readStoredSession(): AdminSession | null {
+  const stored = loadAdminSession();
+  if (!stored) return null;
+  if (!isAdminSessionFresh(stored)) {
+    saveAdminSession(null);
+    return null;
+  }
+  return stored;
+}
+
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const { data, setCurrentUser } = useNewsroom();
-  const [session, setSession] = useState<AdminSession | null>(null);
-  const [ready, setReady] = useState(false);
-  const hydrated = useRef(false);
+  const [session, setSession] = useState<AdminSession | null>(() =>
+    typeof window === "undefined" ? null : readStoredSession(),
+  );
+  const [clientReady] = useState(() => typeof window !== "undefined");
 
   useEffect(() => {
-    if (hydrated.current) return;
-    hydrated.current = true;
-    const stored = loadAdminSession();
-    if (stored && sessionMatchesUser(stored, data)) {
+    const stored = readStoredSession();
+    if (stored && data && sessionMatchesUser(stored, data)) {
       setSession(stored);
       setCurrentUser(stored.userId);
-    } else if (stored) {
-      saveAdminSession(null);
+    } else {
+      if (stored) saveAdminSession(null);
+      setSession(null);
     }
-    setReady(true);
   }, [data, setCurrentUser]);
 
   const login = useCallback(
@@ -77,6 +87,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         loggedInAt: new Date().toISOString(),
       };
       saveAdminSession(next);
+      if (typeof document !== "undefined") {
+        document.documentElement.setAttribute("data-admin-session", "1");
+      }
       setSession(next);
       setCurrentUser(user.id);
       return { ok: true as const };
@@ -86,10 +99,15 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     saveAdminSession(null);
+    clearLoginGuard();
     setSession(null);
+    if (typeof document !== "undefined") {
+      document.documentElement.removeAttribute("data-admin-session");
+    }
   }, []);
 
-  const authenticated = ready && sessionMatchesUser(session, data);
+  const authenticated = clientReady && Boolean(data) && sessionMatchesUser(session, data);
+  const ready = clientReady && Boolean(data);
 
   const value = useMemo(
     () => ({

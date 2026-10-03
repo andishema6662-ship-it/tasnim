@@ -25,13 +25,15 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 export function NewsroomProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [data, setData] = useState<NewsroomData | null>(null);
+  const [data, setData] = useState<NewsroomData | null>(() =>
+    typeof window === "undefined" ? null : loadState(),
+  );
 
   useEffect(() => {
-    // localStorage فقط بعد از نصب روی کلاینت خوانده می‌شود تا داده نمونه، نسخه ذخیره‌شده را نپوشاند.
+    if (data) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- یک‌بار آب‌گیری فروشگاه مرورگر
     setData(loadState());
-  }, []);
+  }, [data]);
 
   useEffect(() => {
     if (data) saveState(data);

@@ -1,5 +1,12 @@
 ErrorDocument 404 /404.html
 
+<IfModule mod_headers.c>
+  SetEnvIf Request_URI "^/admin" ADMIN_AREA=1
+  Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=ADMIN_AREA
+  Header set Pragma "no-cache" env=ADMIN_AREA
+  Header set Expires "0" env=ADMIN_AREA
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
