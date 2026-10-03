@@ -288,6 +288,7 @@ export function TablesScreen() {
 
   return (
     <ModulePage slug="tables">
+      <Notice>برای جدول گزارش‌های جهادی، از فهرست بالا «گزارش جهادی» را انتخاب کنید؛ «پاک کردن جدول» همه ردیف‌ها را با تأیید حذف می‌کند.</Notice>
       {!allowed ? <Notice>ویرایش جدول با سردبیر یا مدیر مسئول است.</Notice> : null}
       <div className="flex flex-wrap gap-2">
         <Select value={table?.id ?? ""} onChange={(event) => setTableId(event.target.value)}>
