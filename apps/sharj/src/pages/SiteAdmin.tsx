@@ -121,6 +121,7 @@ export function SiteAdmin() {
   } = useStore()
   const navigate = useNavigate()
   const [section, setSection] = useState<SiteAdminSection>('properties')
+  const [navOpen, setNavOpen] = useState(false)
   const [form, setForm] = useState<BuildingMeta | null>(null)
   const [complexForm, setComplexForm] = useState<Complex | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -204,9 +205,16 @@ export function SiteAdmin() {
     flash('ساختمان ذخیره شد')
   }
 
+  const sectionLabel = SECTIONS.find((s) => s.id === section)?.label ?? ''
+
+  const selectSection = (id: SiteAdminSection) => {
+    setSection(id)
+    setNavOpen(false)
+  }
+
   return (
-    <div className="app-shell auth wide">
-      <div className="page" style={{ paddingTop: 18 }}>
+    <div className="app-shell auth wide site-admin-shell">
+      <div className="page site-admin-page" style={{ paddingTop: 18 }}>
         <header className="topbar">
           <div className="brand-mark">
             <div className="logo">د</div>
@@ -215,18 +223,29 @@ export function SiteAdmin() {
               <span className="tag">پنل مدیریت سایت</span>
             </div>
           </div>
-          <div style={{ textAlign: 'left' }}>
-            <div className="meta">{session.displayName}</div>
+          <div className="site-admin-top-actions">
             <button
-              className="btn-ghost"
               type="button"
-              onClick={() => {
-                logout()
-                navigate('/')
-              }}
+              className="btn btn-secondary site-admin-menu-btn"
+              aria-expanded={navOpen}
+              aria-controls="site-admin-sidebar"
+              onClick={() => setNavOpen((v) => !v)}
             >
-              خروج
+              {navOpen ? 'بستن منو' : 'منوها'}
             </button>
+            <div style={{ textAlign: 'left' }}>
+              <div className="meta">{session.displayName}</div>
+              <button
+                className="btn-ghost"
+                type="button"
+                onClick={() => {
+                  logout()
+                  navigate('/')
+                }}
+              >
+                خروج
+              </button>
+            </div>
           </div>
         </header>
 
@@ -236,18 +255,39 @@ export function SiteAdmin() {
         </p>
         <BroadcastBanner />
 
-        <div className="chip-row admin-nav">
-          {SECTIONS.map((s) => (
+        <div className={`site-admin-layout ${navOpen ? 'nav-open' : ''}`}>
+          {navOpen && (
             <button
-              key={s.id}
               type="button"
-              className={`chip ${section === s.id ? 'active' : ''}`}
-              onClick={() => setSection(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+              className="site-admin-backdrop"
+              aria-label="بستن منو"
+              onClick={() => setNavOpen(false)}
+            />
+          )}
+          <aside
+            id="site-admin-sidebar"
+            className={`site-admin-sidebar ${navOpen ? 'open' : ''}`}
+            aria-label="منوی مدیریت سایت"
+          >
+            <div className="site-admin-sidebar__title">منوها</div>
+            <nav className="site-admin-nav">
+              {SECTIONS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`site-admin-nav__item ${section === s.id ? 'active' : ''}`}
+                  onClick={() => selectSection(s.id)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          <div className="site-admin-main">
+            <div className="site-admin-section-label">
+              بخش فعال: <strong>{sectionLabel}</strong>
+            </div>
 
         {section === 'properties' && (
           <>
@@ -1167,17 +1207,19 @@ export function SiteAdmin() {
           </>
         )}
 
-        <div className="panel" style={{ marginTop: 12 }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ width: '100%' }}
-            onClick={() => {
-              if (confirm('بازنشانی کل دمو پلتفرم؟')) resetDemo()
-            }}
-          >
-            بازنشانی دمو
-          </button>
+            <div className="panel" style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: '100%' }}
+                onClick={() => {
+                  if (confirm('بازنشانی کل دمو پلتفرم؟')) resetDemo()
+                }}
+              >
+                بازنشانی دمو
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       {toast && <div className="toast">{toast}</div>}
