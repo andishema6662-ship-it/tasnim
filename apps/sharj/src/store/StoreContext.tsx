@@ -115,6 +115,22 @@ interface StoreApi {
   runSchedule: (scheduleId: string) => number
   upsertSchedule: (schedule: ChargeSchedule) => void
   payBill: (billId: string, party: DebtParty, amount?: number) => string | null
+  /** Apply a verified ZarinPal bill payment (amount in تومان). */
+  finalizeZarinpalBillPayment: (input: {
+    billId: string
+    party: DebtParty
+    amount: number
+    authority: string
+    refId: string
+    cardPan?: string
+  }) => string | null
+  /** Mark feature-addon / subscription row paid via ZarinPal verify. */
+  finalizeZarinpalSubscriptionPayment: (input: {
+    paymentId: string
+    authority: string
+    refId: string
+    cardPan?: string
+  }) => boolean
   createInstallmentPlan: (
     billId: string,
     count: number,
@@ -329,6 +345,15 @@ function loadState(): PlatformState {
               subscriptionTracking: c.subscriptionTracking ?? seed?.subscriptionTracking,
             }
           }),
+          gateway: {
+            ...seeded.gateway,
+            ...(parsed.admin?.gateway ?? {}),
+            sandbox: parsed.admin?.gateway?.sandbox ?? seeded.gateway.sandbox,
+            currency: parsed.admin?.gateway?.currency ?? seeded.gateway.currency,
+            provider: 'zarinpal' as const,
+            // Do not keep a pasted full merchant secret in localStorage
+            merchantId: '',
+          },
         }
         return { ...parsed, buildings, byId, admin }
       }
@@ -1001,8 +1026,185 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateGatewayConfig = useCallback((gw: GatewayConfig) => {
-    setPlatform((p) => ({ ...p, admin: { ...p.admin, gateway: gw } }))
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        gateway: {
+          ...gw,
+          provider: 'zarinpal',
+          // Never persist full merchant secret client-side
+          merchantId: '',
+        },
+      },
+    }))
   }, [])
+
+  const finalizeZarinpalBillPayment = useCallback(
+    (input: {
+      billId: string
+      party: DebtParty
+      amount: number
+      authority: string
+      refId: string
+      cardPan?: string
+    }) => {
+      let code: string | null = null
+      setPlatform((p) => {
+        const bid = p.session?.buildingId
+        if (!bid) return p
+        return patchBuilding(p, bid, (data) => {
+          const bill = data.bills.find((b) => b.id === input.billId)
+          if (!bill) return data
+          const due =
+            input.party === 'owner'
+              ? Math.max(0, bill.ownerShare - bill.paidOwner)
+              : Math.max(0, bill.residentShare - bill.paidResident)
+          const pay = Math.min(input.amount, due)
+          if (pay <= 0) return data
+          // Idempotent: same authority already recorded
+          if (data.payments.some((x) => x.authority === input.authority && x.gatewayStatus === 'paid')) {
+            code = data.payments.find((x) => x.authority === input.authority)?.trackingCode ?? null
+            return data
+          }
+          code = trackingCode()
+          const payId = `pay-zp-${Date.now()}`
+          const verifiedAt = new Date().toISOString()
+          const bills = data.bills.map((b) => {
+            if (b.id !== input.billId) return b
+            const next = {
+              ...b,
+              paidOwner: b.paidOwner + (input.party === 'owner' ? pay : 0),
+              paidResident: b.paidResident + (input.party === 'resident' ? pay : 0),
+            }
+            return { ...next, status: billStatus(next) }
+          })
+          return {
+            ...data,
+            bills,
+            units: data.units.map((u) =>
+              u.id === bill.unitId ? { ...u, balance: u.balance + pay } : u,
+            ),
+            fundBalance: data.fundBalance + pay,
+            payments: [
+              {
+                id: payId,
+                billId: input.billId,
+                unitId: bill.unitId,
+                amount: pay,
+                party: input.party,
+                trackingCode: code!,
+                createdAt: verifiedAt,
+                method: 'zarinpal' as const,
+                bankName: 'زرین‌پال',
+                gatewayStatus: 'paid' as const,
+                authority: input.authority,
+                refId: String(input.refId),
+                cardPan: input.cardPan,
+                verifiedAt,
+              },
+              ...data.payments,
+            ],
+            ledger: [
+              {
+                id: `l-zp-${Date.now()}`,
+                kind: 'income' as const,
+                category: 'شارژ',
+                title: `پرداخت زرین‌پال ${bill.title}`,
+                amount: pay,
+                note: `Authority ${input.authority} · Ref ${input.refId}${
+                  input.cardPan ? ` · کارت ${input.cardPan}` : ''
+                }`,
+                createdAt: verifiedAt,
+                visibleToResidents: true,
+                paymentId: payId,
+                method: 'zarinpal' as const,
+                bankName: 'زرین‌پال',
+                trackingCode: code!,
+              },
+              ...data.ledger,
+            ],
+            notifications: [
+              {
+                id: `nt-zp-${Date.now()}`,
+                title: 'پرداخت زرین‌پال موفق',
+                body: `مبلغ ${pay.toLocaleString('fa-IR')} تومان — رسید ${code} — Ref ${input.refId}`,
+                createdAt: verifiedAt,
+                kind: 'payment' as const,
+                read: false,
+              },
+              ...data.notifications,
+            ],
+          }
+        })
+      })
+      return code
+    },
+    [],
+  )
+
+  const finalizeZarinpalSubscriptionPayment = useCallback(
+    (input: { paymentId: string; authority: string; refId: string; cardPan?: string }) => {
+      let ok = false
+      setPlatform((p) => {
+        const target = p.admin.subscriptionPayments.find((sp) => sp.id === input.paymentId)
+        if (!target) return p
+        ok = true
+        const verifiedAt = new Date().toISOString()
+        let buildings = p.buildings
+        if (target.addonFeatureId && target.buildingId) {
+          const fid = target.addonFeatureId
+          buildings = p.buildings.map((b) =>
+            b.id === target.buildingId && !b.enabledFeatures.includes(fid)
+              ? { ...b, enabledFeatures: [...b.enabledFeatures, fid] }
+              : b,
+          )
+        }
+        return {
+          ...p,
+          buildings,
+          admin: {
+            ...p.admin,
+            subscriptionPayments: p.admin.subscriptionPayments.map((sp) =>
+              sp.id === input.paymentId
+                ? {
+                    ...sp,
+                    status: 'approved' as const,
+                    method: 'gateway' as const,
+                    authority: input.authority,
+                    refId: String(input.refId),
+                    cardPan: input.cardPan,
+                    verifiedAt,
+                    reviewedAt: verifiedAt,
+                    reviewedBy: 'زرین‌پال',
+                    receiptNote: [
+                      sp.receiptNote,
+                      `Authority ${input.authority}`,
+                      `Ref ${input.refId}`,
+                      input.cardPan ? `کارت ${input.cardPan}` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' · '),
+                  }
+                : sp,
+            ),
+            activity: [
+              {
+                id: `act-zp-${Date.now()}`,
+                at: verifiedAt,
+                kind: 'payment',
+                label: `پرداخت زرین‌پال ${input.refId}`,
+                buildingId: target.buildingId,
+              },
+              ...p.admin.activity,
+            ].slice(0, 80),
+          },
+        }
+      })
+      return ok
+    },
+    [],
+  )
 
   const reviewSubscriptionPayment = useCallback(
     (id: string, status: 'approved' | 'rejected', asRole: 'siteAdmin' | 'manager') => {
@@ -2773,6 +2975,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       runSchedule,
       upsertSchedule,
       payBill,
+      finalizeZarinpalBillPayment,
+      finalizeZarinpalSubscriptionPayment,
       createInstallmentPlan,
       payInstallment,
       addLedger,
@@ -2857,6 +3061,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       runSchedule,
       upsertSchedule,
       payBill,
+      finalizeZarinpalBillPayment,
+      finalizeZarinpalSubscriptionPayment,
       createInstallmentPlan,
       payInstallment,
       addLedger,

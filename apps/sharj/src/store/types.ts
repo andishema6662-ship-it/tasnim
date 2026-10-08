@@ -109,14 +109,17 @@ export interface Bill {
   installments?: Installment[]
 }
 
-export type PaymentMethod = 'online-demo' | 'card' | 'transfer' | 'cash'
+export type PaymentMethod = 'online-demo' | 'zarinpal' | 'card' | 'transfer' | 'cash'
 
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   'online-demo': 'درگاه آنلاین (دمو)',
+  zarinpal: 'زرین‌پال',
   card: 'کارت به کارت',
   transfer: 'حواله بانکی',
   cash: 'نقدی',
 }
+
+export type GatewayPaymentStatus = 'pending' | 'paid' | 'failed' | 'cancelled'
 
 export interface Payment {
   id: string
@@ -129,6 +132,12 @@ export interface Payment {
   method: PaymentMethod
   /** بانک / حساب مقصد */
   bankName?: string
+  /** ZarinPal / gateway details */
+  gatewayStatus?: GatewayPaymentStatus
+  authority?: string
+  refId?: string
+  cardPan?: string
+  verifiedAt?: string
 }
 
 export type BuildingFundKind = 'charge' | 'operating' | 'custom'

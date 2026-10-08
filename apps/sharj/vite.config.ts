@@ -1,9 +1,15 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { zarinpalDevMiddleware } from './scripts/zarinpalDevMiddleware.ts'
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [
+    zarinpalDevMiddleware(rootDir),
     react(),
     VitePWA({
       registerType: 'autoUpdate',

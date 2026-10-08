@@ -369,6 +369,11 @@ export interface SubscriptionPayment {
    */
   addonFeatureId?: FeatureModuleId
   kind?: 'subscription' | 'feature_addon' | 'complex_platform'
+  /** ZarinPal fields (when method=gateway) */
+  authority?: string
+  refId?: string
+  cardPan?: string
+  verifiedAt?: string
 }
 
 export function isSubPaid(status: SubPaymentStatus): boolean {
@@ -390,10 +395,26 @@ export interface SmsConfig {
 
 export interface GatewayConfig {
   mode: 'gateway' | 'bank_receipt' | 'both'
+  /**
+   * Never store the full secret in localStorage long-term.
+   * Admin pastes into server config via /api/zarinpal/save-config.php;
+   * this field may hold a temporary draft or stay empty.
+   */
   merchantId: string
+  /** True when server status reports a configured merchant (masked). */
+  merchantConfigured?: boolean
+  merchantMasked?: string
   callbackUrl: string
   bankAccountInfo: string
   enabled: boolean
+  /** Sandbox → sandbox.zarinpal.com until real merchant is live */
+  sandbox: boolean
+  /**
+   * IRT = تومان (app amounts as-is). IRR = ریال (×10).
+   * Must match PHP config currency.
+   */
+  currency: 'IRT' | 'IRR'
+  provider: 'zarinpal'
 }
 
 export interface ActivityEvent {

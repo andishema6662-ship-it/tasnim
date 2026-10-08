@@ -21,6 +21,7 @@ import { Meetings } from './pages/Meetings'
 import { More } from './pages/More'
 import { News } from './pages/News'
 import { Notifications } from './pages/Notifications'
+import { PayCallback } from './pages/PayCallback'
 import { Payments } from './pages/Payments'
 import { Polls } from './pages/Polls'
 import { QarzFund } from './pages/QarzFund'
@@ -49,6 +50,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Splash />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/pay/callback" element={<PayCallback />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/app/activate/:featureId" element={<FeatureActivate />} />
           <Route path="/app/site-admin" element={<SiteAdmin />} />

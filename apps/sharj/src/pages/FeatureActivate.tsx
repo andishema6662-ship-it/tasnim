@@ -9,6 +9,11 @@ import {
 } from '../lib/features'
 import { faNum, toman } from '../lib/format'
 import {
+  defaultCallbackUrl,
+  saveZarinpalIntent,
+  zarinpalRequest,
+} from '../lib/zarinpal'
+import {
   FEATURE_PRICING_LABEL,
   type FeatureModuleId,
   type SubPeriodMonths,
@@ -16,7 +21,7 @@ import {
 import { useStore } from '../store/StoreContext'
 
 /**
- * Unlock flow: tariff → payment → paid_demo unlocks the feature for the building.
+ * Unlock flow: tariff → payment → ZarinPal / paid_demo unlocks the feature.
  */
 export function FeatureActivate() {
   const { featureId = '' } = useParams()
@@ -27,6 +32,9 @@ export function FeatureActivate() {
   const [step, setStep] = useState<'tariff' | 'pay' | 'done'>('tariff')
   const [toast, setToast] = useState<string | null>(null)
   const [tracking, setTracking] = useState<string | null>(null)
+  const [paying, setPaying] = useState(false)
+  const gw = platform.admin.gateway
+  const gatewayOnline = gw.enabled && (gw.mode === 'gateway' || gw.mode === 'both')
 
   const catalog = catalogOrDefault(platform.admin.featureCatalog)
   const entry = featureEntry(featureId as FeatureModuleId, catalog)
@@ -129,6 +137,65 @@ export function FeatureActivate() {
       setToast('درخواست ثبت شد — پس از تأیید ادمین فعال می‌شود')
       setTimeout(() => setToast(null), 2800)
       setStep('done')
+    }
+  }
+
+  const payZarinpal = async () => {
+    if (!entry) return
+    if (price < 1000) {
+      setToast('حداقل مبلغ درگاه ۱٬۰۰۰ تومان است')
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
+    setPaying(true)
+    const id = purchaseFeatureAddon({
+      buildingId: activeBuildingId,
+      featureId: entry.id,
+      months: entry.pricingMode === 'period' ? months : undefined,
+      method: 'gateway',
+      status: 'pending',
+      receiptNote: `در انتظار زرین‌پال — ${entry.label}`,
+    })
+    if (!id) {
+      setPaying(false)
+      setToast('ثبت سفارش ممکن نشد')
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
+    try {
+      const callbackUrl = defaultCallbackUrl(gw.callbackUrl)
+      saveZarinpalIntent({
+        kind: 'feature_addon',
+        orderId: id,
+        amountToman: price,
+        description: `شارژبان — افزونه ${entry.label}`,
+        featureId: entry.id,
+        buildingId: activeBuildingId,
+        months: entry.pricingMode === 'period' ? months : undefined,
+        createdAt: new Date().toISOString(),
+      })
+      const req = await zarinpalRequest({
+        amountToman: price,
+        description: `شارژبان — افزونه ${entry.label}`,
+        callbackUrl,
+        orderId: id,
+      })
+      saveZarinpalIntent({
+        kind: 'feature_addon',
+        orderId: id,
+        amountToman: price,
+        description: `شارژبان — افزونه ${entry.label}`,
+        featureId: entry.id,
+        buildingId: activeBuildingId,
+        months: entry.pricingMode === 'period' ? months : undefined,
+        authority: req.authority,
+        createdAt: new Date().toISOString(),
+      })
+      window.location.href = req.start_pay_url
+    } catch (e) {
+      setPaying(false)
+      setToast(e instanceof Error ? e.message : 'خطا در اتصال به درگاه')
+      setTimeout(() => setToast(null), 4000)
     }
   }
 
@@ -262,6 +329,17 @@ export function FeatureActivate() {
               {entry.label} — {toman(price)}
               {entry.pricingMode === 'period' ? ` · ${faNum(months)} ماه` : ' · یک‌بار'}
             </p>
+            {gatewayOnline && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%', marginBottom: 10 }}
+                disabled={paying}
+                onClick={() => void payZarinpal()}
+              >
+                پرداخت آنلاین زرین‌پال{gw.sandbox ? ' (سندباکس)' : ''}
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-copper"

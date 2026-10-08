@@ -10,14 +10,20 @@ import {
   toman,
   toJalaliDateValue,
 } from '../lib/format'
+import {
+  defaultCallbackUrl,
+  saveZarinpalIntent,
+  zarinpalRequest,
+} from '../lib/zarinpal'
 import { useBuildingState, useStore } from '../store/StoreContext'
 import type { Bill, DebtParty } from '../store/types'
 
 export function Bills() {
-  const { payBill, createInstallmentPlan, payInstallment } = useStore()
+  const { payBill, createInstallmentPlan, payInstallment, platform } = useStore()
   const state = useBuildingState()
   const features = useBuildingFeatures()
   const [toast, setToast] = useState<string | null>(null)
+  const [paying, setPaying] = useState(false)
   const [planBillId, setPlanBillId] = useState<string | null>(null)
   const [count, setCount] = useState(4)
   const [startDate, setStartDate] = useState(toJalaliDateValue(new Date().toISOString()))
@@ -26,6 +32,11 @@ export function Bills() {
   const isManager = session.role === 'manager' || session.role === 'financeManager'
   const canInstallments = features.has('installments')
   const canOnlinePay = features.has('payments')
+  const gw = platform.admin.gateway
+  const gatewayOnline =
+    canOnlinePay &&
+    gw.enabled &&
+    (gw.mode === 'gateway' || gw.mode === 'both')
   const bills =
     session.role === 'resident'
       ? state.bills.filter((b) => b.unitId === session.unitId)
@@ -39,11 +50,62 @@ export function Bills() {
     return previewInstallments(rem, count, jalaliDateValueToIso(startDate), intervalMonths)
   }, [planBill, count, startDate, intervalMonths])
 
-  const pay = (billId: string, party: DebtParty) => {
+  const payDemo = (billId: string, party: DebtParty) => {
     const code = payBill(billId, party)
     if (code) {
       setToast(`پرداخت دمو موفق — رسید با کد ${code} ثبت شد.`)
       setTimeout(() => setToast(null), 4000)
+    }
+  }
+
+  const payOnline = async (billId: string, party: DebtParty) => {
+    const bill = bills.find((b) => b.id === billId)
+    if (!bill) return
+    const due =
+      party === 'owner'
+        ? Math.max(0, bill.ownerShare - bill.paidOwner)
+        : Math.max(0, bill.residentShare - bill.paidResident)
+    if (due < 1000) {
+      setToast('حداقل مبلغ درگاه ۱٬۰۰۰ تومان است.')
+      setTimeout(() => setToast(null), 3500)
+      return
+    }
+    setPaying(true)
+    try {
+      const orderId = `bill-${billId}-${party}-${Date.now()}`
+      const callbackUrl = defaultCallbackUrl(gw.callbackUrl)
+      saveZarinpalIntent({
+        kind: 'bill',
+        orderId,
+        amountToman: due,
+        description: `شارژبان — ${bill.title} (${party === 'owner' ? 'مالک' : 'ساکن'})`,
+        billId,
+        party,
+        buildingId: state.buildingId,
+        createdAt: new Date().toISOString(),
+      })
+      const req = await zarinpalRequest({
+        amountToman: due,
+        description: `شارژبان — ${bill.title}`,
+        callbackUrl,
+        orderId,
+      })
+      saveZarinpalIntent({
+        kind: 'bill',
+        orderId,
+        amountToman: due,
+        description: `شارژبان — ${bill.title}`,
+        billId,
+        party,
+        buildingId: state.buildingId,
+        authority: req.authority,
+        createdAt: new Date().toISOString(),
+      })
+      window.location.href = req.start_pay_url
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : 'خطا در اتصال به درگاه')
+      setTimeout(() => setToast(null), 4500)
+      setPaying(false)
     }
   }
 
@@ -92,7 +154,11 @@ export function Bills() {
   return (
     <div className="page">
       <h2>شارژ و قبوض</h2>
-      <p className="lead">تفکیک بدهی مالک و ساکن؛ تقسیط و پرداخت آنلاین دمو.</p>
+      <p className="lead">
+        تفکیک بدهی مالک و ساکن؛ تقسیط و پرداخت آنلاین
+        {gw.sandbox ? ' (زرین‌پال سندباکس)' : ' (زرین‌پال)'}.
+        مبالغ به تومان است — درگاه با واحد {gw.currency === 'IRR' ? 'ریال (×۱۰)' : 'تومان (IRT)'}.
+      </p>
       <div className="list">
         {bills.map((b) => {
           const unit = state.units.find((u) => u.id === b.unitId)
@@ -142,14 +208,42 @@ export function Bills() {
 
               {b.status !== 'paid' && (
                 <div className="grid-actions" style={{ marginTop: 12 }}>
+                  {gatewayOnline && !hasPlan && ownerDue > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={paying}
+                      onClick={() => payOnline(b.id, 'owner')}
+                    >
+                      پرداخت آنلاین سهم مالک
+                    </button>
+                  )}
+                  {gatewayOnline && !hasPlan && residentDue > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-copper"
+                      disabled={paying}
+                      onClick={() => payOnline(b.id, 'resident')}
+                    >
+                      پرداخت آنلاین سهم ساکن
+                    </button>
+                  )}
                   {canOnlinePay && !hasPlan && ownerDue > 0 && (
-                    <button type="button" className="btn btn-primary" onClick={() => pay(b.id, 'owner')}>
-                      پرداخت سهم مالک
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => payDemo(b.id, 'owner')}
+                    >
+                      پرداخت دمو مالک
                     </button>
                   )}
                   {canOnlinePay && !hasPlan && residentDue > 0 && (
-                    <button type="button" className="btn btn-copper" onClick={() => pay(b.id, 'resident')}>
-                      پرداخت سهم ساکن
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => payDemo(b.id, 'resident')}
+                    >
+                      پرداخت دمو ساکن
                     </button>
                   )}
                   {!canOnlinePay && (
