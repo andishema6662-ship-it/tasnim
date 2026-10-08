@@ -1410,10 +1410,26 @@ button {
 }
 
 .sa-contact-grid,
-.sa-prop-grid {
+.sa-prop-grid,
+.sa-feat-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+}
+
+.sa-feat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sa-feat-card .feature-toggle {
+  margin-bottom: 0;
+}
+
+.sa-feat-card .field {
+  margin-bottom: 8px;
 }
 
 .sa-contact-card,
@@ -1700,7 +1716,8 @@ button {
   }
 
   .sa-contact-grid,
-  .sa-prop-grid {
+  .sa-prop-grid,
+  .sa-feat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

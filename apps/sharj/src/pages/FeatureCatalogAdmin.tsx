@@ -77,116 +77,115 @@ export function FeatureCatalogAdmin() {
             «پیش‌فرض روشن» فقط برای ساختمان‌های تازه‌ایجاد اعمال می‌شود. افزونه‌های پولی حتی با تیک
             روشن تا پرداخت فعال نمی‌شوند.
           </p>
-          {catalog.map((f) => (
-            <div
-              key={f.id}
-              style={{ borderBottom: '1px solid var(--line)', padding: '12px 0' }}
-            >
-              <div className="list-item" style={{ paddingTop: 0 }}>
-                <div>
-                  <div className="title">{f.label}</div>
-                  <div className="sub">{f.hint ?? f.id}</div>
-                </div>
-                <span className={`badge ${f.paidAddon ? 'warn' : 'ok'}`}>
-                  {f.paidAddon ? 'پولی' : 'پایه'}
-                </span>
-              </div>
-              <label className="feature-toggle" style={{ marginBottom: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={f.defaultEnabled}
-                  onChange={(e) => {
-                    patchEntry(f.id, { defaultEnabled: e.target.checked })
-                    flash('پیش‌فرض ذخیره شد')
-                  }}
-                />
-                <span>پیش‌فرض روشن برای ساختمان جدید</span>
-              </label>
-              <label className="feature-toggle" style={{ marginBottom: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={f.paidAddon}
-                  onChange={(e) => {
-                    const paid = e.target.checked
-                    patchEntry(f.id, {
-                      paidAddon: paid,
-                      pricingMode: paid
-                        ? f.pricingMode === 'included'
-                          ? 'period'
-                          : f.pricingMode
-                        : 'included',
-                      defaultEnabled: paid ? false : f.defaultEnabled,
-                    })
-                    flash(paid ? 'به افزونه پولی تبدیل شد' : 'به امکان پایه برگشت')
-                  }}
-                />
-                <span>افزونه پولی (فعال فقط بعد از پرداخت)</span>
-              </label>
-              {f.paidAddon && (
-                <>
-                  <div className="field">
-                    <label>نوع قیمت‌گذاری</label>
-                    <select
-                      value={f.pricingMode}
-                      onChange={(e) =>
-                        patchEntry(f.id, {
-                          pricingMode: e.target.value as FeaturePricingMode,
-                        })
-                      }
-                    >
-                      <option value="period">{FEATURE_PRICING_LABEL.period}</option>
-                      <option value="one_time">{FEATURE_PRICING_LABEL.one_time}</option>
-                    </select>
+          <div className="sa-feat-grid">
+            {catalog.map((f) => (
+              <article key={f.id} className="sa-prop-card sa-feat-card">
+                <div className="list-item" style={{ paddingTop: 0 }}>
+                  <div>
+                    <div className="title">{f.label}</div>
+                    <div className="sub">{f.hint ?? f.id}</div>
                   </div>
-                  {f.pricingMode === 'period' ? (
-                    <div className="grid-actions">
-                      <div className="field">
-                        <label>۳ ماهه (تومان)</label>
-                        <input
-                          type="number"
-                          value={f.price3 ?? 0}
-                          onChange={(e) =>
-                            patchEntry(f.id, { price3: Number(e.target.value) || 0 })
-                          }
-                        />
-                      </div>
-                      <div className="field">
-                        <label>۶ ماهه</label>
-                        <input
-                          type="number"
-                          value={f.price6 ?? 0}
-                          onChange={(e) =>
-                            patchEntry(f.id, { price6: Number(e.target.value) || 0 })
-                          }
-                        />
-                      </div>
-                      <div className="field">
-                        <label>۱۲ ماهه</label>
-                        <input
-                          type="number"
-                          value={f.price12 ?? 0}
-                          onChange={(e) =>
-                            patchEntry(f.id, { price12: Number(e.target.value) || 0 })
-                          }
-                        />
-                      </div>
-                    </div>
-                  ) : (
+                  <span className={`badge ${f.paidAddon ? 'warn' : 'ok'}`}>
+                    {f.paidAddon ? 'پولی' : 'پایه'}
+                  </span>
+                </div>
+                <label className="feature-toggle" style={{ marginBottom: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={f.defaultEnabled}
+                    onChange={(e) => {
+                      patchEntry(f.id, { defaultEnabled: e.target.checked })
+                      flash('پیش‌فرض ذخیره شد')
+                    }}
+                  />
+                  <span>پیش‌فرض روشن برای ساختمان جدید</span>
+                </label>
+                <label className="feature-toggle" style={{ marginBottom: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={f.paidAddon}
+                    onChange={(e) => {
+                      const paid = e.target.checked
+                      patchEntry(f.id, {
+                        paidAddon: paid,
+                        pricingMode: paid
+                          ? f.pricingMode === 'included'
+                            ? 'period'
+                            : f.pricingMode
+                          : 'included',
+                        defaultEnabled: paid ? false : f.defaultEnabled,
+                      })
+                      flash(paid ? 'به افزونه پولی تبدیل شد' : 'به امکان پایه برگشت')
+                    }}
+                  />
+                  <span>افزونه پولی (فعال فقط بعد از پرداخت)</span>
+                </label>
+                {f.paidAddon && (
+                  <>
                     <div className="field">
-                      <label>قیمت یک‌بار (تومان)</label>
-                      <input
-                        type="number"
-                        value={f.oneTimePrice ?? 0}
+                      <label>نوع قیمت‌گذاری</label>
+                      <select
+                        value={f.pricingMode}
                         onChange={(e) =>
-                          patchEntry(f.id, { oneTimePrice: Number(e.target.value) || 0 })
+                          patchEntry(f.id, {
+                            pricingMode: e.target.value as FeaturePricingMode,
+                          })
                         }
-                      />
+                      >
+                        <option value="period">{FEATURE_PRICING_LABEL.period}</option>
+                        <option value="one_time">{FEATURE_PRICING_LABEL.one_time}</option>
+                      </select>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+                    {f.pricingMode === 'period' ? (
+                      <div className="grid-actions">
+                        <div className="field">
+                          <label>۳ ماهه (تومان)</label>
+                          <input
+                            type="number"
+                            value={f.price3 ?? 0}
+                            onChange={(e) =>
+                              patchEntry(f.id, { price3: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>۶ ماهه</label>
+                          <input
+                            type="number"
+                            value={f.price6 ?? 0}
+                            onChange={(e) =>
+                              patchEntry(f.id, { price6: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>۱۲ ماهه</label>
+                          <input
+                            type="number"
+                            value={f.price12 ?? 0}
+                            onChange={(e) =>
+                              patchEntry(f.id, { price12: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="field">
+                        <label>قیمت یک‌بار (تومان)</label>
+                        <input
+                          type="number"
+                          value={f.oneTimePrice ?? 0}
+                          onChange={(e) =>
+                            patchEntry(f.id, { oneTimePrice: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       )}
 
