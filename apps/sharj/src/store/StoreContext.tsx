@@ -25,11 +25,13 @@ import {
 } from './seed'
 import { createPlatformAdmin } from './seedAdmin'
 import type {
+  Complex,
   ComplexTicket,
   ComplexTicketStatus,
   DiscountCode,
   FeatureModuleId,
   GatewayConfig,
+  PlatformUser,
   SmsConfig,
   TariffTier,
 } from './platformTypes'
@@ -60,12 +62,19 @@ interface StoreApi {
   /** Building-scoped view for manager/resident screens */
   state: ScopedState | null
   loginSiteAdmin: (username: string, password: string) => boolean
-  loginBuilding: (role: 'manager' | 'resident', buildingId: string, unitId?: string) => boolean
+  loginStaff: (username: string, password: string) => boolean
+  loginBuilding: (
+    role: 'manager' | 'financeManager' | 'resident',
+    buildingId: string,
+    unitId?: string,
+  ) => boolean
+  loginComplexManager: (username: string, password: string) => boolean
   enterBuildingAsManager: (buildingId: string) => void
   returnToSiteAdmin: () => void
   logout: () => void
   resetDemo: () => void
   upsertBuilding: (meta: BuildingMeta) => void
+  upsertUser: (user: PlatformUser) => void
   runSchedule: (scheduleId: string) => number
   upsertSchedule: (schedule: ChargeSchedule) => void
   payBill: (billId: string, party: DebtParty, amount?: number) => string | null
@@ -106,7 +115,7 @@ interface StoreApi {
   voteQarzFund: (fundId: string, approve: boolean) => boolean
   payQarzDue: (fundId: string, dueId: string, amount?: number) => string | null
   closeQarzFund: (fundId: string) => void
-  loginComplexManager: (username: string, password: string) => boolean
+  upsertComplex: (complex: Complex) => void
   upsertDiscount: (code: DiscountCode) => void
   upsertTariff: (tier: TariffTier) => void
   updateSmsConfig: (sms: SmsConfig) => void
@@ -143,6 +152,7 @@ function loadState(): PlatformState {
   try {
     const raw =
       localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem('diyarsharj-v3') ||
       localStorage.getItem('diyarsharj-v2')
     if (raw) {
       const parsed = JSON.parse(raw) as PlatformState
@@ -152,7 +162,15 @@ function loadState(): PlatformState {
           byId[id] = normalizeBuildingData(data)
         }
         const buildings = parsed.buildings.map(normalizeBuildingMeta)
-        const admin = parsed.admin ?? createPlatformAdmin()
+        const seeded = createPlatformAdmin()
+        const admin = {
+          ...seeded,
+          ...parsed.admin,
+          users:
+            Array.isArray(parsed.admin?.users) && parsed.admin.users.length > 0
+              ? parsed.admin.users
+              : seeded.users,
+        }
         return { ...parsed, buildings, byId, admin }
       }
     }
@@ -225,6 +243,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const state = useMemo<ScopedState | null>(() => {
     if (!session?.buildingId) return null
     if (session.role === 'siteAdmin' && !session.viaSiteAdmin) return null
+    if (session.role === 'complexManager') return null
     const data = platform.byId[session.buildingId]
     const meta = platform.buildings.find((b) => b.id === session.buildingId)
     if (!data || !meta) return null
@@ -236,23 +255,126 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [platform, session])
 
-  const loginSiteAdmin = useCallback((username: string, password: string) => {
-    if (username.trim() !== SITE_ADMIN_DEMO.username || password !== SITE_ADMIN_DEMO.password) {
-      return false
+  const applyStaffSession = useCallback((user: PlatformUser) => {
+    if (user.role === 'siteAdmin') {
+      setPlatform((p) => ({
+        ...p,
+        session: { role: 'siteAdmin', displayName: user.displayName || 'ادمین کل سایت' },
+      }))
+      return true
     }
-    setPlatform((p) => ({
-      ...p,
-      session: { role: 'siteAdmin', displayName: 'مدیر سایت' },
-    }))
-    return true
-  }, [])
+    if (user.role === 'complexManager') {
+      const complexId = user.complexId
+      const complex = platform.admin.complexes.find((c) => c.id === complexId)
+      if (!complex || complex.status !== 'active') return false
+      setPlatform((p) => ({
+        ...p,
+        session: {
+          role: 'complexManager',
+          complexId: complex.id,
+          displayName: `مدیر شهرک — ${complex.name}`,
+        },
+      }))
+      return true
+    }
+    if (user.role === 'manager' || user.role === 'financeManager') {
+      const buildingId = user.buildingId
+      const meta = platform.buildings.find((b) => b.id === buildingId)
+      if (!meta || meta.status === 'disabled' || !platform.byId[buildingId!]) return false
+      setPlatform((p) => ({
+        ...p,
+        session: {
+          role: user.role,
+          buildingId: meta.id,
+          displayName:
+            user.role === 'financeManager'
+              ? `مدیر مالی — ${meta.name}`
+              : user.displayName || meta.managerName || 'مدیر بلوک',
+        },
+      }))
+      return true
+    }
+    return false
+  }, [platform.admin.complexes, platform.buildings, platform.byId])
+
+  const loginStaff = useCallback(
+    (username: string, password: string) => {
+      const user = (platform.admin.users ?? []).find(
+        (u) =>
+          u.username === username.trim() &&
+          u.password === password &&
+          u.status === 'active',
+      )
+      if (user) return applyStaffSession(user)
+      // Fallbacks for older seeds
+      if (
+        username.trim() === SITE_ADMIN_DEMO.username &&
+        password === SITE_ADMIN_DEMO.password
+      ) {
+        setPlatform((p) => ({
+          ...p,
+          session: { role: 'siteAdmin', displayName: 'ادمین کل سایت' },
+        }))
+        return true
+      }
+      const complex = platform.admin.complexes.find(
+        (c) =>
+          c.username === username.trim() &&
+          c.password === password &&
+          c.status === 'active',
+      )
+      if (complex) {
+        setPlatform((p) => ({
+          ...p,
+          session: {
+            role: 'complexManager',
+            complexId: complex.id,
+            displayName: `مدیر شهرک — ${complex.name}`,
+          },
+        }))
+        return true
+      }
+      return false
+    },
+    [platform.admin.users, platform.admin.complexes, applyStaffSession],
+  )
+
+  const loginSiteAdmin = useCallback(
+    (username: string, password: string) => {
+      const user = (platform.admin.users ?? []).find(
+        (u) =>
+          u.username === username.trim() &&
+          u.password === password &&
+          u.status === 'active' &&
+          u.role === 'siteAdmin',
+      )
+      if (user) return applyStaffSession(user)
+      if (
+        username.trim() === SITE_ADMIN_DEMO.username &&
+        password === SITE_ADMIN_DEMO.password
+      ) {
+        setPlatform((p) => ({
+          ...p,
+          session: { role: 'siteAdmin', displayName: 'ادمین کل سایت' },
+        }))
+        return true
+      }
+      return false
+    },
+    [platform.admin.users, applyStaffSession],
+  )
 
   const loginBuilding = useCallback(
-    (role: 'manager' | 'resident', buildingId: string, unitId?: string) => {
+    (
+      role: 'manager' | 'financeManager' | 'resident',
+      buildingId: string,
+      unitId?: string,
+    ) => {
       const meta = platform.buildings.find((b) => b.id === buildingId)
       const data = platform.byId[buildingId]
       if (!meta || !data || meta.status === 'disabled') return false
-      let displayName = meta.managerName || 'مدیر ساختمان'
+      let displayName = meta.managerName || 'مدیر بلوک'
+      if (role === 'financeManager') displayName = `مدیر مالی — ${meta.name}`
       if (role === 'resident') {
         const unit = data.units.find((u) => u.id === unitId)
         if (!unit) return false
@@ -266,6 +388,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     [platform.buildings, platform.byId],
   )
+
+  const upsertUser = useCallback((user: PlatformUser) => {
+    setPlatform((p) => {
+      const exists = (p.admin.users ?? []).some((u) => u.id === user.id)
+      const users = exists
+        ? (p.admin.users ?? []).map((u) => (u.id === user.id ? user : u))
+        : [user, ...(p.admin.users ?? [])]
+      let complexes = p.admin.complexes
+      if (user.role === 'complexManager' && user.complexId) {
+        complexes = complexes.map((c) =>
+          c.id === user.complexId
+            ? {
+                ...c,
+                managerName: user.displayName || c.managerName,
+                username: user.username,
+                password: user.password,
+              }
+            : c,
+        )
+      }
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          users,
+          complexes,
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'user',
+              label: exists
+                ? `ویرایش کاربر ${user.username}`
+                : `افزودن کاربر ${user.username}`,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
 
   const enterBuildingAsManager = useCallback((buildingId: string) => {
     setPlatform((p) => {
@@ -335,24 +498,73 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const loginComplexManager = useCallback((username: string, password: string) => {
-    const complex = platform.admin.complexes.find(
-      (c) =>
-        c.username === username.trim() &&
-        c.password === password &&
-        c.status === 'active',
-    )
-    if (!complex) return false
-    setPlatform((p) => ({
-      ...p,
-      session: {
-        role: 'complexManager',
-        complexId: complex.id,
-        displayName: `مدیر شهرک — ${complex.name}`,
-      },
-    }))
-    return true
-  }, [platform.admin.complexes])
+  const loginComplexManager = useCallback(
+    (username: string, password: string) => {
+      const user = (platform.admin.users ?? []).find(
+        (u) =>
+          u.username === username.trim() &&
+          u.password === password &&
+          u.status === 'active' &&
+          u.role === 'complexManager',
+      )
+      if (user) return applyStaffSession(user)
+      const complex = platform.admin.complexes.find(
+        (c) =>
+          c.username === username.trim() &&
+          c.password === password &&
+          c.status === 'active',
+      )
+      if (!complex) return false
+      setPlatform((p) => ({
+        ...p,
+        session: {
+          role: 'complexManager',
+          complexId: complex.id,
+          displayName: `مدیر شهرک — ${complex.name}`,
+        },
+      }))
+      return true
+    },
+    [platform.admin.users, platform.admin.complexes, applyStaffSession],
+  )
+
+  const upsertComplex = useCallback((complex: Complex) => {
+    setPlatform((p) => {
+      const exists = p.admin.complexes.some((c) => c.id === complex.id)
+      const complexes = exists
+        ? p.admin.complexes.map((c) => (c.id === complex.id ? complex : c))
+        : [complex, ...p.admin.complexes]
+      // Keep building.complexId in sync with blockIds
+      const blockSet = new Set(complex.blockIds)
+      const buildings = p.buildings.map((b) => {
+        if (blockSet.has(b.id)) return { ...b, complexId: complex.id }
+        if (b.complexId === complex.id && !blockSet.has(b.id)) {
+          const { complexId: _, ...rest } = b
+          return { ...rest } as typeof b
+        }
+        return b
+      })
+      return {
+        ...p,
+        buildings,
+        admin: {
+          ...p.admin,
+          complexes,
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'complex',
+              label: exists
+                ? `به‌روزرسانی شهرک ${complex.name}`
+                : `افزودن شهرک ${complex.name}`,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
 
   const logActivity = useCallback((label: string, kind = 'info', buildingId?: string) => {
     setPlatform((p) => ({
@@ -1326,12 +1538,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       session,
       state,
       loginSiteAdmin,
+      loginStaff,
       loginBuilding,
+      loginComplexManager,
       enterBuildingAsManager,
       returnToSiteAdmin,
       logout,
       resetDemo,
       upsertBuilding,
+      upsertUser,
+      upsertComplex,
       runSchedule,
       upsertSchedule,
       payBill,
@@ -1352,7 +1568,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       voteQarzFund,
       payQarzDue,
       closeQarzFund,
-      loginComplexManager,
       upsertDiscount,
       upsertTariff,
       updateSmsConfig,
@@ -1371,12 +1586,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       session,
       state,
       loginSiteAdmin,
+      loginStaff,
       loginBuilding,
+      loginComplexManager,
       enterBuildingAsManager,
       returnToSiteAdmin,
       logout,
       resetDemo,
       upsertBuilding,
+      upsertUser,
+      upsertComplex,
       runSchedule,
       upsertSchedule,
       payBill,
@@ -1397,7 +1616,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       voteQarzFund,
       payQarzDue,
       closeQarzFund,
-      loginComplexManager,
       upsertDiscount,
       upsertTariff,
       updateSmsConfig,

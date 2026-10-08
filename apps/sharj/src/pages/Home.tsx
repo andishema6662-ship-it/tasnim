@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
+import { RequireFeature, useBuildingFeatures } from '../components/FeatureGate'
+import { roleLabel } from '../lib/rbac'
 import { toman } from '../lib/format'
 import { useBuildingState } from '../store/StoreContext'
 
 export function Home() {
   const state = useBuildingState()
   const session = state.session!
+  const features = useBuildingFeatures()
   const unpaid = state.bills.filter((b) => b.status !== 'paid')
   const myBills =
     session.role === 'resident'
@@ -15,11 +18,19 @@ export function Home() {
       ? state.units.find((u) => u.id === session.unitId)?.balance ?? 0
       : state.units.reduce((s, u) => s + Math.min(0, u.balance), 0)
 
-  if (session.role === 'manager') {
+  if (session.role === 'manager' || session.role === 'financeManager') {
+    const isFinance = session.role === 'financeManager'
     return (
       <div className="page">
-        <h2>میز کار مدیر</h2>
-        <p className="lead">شارژ دوره‌ای، بیلان صندوق و پیگیری بدهی واحدها.</p>
+        <h2>{isFinance ? 'میز کار مالی' : 'میز کار مدیر'}</h2>
+        <p className="lead">
+          {isFinance
+            ? 'شارژ، قبوض، صندوق و گزارش مالی — بدون تنظیمات کامل ساختمان.'
+            : 'شارژ دوره‌ای، بیلان صندوق و پیگیری بدهی واحدها.'}
+        </p>
+        <div className="badge" style={{ marginBottom: 10 }}>
+          {roleLabel[session.role]}
+        </div>
         <div className="stat-row">
           <div className="stat">
             <span className="label">مانده صندوق</span>
@@ -31,21 +42,33 @@ export function Home() {
           </div>
         </div>
         <div className="quick-grid">
-          <Link className="quick-link" to="/app/charges">
-            <strong>شارژ</strong>
-            <span>فرمول و زمان‌بندی</span>
-          </Link>
-          <Link className="quick-link" to="/app/finance">
-            <strong>مالی</strong>
-            <span>هزینه و درآمد</span>
-          </Link>
-          <Link className="quick-link" to="/app/meetings">
-            <strong>جلسات</strong>
-            <span>مصوبات و حاضرین</span>
-          </Link>
-          <Link className="quick-link" to="/app/qarz">
-            <strong>قرض‌الحسنه</strong>
-            <span>صندوق اعضا</span>
+          {features.has('charges') && (
+            <Link className="quick-link" to="/app/charges">
+              <strong>شارژ</strong>
+              <span>فرمول و زمان‌بندی</span>
+            </Link>
+          )}
+          {features.has('finance') && (
+            <Link className="quick-link" to="/app/finance">
+              <strong>مالی</strong>
+              <span>هزینه و درآمد</span>
+            </Link>
+          )}
+          {!isFinance && features.has('meetings') && (
+            <Link className="quick-link" to="/app/meetings">
+              <strong>جلسات</strong>
+              <span>مصوبات و حاضرین</span>
+            </Link>
+          )}
+          {features.has('qarz') && (
+            <Link className="quick-link" to="/app/qarz">
+              <strong>قرض‌الحسنه</strong>
+              <span>{isFinance ? 'پرداخت و گزارش' : 'صندوق اعضا'}</span>
+            </Link>
+          )}
+          <Link className="quick-link" to="/app/bills">
+            <strong>قبوض</strong>
+            <span>پرداخت و تقسیط</span>
           </Link>
         </div>
         <div className="panel">
@@ -93,18 +116,24 @@ export function Home() {
           <strong>پرداخت</strong>
           <span>شارژ آنلاین</span>
         </Link>
-        <Link className="quick-link" to="/app/expenses">
-          <strong>هزینه‌ها</strong>
-          <span>شفافیت مالی</span>
-        </Link>
-        <Link className="quick-link" to="/app/polls">
-          <strong>نظرسنجی</strong>
-          <span>مشارکت</span>
-        </Link>
-        <Link className="quick-link" to="/app/qarz">
-          <strong>قرض‌الحسنه</strong>
-          <span>صندوق و اقساط</span>
-        </Link>
+        <RequireFeature id="finance">
+          <Link className="quick-link" to="/app/expenses">
+            <strong>هزینه‌ها</strong>
+            <span>شفافیت مالی</span>
+          </Link>
+        </RequireFeature>
+        <RequireFeature id="polls">
+          <Link className="quick-link" to="/app/polls">
+            <strong>نظرسنجی</strong>
+            <span>مشارکت</span>
+          </Link>
+        </RequireFeature>
+        <RequireFeature id="qarz">
+          <Link className="quick-link" to="/app/qarz">
+            <strong>قرض‌الحسنه</strong>
+            <span>صندوق و اقساط</span>
+          </Link>
+        </RequireFeature>
       </div>
       <div className="panel">
         <h3>نزدیک‌ترین قبض</h3>
@@ -122,7 +151,7 @@ export function Home() {
             </Link>
           </div>
         ) : (
-          <div className="empty">قبض بازی ندارید.</div>
+          <div className="empty">قبض بازی نیست.</div>
         )}
       </div>
     </div>

@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { faDate, faNum, toman } from '../lib/format'
-import { FEATURE_CATALOG, type FeatureModuleId, type SiteAdminSection } from '../store/platformTypes'
+import { roleLabel } from '../lib/rbac'
+import {
+  FEATURE_CATALOG,
+  type FeatureModuleId,
+  type PlatformUser,
+  type SiteAdminSection,
+  type StaffRole,
+} from '../store/platformTypes'
 import { ALL_FEATURES } from '../store/seedAdmin'
 import { useStore } from '../store/StoreContext'
 import {
@@ -15,6 +22,7 @@ import { qarzStatusLabel } from '../lib/qarz'
 
 const SECTIONS: { id: SiteAdminSection; label: string }[] = [
   { id: 'properties', label: 'املاک' },
+  { id: 'users', label: 'کاربران' },
   { id: 'subscriptions', label: 'اشتراک' },
   { id: 'tariffs', label: 'تعرفه' },
   { id: 'discounts', label: 'تخفیف' },
@@ -88,6 +96,8 @@ export function SiteAdmin() {
     setBuildingStorageQuota,
     setBuildingFeatures,
     updateComplexTicket,
+    upsertUser,
+    upsertComplex,
   } = useStore()
   const navigate = useNavigate()
   const [section, setSection] = useState<SiteAdminSection>('properties')
@@ -99,6 +109,17 @@ export function SiteAdmin() {
     maxUses: 50,
   })
   const [featBuildingId, setFeatBuildingId] = useState(platform.buildings[0]?.id ?? '')
+  const [userForm, setUserForm] = useState<PlatformUser | null>(null)
+
+  const emptyUser = (): PlatformUser => ({
+    id: `usr-${Date.now()}`,
+    username: '',
+    password: '',
+    role: 'manager',
+    displayName: '',
+    buildingId: platform.buildings[0]?.id,
+    status: 'active',
+  })
 
   const flash = (m: string) => {
     setToast(m)
@@ -549,15 +570,164 @@ export function SiteAdmin() {
           </div>
         )}
 
+        {section === 'users' && (
+          <>
+            <p className="lead">ایجاد و انتساب نقش: ادمین کل، مدیر شهرک، مدیر بلوک، مدیر مالی بلوک.</p>
+            <button
+              type="button"
+              className="btn btn-copper"
+              style={{ width: '100%', marginBottom: 12 }}
+              onClick={() => setUserForm(emptyUser())}
+            >
+              افزودن کاربر
+            </button>
+            {userForm && (
+              <div className="panel">
+                <h3>کاربر</h3>
+                <div className="field">
+                  <label>نام نمایشی</label>
+                  <input
+                    value={userForm.displayName}
+                    onChange={(e) => setUserForm({ ...userForm, displayName: e.target.value })}
+                  />
+                </div>
+                <div className="grid-actions">
+                  <div className="field">
+                    <label>نام کاربری</label>
+                    <input
+                      value={userForm.username}
+                      onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>رمز</label>
+                    <input
+                      value={userForm.password}
+                      onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label>نقش</label>
+                  <select
+                    value={userForm.role}
+                    onChange={(e) => {
+                      const role = e.target.value as StaffRole
+                      setUserForm({
+                        ...userForm,
+                        role,
+                        buildingId:
+                          role === 'manager' || role === 'financeManager'
+                            ? userForm.buildingId || platform.buildings[0]?.id
+                            : undefined,
+                        complexId:
+                          role === 'complexManager'
+                            ? userForm.complexId || platform.admin.complexes[0]?.id
+                            : undefined,
+                      })
+                    }}
+                  >
+                    <option value="siteAdmin">{roleLabel.siteAdmin}</option>
+                    <option value="complexManager">{roleLabel.complexManager}</option>
+                    <option value="manager">{roleLabel.manager}</option>
+                    <option value="financeManager">{roleLabel.financeManager}</option>
+                  </select>
+                </div>
+                {(userForm.role === 'manager' || userForm.role === 'financeManager') && (
+                  <div className="field">
+                    <label>ساختمان / بلوک</label>
+                    <select
+                      value={userForm.buildingId ?? ''}
+                      onChange={(e) => setUserForm({ ...userForm, buildingId: e.target.value })}
+                    >
+                      {platform.buildings.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {userForm.role === 'complexManager' && (
+                  <div className="field">
+                    <label>شهرک</label>
+                    <select
+                      value={userForm.complexId ?? ''}
+                      onChange={(e) => setUserForm({ ...userForm, complexId: e.target.value })}
+                    >
+                      {platform.admin.complexes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="grid-actions">
+                  <button type="button" className="btn btn-secondary" onClick={() => setUserForm(null)}>
+                    انصراف
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (!userForm.username.trim() || !userForm.password.trim()) return
+                      upsertUser({
+                        ...userForm,
+                        username: userForm.username.trim(),
+                        displayName: userForm.displayName.trim() || userForm.username.trim(),
+                      })
+                      setUserForm(null)
+                      flash('کاربر ذخیره شد')
+                    }}
+                  >
+                    ذخیره
+                  </button>
+                </div>
+              </div>
+            )}
+            {(platform.admin.users ?? []).map((u) => (
+              <div className="panel" key={u.id}>
+                <div className="list-item" style={{ paddingTop: 0 }}>
+                  <div>
+                    <div className="title">{u.displayName}</div>
+                    <div className="sub">
+                      {roleLabel[u.role]} · {u.username} / {u.password}
+                      <br />
+                      {u.buildingId
+                        ? platform.buildings.find((b) => b.id === u.buildingId)?.name
+                        : u.complexId
+                          ? platform.admin.complexes.find((c) => c.id === u.complexId)?.name
+                          : 'کل پلتفرم'}
+                    </div>
+                  </div>
+                  <span className={`badge ${u.status === 'active' ? 'ok' : 'soon'}`}>
+                    {u.status === 'active' ? 'فعال' : 'غیرفعال'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ width: '100%' }}
+                  onClick={() => setUserForm({ ...u })}
+                >
+                  ویرایش
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+
         {section === 'features' && (
           <div className="panel">
             <h3>امکانات هر بلوک</h3>
+            <p className="sub">تغییر بلافاصله ذخیره می‌شود و منو/مسیر اپ همان ساختمان را محدود می‌کند.</p>
             <div className="field">
               <label>انتخاب ساختمان</label>
               <select value={featBuildingId} onChange={(e) => setFeatBuildingId(e.target.value)}>
                 {platform.buildings.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
+                    {b.name} — {faNum(b.enabledFeatures.length)}/{faNum(FEATURE_CATALOG.length)} فعال
                   </option>
                 ))}
               </select>
@@ -566,11 +736,11 @@ export function SiteAdmin() {
               const b = platform.buildings.find((x) => x.id === featBuildingId)
               if (!b) return null
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="feature-toggles">
                   {FEATURE_CATALOG.map((f) => {
                     const on = b.enabledFeatures.includes(f.id)
                     return (
-                      <label key={f.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <label key={f.id} className={`feature-toggle ${on ? 'on' : 'off'}`}>
                         <input
                           type="checkbox"
                           checked={on}
@@ -579,9 +749,20 @@ export function SiteAdmin() {
                               ? [...b.enabledFeatures, f.id]
                               : b.enabledFeatures.filter((id) => id !== f.id)
                             setBuildingFeatures(b.id, next as FeatureModuleId[])
+                            flash(
+                              e.target.checked
+                                ? `«${f.label}» فعال شد`
+                                : `«${f.label}» غیرفعال شد`,
+                            )
                           }}
                         />
-                        {f.label}
+                        <span>
+                          <strong>{f.label}</strong>
+                          {f.hint ? <span className="sub"> — {f.hint}</span> : null}
+                        </span>
+                        <span className={`badge ${on ? 'ok' : 'soon'}`}>
+                          {on ? 'فعال' : 'خاموش'}
+                        </span>
                       </label>
                     )
                   })}
@@ -780,13 +961,60 @@ export function SiteAdmin() {
                 <div className="sub">
                   {c.city} · مدیر: {c.managerName}
                   <br />
-                  ورود دمو: {c.username} / {c.password}
-                  <br />
                   بلوک‌ها:{' '}
                   {c.blockIds
                     .map((id) => platform.buildings.find((b) => b.id === id)?.name ?? id)
                     .join('، ')}
                 </div>
+                <div className="grid-actions" style={{ marginTop: 10 }}>
+                  <div className="field">
+                    <label>نام کاربری مدیر شهرک</label>
+                    <input
+                      value={c.username}
+                      onChange={(e) =>
+                        upsertComplex({ ...c, username: e.target.value.trim() })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>رمز مدیر شهرک</label>
+                    <input
+                      value={c.password}
+                      onChange={(e) => upsertComplex({ ...c, password: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ width: '100%', marginTop: 8 }}
+                  onClick={() => {
+                    const linked = (platform.admin.users ?? []).find(
+                      (u) => u.role === 'complexManager' && u.complexId === c.id,
+                    )
+                    if (linked) {
+                      upsertUser({
+                        ...linked,
+                        username: c.username,
+                        password: c.password,
+                        displayName: c.managerName,
+                      })
+                    } else {
+                      upsertUser({
+                        id: `usr-cpx-${c.id}`,
+                        username: c.username,
+                        password: c.password,
+                        role: 'complexManager',
+                        displayName: c.managerName,
+                        complexId: c.id,
+                        status: 'active',
+                      })
+                    }
+                    flash('حساب مدیر شهرک همگام شد')
+                  }}
+                >
+                  همگام‌سازی حساب ورود مدیر شهرک
+                </button>
                 <h3 style={{ fontSize: '0.95rem', marginTop: 12 }}>تیم‌های فنی</h3>
                 <div className="list">
                   {platform.admin.teams

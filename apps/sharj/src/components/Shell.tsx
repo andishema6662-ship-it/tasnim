@@ -1,24 +1,36 @@
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { roleLabel } from '../lib/rbac'
 import { useStore } from '../store/StoreContext'
+import type { FeatureModuleId } from '../store/platformTypes'
 
-const managerNav = [
+type NavItem = { to: string; end?: boolean; label: string; ico: string; feature?: FeatureModuleId }
+
+const managerNav: NavItem[] = [
   { to: '/app', end: true, label: 'خانه', ico: '⌂' },
   { to: '/app/units', label: 'واحدها', ico: '▦' },
-  { to: '/app/charges', label: 'شارژ', ico: '◎' },
-  { to: '/app/finance', label: 'مالی', ico: '﷼' },
+  { to: '/app/charges', label: 'شارژ', ico: '◎', feature: 'charges' },
+  { to: '/app/finance', label: 'مالی', ico: '﷼', feature: 'finance' },
   { to: '/app/more', label: 'بیشتر', ico: '⋯' },
 ]
 
-const residentNav = [
+const financeNav: NavItem[] = [
+  { to: '/app', end: true, label: 'خانه', ico: '⌂' },
+  { to: '/app/charges', label: 'شارژ', ico: '◎', feature: 'charges' },
+  { to: '/app/bills', label: 'قبوض', ico: '◎' },
+  { to: '/app/finance', label: 'مالی', ico: '﷼', feature: 'finance' },
+  { to: '/app/more', label: 'بیشتر', ico: '⋯' },
+]
+
+const residentNav: NavItem[] = [
   { to: '/app', end: true, label: 'خانه', ico: '⌂' },
   { to: '/app/bills', label: 'قبوض', ico: '◎' },
-  { to: '/app/meetings', label: 'جلسات', ico: '☰' },
-  { to: '/app/polls', label: 'نظرسنجی', ico: '✓' },
+  { to: '/app/meetings', label: 'جلسات', ico: '☰', feature: 'meetings' },
+  { to: '/app/polls', label: 'نظرسنجی', ico: '✓', feature: 'polls' },
   { to: '/app/more', label: 'بیشتر', ico: '⋯' },
 ]
 
 export function Shell() {
-  const { state, session, logout, returnToSiteAdmin } = useStore()
+  const { platform, state, session, logout, returnToSiteAdmin } = useStore()
   const navigate = useNavigate()
 
   if (!session) return <Navigate to="/login" replace />
@@ -30,7 +42,17 @@ export function Shell() {
   }
   if (!state) return <Navigate to="/login" replace />
 
-  const nav = state.session.role === 'manager' ? managerNav : residentNav
+  const meta = platform.buildings.find((b) => b.id === state.buildingId)
+  const features = new Set(meta?.enabledFeatures ?? [])
+
+  const baseNav =
+    state.session.role === 'financeManager'
+      ? financeNav
+      : state.session.role === 'manager'
+        ? managerNav
+        : residentNav
+
+  const nav = baseNav.filter((item) => !item.feature || features.has(item.feature))
   const unread = state.notifications.filter((n) => !n.read).length
 
   return (
@@ -45,6 +67,7 @@ export function Shell() {
         </div>
         <div style={{ textAlign: 'left' }}>
           <div className="meta">{state.session.displayName}</div>
+          <div className="sub">{roleLabel[state.session.role]}</div>
           {session.viaSiteAdmin && (
             <button
               className="btn-ghost"

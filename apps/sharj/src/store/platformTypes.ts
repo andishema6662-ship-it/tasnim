@@ -3,6 +3,7 @@ import type { BuildingType } from './types'
 export type FeatureModuleId =
   | 'charges'
   | 'finance'
+  | 'payments'
   | 'polls'
   | 'meetings'
   | 'suggestions'
@@ -10,18 +11,43 @@ export type FeatureModuleId =
   | 'news'
   | 'chat'
   | 'installments'
+  | 'blockTickets'
 
-export const FEATURE_CATALOG: { id: FeatureModuleId; label: string }[] = [
+export const FEATURE_CATALOG: { id: FeatureModuleId; label: string; hint?: string }[] = [
   { id: 'charges', label: 'شارژ و زمان‌بندی' },
-  { id: 'installments', label: 'تقسیط قبوض' },
-  { id: 'finance', label: 'مالی و شفافیت' },
+  { id: 'installments', label: 'تقسیط شارژ', hint: 'در صفحه قبوض' },
+  { id: 'payments', label: 'پرداخت آنلاین دمو', hint: 'رسیدها و پرداخت شبیه‌سازی' },
+  { id: 'finance', label: 'مالی و شفافیت هزینه‌ها' },
   { id: 'polls', label: 'نظرسنجی' },
-  { id: 'meetings', label: 'جلسات' },
+  { id: 'meetings', label: 'جلسات و مصوبات' },
   { id: 'suggestions', label: 'نظرات و پیشنهادات' },
   { id: 'qarz', label: 'صندوق قرض‌الحسنه' },
   { id: 'news', label: 'کانال خبری' },
   { id: 'chat', label: 'چت داخلی' },
+  { id: 'blockTickets', label: 'تیکت فنی بلوک', hint: 'ارجاع به مدیر شهرک' },
 ]
+
+/** App routes gated by a feature module */
+export const FEATURE_ROUTES: Partial<Record<FeatureModuleId, string[]>> = {
+  charges: ['/app/charges'],
+  finance: ['/app/finance', '/app/expenses'],
+  payments: ['/app/payments'],
+  polls: ['/app/polls'],
+  meetings: ['/app/meetings'],
+  suggestions: ['/app/suggestions'],
+  qarz: ['/app/qarz'],
+  news: ['/app/news'],
+  chat: ['/app/chat'],
+  blockTickets: ['/app/block-tickets'],
+}
+
+export function featureForPath(pathname: string): FeatureModuleId | null {
+  const path = pathname.replace(/\/$/, '') || pathname
+  for (const [id, routes] of Object.entries(FEATURE_ROUTES) as [FeatureModuleId, string[]][]) {
+    if (routes.some((r) => path === r || path.startsWith(r + '/'))) return id
+  }
+  return null
+}
 
 export interface Complex {
   id: string
@@ -121,7 +147,21 @@ export interface ActivityEvent {
   buildingId?: string
 }
 
+export type StaffRole = 'siteAdmin' | 'complexManager' | 'manager' | 'financeManager'
+
+export interface PlatformUser {
+  id: string
+  username: string
+  password: string
+  role: StaffRole
+  displayName: string
+  buildingId?: string
+  complexId?: string
+  status: 'active' | 'disabled'
+}
+
 export interface PlatformAdmin {
+  users: PlatformUser[]
   complexes: Complex[]
   teams: TechnicalTeam[]
   tickets: ComplexTicket[]
@@ -135,6 +175,7 @@ export interface PlatformAdmin {
 
 export type SiteAdminSection =
   | 'properties'
+  | 'users'
   | 'subscriptions'
   | 'tariffs'
   | 'discounts'

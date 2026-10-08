@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { faDate } from '../lib/format'
+import { faDate, faNum } from '../lib/format'
 import { useStore } from '../store/StoreContext'
 import type { ComplexTicketStatus } from '../store/platformTypes'
 
@@ -71,31 +71,58 @@ export function ComplexDesk() {
           </div>
         </header>
 
-        <h2>تیکت‌های فنی شهرک</h2>
+        <h2>میز مدیر شهرک</h2>
         <p className="lead">
-          مشکلات ارسالی مدیران بلوک — دسته‌بندی، ارجاع به تیم فنی، پیگیری وضعیت.
+          بلوک‌های شهرک، تیم‌های فنی و تیکت‌ها — بدون دسترسی به پنل کل سایت.
         </p>
 
         <div className="stat-row">
           <div className="stat">
-            <span className="label">باز</span>
+            <span className="label">بلوک‌ها</span>
+            <span className="value">{blocks.length}</span>
+          </div>
+          <div className="stat">
+            <span className="label">تیکت باز</span>
             <span className="value">
               {tickets.filter((t) => t.status === 'open').length}
             </span>
           </div>
-          <div className="stat">
-            <span className="label">در جریان / حل‌شده</span>
-            <span className="value">
-              {
-                platform.admin.tickets.filter(
-                  (t) =>
-                    t.complexId === complex.id &&
-                    (t.status === 'in_progress' || t.status === 'resolved'),
-                ).length
-              }
-            </span>
+        </div>
+
+        <div className="panel">
+          <h3>ساختمان‌های شهرک</h3>
+          <div className="list">
+            {blocks.map((b) =>
+              b ? (
+                <div className="list-item" key={b.id}>
+                  <div>
+                    <div className="title">{b.name}</div>
+                    <div className="sub">
+                      مدیر بلوک: {b.managerName} · {faNum(b.unitCount)} واحد
+                    </div>
+                  </div>
+                  <span className="badge ok">فعال</span>
+                </div>
+              ) : null,
+            )}
           </div>
         </div>
+
+        <div className="panel">
+          <h3>تیم‌های فنی</h3>
+          <div className="list">
+            {platform.admin.teams
+              .filter((t) => t.complexId === complex.id)
+              .map((t) => (
+                <div className="list-item" key={t.id}>
+                  <div className="title">{t.name}</div>
+                  <div className="sub">{t.specialty}</div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        <h3 style={{ marginTop: 8 }}>تیکت‌های فنی</h3>
 
         <div className="chip-row">
           <button

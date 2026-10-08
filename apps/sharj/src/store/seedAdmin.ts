@@ -7,6 +7,43 @@ export const ALL_FEATURES: FeatureModuleId[] = FEATURE_CATALOG.map((f) => f.id)
 
 export function createPlatformAdmin(): PlatformAdmin {
   return {
+    users: [
+      {
+        id: 'usr-admin',
+        username: 'admin',
+        password: 'admin123',
+        role: 'siteAdmin',
+        displayName: 'ادمین کل سایت',
+        status: 'active',
+      },
+      {
+        id: 'usr-complex',
+        username: 'complex',
+        password: 'complex123',
+        role: 'complexManager',
+        displayName: 'مریم کاظمی',
+        complexId: 'cpx-minoodar',
+        status: 'active',
+      },
+      {
+        id: 'usr-manager',
+        username: 'manager',
+        password: 'manager123',
+        role: 'manager',
+        displayName: 'حسین توکلی',
+        buildingId: 'bld-diyar',
+        status: 'active',
+      },
+      {
+        id: 'usr-finance',
+        username: 'finance',
+        password: 'finance123',
+        role: 'financeManager',
+        displayName: 'سارا مالی',
+        buildingId: 'bld-diyar',
+        status: 'active',
+      },
+    ],
     complexes: [
       {
         id: 'cpx-minoodar',

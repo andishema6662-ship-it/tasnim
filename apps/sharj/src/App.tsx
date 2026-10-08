@@ -1,4 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { FeatureGate } from './components/FeatureGate'
+import { RoleGate } from './components/RoleGate'
 import { Shell } from './components/Shell'
 import { Bills } from './pages/Bills'
 import { BlockTickets } from './pages/BlockTickets'
@@ -24,6 +26,14 @@ import { Suggestions } from './pages/Suggestions'
 import { Units } from './pages/Units'
 import { StoreProvider } from './store/StoreContext'
 
+function Guarded({ children }: { children: React.ReactNode }) {
+  return (
+    <RoleGate>
+      <FeatureGate>{children}</FeatureGate>
+    </RoleGate>
+  )
+}
+
 export default function App() {
   return (
     <StoreProvider>
@@ -36,20 +46,20 @@ export default function App() {
           <Route path="/app/complex" element={<ComplexDesk />} />
           <Route path="/app" element={<Shell />}>
             <Route index element={<Home />} />
-            <Route path="units" element={<Units />} />
-            <Route path="residents" element={<Residents />} />
-            <Route path="charges" element={<Charges />} />
-            <Route path="bills" element={<Bills />} />
-            <Route path="payments" element={<Payments />} />
-            <Route path="finance" element={<Finance />} />
-            <Route path="expenses" element={<Expenses />} />
-            <Route path="polls" element={<Polls />} />
-            <Route path="news" element={<News />} />
-            <Route path="chat" element={<Chat />} />
-            <Route path="meetings" element={<Meetings />} />
-            <Route path="suggestions" element={<Suggestions />} />
-            <Route path="qarz" element={<QarzFund />} />
-            <Route path="block-tickets" element={<BlockTickets />} />
+            <Route path="units" element={<Guarded><Units /></Guarded>} />
+            <Route path="residents" element={<Guarded><Residents /></Guarded>} />
+            <Route path="charges" element={<Guarded><Charges /></Guarded>} />
+            <Route path="bills" element={<Guarded><Bills /></Guarded>} />
+            <Route path="payments" element={<Guarded><Payments /></Guarded>} />
+            <Route path="finance" element={<Guarded><Finance /></Guarded>} />
+            <Route path="expenses" element={<Guarded><Expenses /></Guarded>} />
+            <Route path="polls" element={<Guarded><Polls /></Guarded>} />
+            <Route path="news" element={<Guarded><News /></Guarded>} />
+            <Route path="chat" element={<Guarded><Chat /></Guarded>} />
+            <Route path="meetings" element={<Guarded><Meetings /></Guarded>} />
+            <Route path="suggestions" element={<Guarded><Suggestions /></Guarded>} />
+            <Route path="qarz" element={<Guarded><QarzFund /></Guarded>} />
+            <Route path="block-tickets" element={<Guarded><BlockTickets /></Guarded>} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

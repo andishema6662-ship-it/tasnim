@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useBuildingFeatures } from '../components/FeatureGate'
 import { formulaLabel } from '../lib/charges'
 import { billRemaining, previewInstallments } from '../lib/installments'
 import { faDate, faNum, toman, toLocalInput } from '../lib/format'
@@ -8,13 +9,16 @@ import type { Bill, DebtParty } from '../store/types'
 export function Bills() {
   const { payBill, createInstallmentPlan, payInstallment } = useStore()
   const state = useBuildingState()
+  const features = useBuildingFeatures()
   const [toast, setToast] = useState<string | null>(null)
   const [planBillId, setPlanBillId] = useState<string | null>(null)
   const [count, setCount] = useState(4)
   const [startDate, setStartDate] = useState(toLocalInput(new Date().toISOString()).slice(0, 10))
   const [intervalMonths, setIntervalMonths] = useState(1)
   const session = state.session!
-  const isManager = session.role === 'manager'
+  const isManager = session.role === 'manager' || session.role === 'financeManager'
+  const canInstallments = features.has('installments')
+  const canOnlinePay = features.has('payments')
   const bills =
     session.role === 'resident'
       ? state.bills.filter((b) => b.unitId === session.unitId)
@@ -127,21 +131,24 @@ export function Bills() {
                 سهم ساکن: {toman(b.residentShare)} (مانده {toman(residentDue)})
               </div>
 
-              {renderInstallments(b)}
+              {canInstallments && renderInstallments(b)}
 
               {b.status !== 'paid' && (
                 <div className="grid-actions" style={{ marginTop: 12 }}>
-                  {!hasPlan && ownerDue > 0 && (
+                  {canOnlinePay && !hasPlan && ownerDue > 0 && (
                     <button type="button" className="btn btn-primary" onClick={() => pay(b.id, 'owner')}>
                       پرداخت سهم مالک
                     </button>
                   )}
-                  {!hasPlan && residentDue > 0 && (
+                  {canOnlinePay && !hasPlan && residentDue > 0 && (
                     <button type="button" className="btn btn-copper" onClick={() => pay(b.id, 'resident')}>
                       پرداخت سهم ساکن
                     </button>
                   )}
-                  {isManager && rem > 0 && (
+                  {!canOnlinePay && (
+                    <span className="badge soon">پرداخت آنلاین برای این ساختمان غیرفعال است</span>
+                  )}
+                  {isManager && canInstallments && rem > 0 && (
                     <button
                       type="button"
                       className="btn btn-secondary"
@@ -163,7 +170,7 @@ export function Bills() {
         {bills.length === 0 && <div className="empty">قبضی ثبت نشده.</div>}
       </div>
 
-      {planBill && isManager && (
+      {planBill && isManager && canInstallments && (
         <div className="panel">
           <h3>تقسیط — {planBill.title}</h3>
           <p className="sub" style={{ marginTop: 0 }}>

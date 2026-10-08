@@ -1,6 +1,11 @@
 import type { FeatureModuleId, PlatformAdmin } from './platformTypes'
 
-export type Role = 'siteAdmin' | 'complexManager' | 'manager' | 'resident'
+export type Role =
+  | 'siteAdmin'
+  | 'complexManager'
+  | 'manager'
+  | 'financeManager'
+  | 'resident'
 
 export type BuildingType = 'block' | 'building' | 'tower'
 export type BuildingStatus = 'active' | 'disabled'
@@ -304,6 +309,37 @@ export const SITE_ADMIN_DEMO = {
   username: 'admin',
   password: 'admin123',
 } as const
+
+/** Demo staff credentials (also seeded in admin.users) */
+export const DEMO_CREDENTIALS = [
+  {
+    role: 'siteAdmin' as const,
+    username: 'admin',
+    password: 'admin123',
+    label: 'ادمین کل سایت',
+  },
+  {
+    role: 'complexManager' as const,
+    username: 'complex',
+    password: 'complex123',
+    label: 'مدیر شهرک',
+    scope: 'شهرک مینودر',
+  },
+  {
+    role: 'manager' as const,
+    username: 'manager',
+    password: 'manager123',
+    label: 'مدیر بلوک',
+    scope: 'مجتمع دیار مینودری',
+  },
+  {
+    role: 'financeManager' as const,
+    username: 'finance',
+    password: 'finance123',
+    label: 'مدیر مالی بلوک',
+    scope: 'مجتمع دیار مینودری',
+  },
+] as const
 
 export const buildingTypeLabel: Record<BuildingType, string> = {
   block: 'بلوک',

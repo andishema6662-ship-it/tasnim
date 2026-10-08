@@ -659,6 +659,38 @@ button {
   margin-bottom: 14px;
 }
 
+.feature-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 251, 245, 0.7);
+  cursor: pointer;
+}
+
+.feature-toggle.on {
+  border-color: rgba(12, 107, 98, 0.35);
+  background: rgba(12, 107, 98, 0.06);
+}
+
+.feature-toggle.off {
+  opacity: 0.85;
+}
+
+.feature-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
 .bar-chart {
   display: flex;
   flex-direction: column;

@@ -23,7 +23,9 @@ export function QarzFund() {
     closeQarzFund,
   } = useStore()
   const state = useBuildingState()
-  const isManager = state.session.role === 'manager'
+  const role = state.session.role
+  const isManager = role === 'manager'
+  const canViewAll = role === 'manager' || role === 'financeManager'
   const myUnitId = state.session.unitId
   const [showForm, setShowForm] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -218,19 +220,19 @@ export function QarzFund() {
                 </div>
 
                 <h3 style={{ fontSize: '0.95rem', marginTop: 12 }}>
-                  {isManager ? 'اقساط اعضا' : 'اقساط واحد من'}
+                  {canViewAll ? 'اقساط اعضا' : 'اقساط واحد من'}
                 </h3>
                 <div className="list">
                   {fund.dues
-                    .filter((d) => isManager || d.unitId === myUnitId)
-                    .slice(0, isManager ? 24 : 24)
+                    .filter((d) => canViewAll || d.unitId === myUnitId)
+                    .slice(0, 24)
                     .map((d) => {
                       const remain = Math.max(0, d.amount - d.paidAmount)
                       return (
                         <div className="list-item" key={d.id}>
                           <div>
                             <div className="title">
-                              {isManager ? `${unitLabel(d.unitId)} · ` : ''}
+                              {canViewAll ? `${unitLabel(d.unitId)} · ` : ''}
                               ماه {faNum(d.monthIndex)} — {toman(d.amount)}
                             </div>
                             <div className="sub">
@@ -263,7 +265,7 @@ export function QarzFund() {
                     <h3 style={{ fontSize: '0.95rem', marginTop: 12 }}>آخرین دریافتی‌ها</h3>
                     <div className="list">
                       {fund.payments
-                        .filter((p) => isManager || p.unitId === myUnitId)
+                        .filter((p) => canViewAll || p.unitId === myUnitId)
                         .slice(0, 6)
                         .map((p) => (
                           <div className="list-item" key={p.id}>
