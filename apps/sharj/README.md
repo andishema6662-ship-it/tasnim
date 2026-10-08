@@ -24,5 +24,5 @@ npm run build   # خروجی: dist/
 
 - منطق شارژ: `src/lib/charges.ts`
 - state و اکشن‌ها: `src/store/StoreContext.tsx` + `seed.ts`
-- صفحات: `src/pages/*`
+- صفحات: `src/pages/*` — جلسات: `/app/meetings`
 - نقش‌ها: ورود از `/login` (`manager` | `resident`)
