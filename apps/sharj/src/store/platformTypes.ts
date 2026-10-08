@@ -127,6 +127,26 @@ export interface TariffTier {
 export type SubPaymentMethod = 'gateway' | 'bank_receipt'
 export type SubPaymentStatus = 'pending' | 'approved' | 'rejected' | 'paid_demo'
 
+export type SubPeriodMonths = 3 | 6 | 12
+
+export const SUB_PERIOD_LABEL: Record<number, string> = {
+  3: '۳ ماهه',
+  6: '۶ ماهه',
+  12: '۱۲ ماهه',
+}
+
+export const SUB_METHOD_LABEL: Record<SubPaymentMethod, string> = {
+  gateway: 'درگاه پرداخت',
+  bank_receipt: 'فیش بانکی',
+}
+
+export const SUB_STATUS_LABEL: Record<SubPaymentStatus, string> = {
+  pending: 'در انتظار تأیید',
+  approved: 'تأییدشده',
+  rejected: 'ردشده',
+  paid_demo: 'پرداخت‌شده (دمو)',
+}
+
 export interface SubscriptionPayment {
   id: string
   buildingId: string
@@ -141,6 +161,14 @@ export interface SubscriptionPayment {
   createdAt: string
   reviewedAt?: string
   reviewedBy?: string
+}
+
+export function isSubPaid(status: SubPaymentStatus): boolean {
+  return status === 'approved' || status === 'paid_demo'
+}
+
+export function isSubDebt(status: SubPaymentStatus): boolean {
+  return status === 'pending' || status === 'rejected'
 }
 
 export interface SmsConfig {

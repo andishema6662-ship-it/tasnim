@@ -19,6 +19,7 @@ import {
   type BuildingType,
 } from '../store/types'
 import { qarzStatusLabel } from '../lib/qarz'
+import { SubscriptionReports } from './SubscriptionReports'
 
 const SECTIONS: { id: SiteAdminSection; label: string }[] = [
   { id: 'properties', label: 'املاک' },
@@ -356,74 +357,18 @@ export function SiteAdmin() {
         )}
 
         {section === 'subscriptions' && (
-          <div className="panel">
-            <h3>واریز / فیش اشتراک</h3>
-            <div className="list">
-              {platform.admin.subscriptionPayments.map((sp) => {
-                const b = platform.buildings.find((x) => x.id === sp.buildingId)
-                return (
-                  <div className="list-item" key={sp.id}>
-                    <div>
-                      <div className="title">
-                        {b?.name ?? sp.buildingId} — {toman(sp.amount)}
-                      </div>
-                      <div className="sub">
-                        {faNum(sp.units)} واحد · {faNum(sp.months)} ماه ·{' '}
-                        {sp.method === 'gateway' ? 'درگاه' : 'فیش بانکی'}
-                        {sp.discountCode ? ` · کد ${sp.discountCode}` : ''}
-                        <br />
-                        {sp.trackingCode} · {faDate(sp.createdAt)}
-                        {sp.receiptNote ? ` · ${sp.receiptNote}` : ''}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                      <span
-                        className={`badge ${
-                          sp.status === 'approved' || sp.status === 'paid_demo'
-                            ? 'ok'
-                            : sp.status === 'pending'
-                              ? 'warn'
-                              : 'danger'
-                        }`}
-                      >
-                        {sp.status === 'pending'
-                          ? 'در انتظار'
-                          : sp.status === 'approved'
-                            ? 'تأیید'
-                            : sp.status === 'rejected'
-                              ? 'رد'
-                              : 'پرداخت‌شده'}
-                      </span>
-                      {sp.status === 'pending' && (
-                        <div className="grid-actions" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            style={{ minHeight: 36, padding: '4px 8px' }}
-                            onClick={() => {
-                              reviewSubscriptionPayment(sp.id, 'approved', 'siteAdmin')
-                              flash('فیش تأیید شد')
-                            }}
-                          >
-                            تأیید
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ minHeight: 36, padding: '4px 8px' }}
-                            onClick={() => reviewSubscriptionPayment(sp.id, 'rejected', 'siteAdmin')}
-                          >
-                            رد
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+          <>
+            <p className="lead">
+              پرداخت حق اشتراک با تاریخ شمسی، دوره ۳/۶/۱۲ ماهه، گزارش بدهی و پرداختی و جمع کل.
+            </p>
+            <SubscriptionReports
+              onReview={(id, status) => {
+                reviewSubscriptionPayment(id, status, 'siteAdmin')
+                flash(status === 'approved' ? 'فیش تأیید شد' : 'فیش رد شد')
+              }}
+            />
             <span className="badge soon">درگاه واقعی — به‌زودی</span>
-          </div>
+          </>
         )}
 
         {section === 'tariffs' && (
