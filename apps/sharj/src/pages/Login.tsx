@@ -60,7 +60,7 @@ export function Login() {
           <div className="login-brand">
             <div className="logo">د</div>
             <div>
-              <div className="name">دیارشارژ</div>
+              <div className="name">شارژبان</div>
               <span className="tag">مدیریت شارژ ساختمان و شهرک</span>
             </div>
           </div>

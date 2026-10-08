@@ -19,10 +19,13 @@ export function managerOnboardingSteps(data: BuildingData): OnboardingStep[] {
     data.units.every((u) => data.residents.some((r) => r.unitId === u.id))
   const inviteOk = Boolean(data.managerOnboarding?.inviteSmsCopied)
   const residentsOk = rosterOk && inviteOk
-  const hasCharge = (data.funds ?? []).some((f) => f.kind === 'charge')
-  const hasOperating = (data.funds ?? []).some((f) => f.kind === 'operating')
-  const accountOk =
-    hasCharge && hasOperating && Boolean(data.managerOnboarding?.accountConfirmed)
+  const bank = data.blockBankAccount
+  const accountOk = Boolean(
+    bank?.iban?.trim() &&
+      bank?.cardNumber?.trim() &&
+      (bank.iban.replace(/\s/g, '').length >= 24) &&
+      (bank.cardNumber.replace(/\D/g, '').length === 16),
+  )
 
   return [
     {
@@ -49,8 +52,8 @@ export function managerOnboardingSteps(data: BuildingData): OnboardingStep[] {
     {
       id: 'account',
       title: 'حساب بلوک',
-      hint: 'صندوق شارژ و هزینه‌های جاری',
-      to: '/app/finance?tab=status',
+      hint: 'ثبت شبا و شماره کارت بانکی',
+      to: '/app/block-account',
       done: accountOk,
     },
   ]

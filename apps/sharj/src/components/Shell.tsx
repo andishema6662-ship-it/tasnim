@@ -161,7 +161,7 @@ export function Shell() {
             <div className="logo">د</div>
           )}
           <div>
-            <div className="name">دیارشارژ</div>
+            <div className="name">شارژبان</div>
             <span className="tag">{state.buildingName}</span>
           </div>
         </div>

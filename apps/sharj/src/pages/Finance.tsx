@@ -37,7 +37,6 @@ export function Finance() {
     removeLedger,
     upsertBuildingFund,
     removeBuildingFund,
-    confirmManagerAccount,
   } = useStore()
   const state = useBuildingState()
   const [params, setParams] = useSearchParams()
@@ -196,19 +195,21 @@ export function Finance() {
                 </div>
               ))}
             </div>
-            {isManager &&
-              state.funds.some((f) => f.kind === 'charge') &&
-              state.funds.some((f) => f.kind === 'operating') &&
-              !state.managerOnboarding?.accountConfirmed && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ width: '100%', marginTop: 12 }}
-                  onClick={() => confirmManagerAccount()}
-                >
-                  تأیید حساب بلوک (صندوق شارژ + جاری)
-                </button>
-              )}
+            {isManager && (
+              <div style={{ marginTop: 12 }}>
+                {state.blockBankAccount?.iban ? (
+                  <div className="badge ok" style={{ display: 'block', marginBottom: 8 }}>
+                    شبا: {state.blockBankAccount.iban}
+                    {state.blockBankAccount.cardNumber
+                      ? ` · کارت: ${state.blockBankAccount.cardNumber.replace(/(\d{4})(?=\d)/g, '$1-')}`
+                      : ''}
+                  </div>
+                ) : null}
+                <Link to="/app/block-account" className="btn btn-primary" style={{ width: '100%' }}>
+                  {state.blockBankAccount?.iban ? 'ویرایش حساب بانکی بلوک' : 'ثبت شبا و کارت بانکی بلوک'}
+                </Link>
+              </div>
+            )}
           </div>
           {fundForm && isManager && (
             <div className="panel">

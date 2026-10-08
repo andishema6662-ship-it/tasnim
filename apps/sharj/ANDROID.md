@@ -1,20 +1,20 @@
-# دیارشارژ — Android (Capacitor)
+# شارژبان — Android (Capacitor)
 
-Native wrapper around the live PWA at `https://sharj.diyareminoodari.ir`.
+Native wrapper around the live PWA at `https://sharzhban.ir`.
 
 | Field | Value |
 |-------|--------|
-| Package / applicationId | `ir.diyareminoodari.sharj` |
-| App name | دیارشارژ |
+| Package / applicationId | `ir.diyareminoodari.sharj` (legacy package id; display name is شارژبان) |
+| App name | شارژبان |
 | Stack | Capacitor Android WebView → live URL |
 | Min SDK | 24 |
 | Target / compile SDK | 36 |
 
-## Artifacts (user store)
+## Artifacts (agent store)
 
 | File | Kind |
 |------|------|
-| `/cursor/stores/self/media/sharj-app/diyarsharj.apk` | **Release APK**, signed with local upload keystore (`CN=DiyarSharj`) — OK for sideload |
+| `/cursor/stores/self/media/sharj-app/diyarsharj.apk` | **Release APK**, signed with local upload keystore — OK for sideload |
 | `/cursor/stores/self/media/sharj-app/diyarsharj.aab` | **Release AAB**, same upload key — for Play Console upload testing |
 | `/cursor/stores/self/media/sharj-app/diyarsharj-debug.apk` | Debug-signed APK (Android Debug cert) |
 
@@ -31,7 +31,7 @@ Native wrapper around the live PWA at `https://sharj.diyareminoodari.ir`.
 1. فایل `diyarsharj.apk` را به گوشی منتقل کنید (دانلود / کابل / پیام‌رسان).
 2. در تنظیمات گوشی: **امنیت** یا **برنامه‌ها** → **نصب برنامه‌های ناشناس** / **Install unknown apps** را برای مرورگر یا فایل‌منجر روشن کنید.
 3. روی APK بزنید → اگر هشدار «Play Protect» آمد، گزینه **بیشتر / Install anyway** را بزنید (فقط اگر منبع فایل را خودتان می‌شناسید).
-4. بعد از نصب، اپ دیارشارژ را باز کنید؛ محتوا از `https://sharj.diyareminoodari.ir` بارگذاری می‌شود.
+4. بعد از نصب، اپ شارژبان را باز کنید؛ محتوا از `https://sharzhban.ir` بارگذاری می‌شود.
 
 ```bash
 adb install -r /cursor/stores/self/media/sharj-app/diyarsharj.apk

@@ -39,7 +39,7 @@ export function Subscription() {
         <div className="brand-mark" style={{ marginBottom: 12 }}>
           <div className="logo">د</div>
           <div>
-            <div className="name">دیارشارژ</div>
+            <div className="name">شارژبان</div>
             <span className="tag">اشتراک نرم‌افزار</span>
           </div>
         </div>

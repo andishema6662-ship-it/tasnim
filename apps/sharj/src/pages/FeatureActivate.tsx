@@ -139,7 +139,7 @@ export function FeatureActivate() {
           <div className="brand-mark">
             <div className="logo">د</div>
             <div>
-              <div className="name">دیارشارژ</div>
+              <div className="name">شارژبان</div>
               <span className="tag">فعال‌سازی امکان</span>
             </div>
           </div>

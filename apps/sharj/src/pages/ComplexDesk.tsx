@@ -116,7 +116,7 @@ export function ComplexDesk() {
           <div className="brand-mark">
             <div className="logo">د</div>
             <div>
-              <div className="name">دیارشارژ</div>
+              <div className="name">شارژبان</div>
               <span className="tag">{complex.name}</span>
             </div>
           </div>

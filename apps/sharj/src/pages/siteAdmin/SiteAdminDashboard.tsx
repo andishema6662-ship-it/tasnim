@@ -41,7 +41,7 @@ export function SiteAdminDashboard({
       <div className="sa-hero">
         <div>
           <p className="sa-hero__eyebrow">پیشخوان ادمین کل</p>
-          <h3 className="sa-hero__title">سلام، مدیریت پلتفرم دیارشارژ</h3>
+          <h3 className="sa-hero__title">سلام، مدیریت پلتفرم شارژبان</h3>
           <p className="sa-hero__lead">
             نمای کلی املاک، اشتراک‌ها، پشتیبانی و جریان مالی — از اینجا به هر بخش بروید.
           </p>

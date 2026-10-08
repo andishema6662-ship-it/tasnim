@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">دیارشارژ</string>
-    <string name="title_activity_main">دیارشارژ</string>
+    <string name="app_name">شارژبان</string>
+    <string name="title_activity_main">شارژبان</string>
     <string name="package_name">ir.diyareminoodari.sharj</string>
     <string name="custom_url_scheme">ir.diyareminoodari.sharj</string>
 </resources>

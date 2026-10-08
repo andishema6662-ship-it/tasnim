@@ -207,10 +207,18 @@ export interface ManagerOnboarding {
    * are complete (then the banner hides via progress, not dismiss).
    */
   dismissed?: boolean
-  /** Manager confirmed charge + operating funds as block account */
+  /** @deprecated Prefer blockBankAccount; kept for older saved state */
   accountConfirmed?: boolean
   /** Manager copied the fixed resident-invite SMS at least once */
   inviteSmsCopied?: boolean
+}
+
+/** Bank details for the block (onboarding «حساب بلوک»). */
+export interface BlockBankAccount {
+  iban: string
+  cardNumber: string
+  holderName?: string
+  updatedAt: string
 }
 
 export interface PollOption {
@@ -384,6 +392,8 @@ export interface BuildingData {
   reminders: ManagerReminder[]
   serviceWorkers: ServiceWorker[]
   managerOnboarding?: ManagerOnboarding
+  /** IBAN + card registered by block manager */
+  blockBankAccount?: BlockBankAccount
 }
 
 export interface Session {

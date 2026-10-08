@@ -7,7 +7,7 @@ export function Splash() {
         <div className="brand-mark" style={{ marginBottom: 8 }}>
           <div className="logo">د</div>
           <div>
-            <div className="name">دیارشارژ</div>
+            <div className="name">شارژبان</div>
             <span className="tag">مدیریت شارژ ساختمان</span>
           </div>
         </div>

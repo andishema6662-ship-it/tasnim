@@ -133,6 +133,7 @@ interface StoreApi {
   removeServiceWorker: (id: string) => void
   dismissManagerOnboarding: () => void
   confirmManagerAccount: () => void
+  upsertBlockBankAccount: (account: import('./types').BlockBankAccount) => void
   markInviteSmsCopied: () => void
   reloadFromStorage: () => void
   votePoll: (pollId: string, optionId: string) => void
@@ -1868,6 +1869,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [withBuilding])
 
+  const upsertBlockBankAccount = useCallback(
+    (account: import('./types').BlockBankAccount) => {
+      withBuilding((data) => ({
+        ...data,
+        blockBankAccount: account,
+        managerOnboarding: { ...data.managerOnboarding, accountConfirmed: true },
+      }))
+    },
+    [withBuilding],
+  )
+
   const markInviteSmsCopied = useCallback(() => {
     withBuilding((data) => ({
       ...data,
@@ -2774,6 +2786,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeServiceWorker,
       dismissManagerOnboarding,
       confirmManagerAccount,
+      upsertBlockBankAccount,
       markInviteSmsCopied,
       reloadFromStorage,
       votePoll,
@@ -2857,6 +2870,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeServiceWorker,
       dismissManagerOnboarding,
       confirmManagerAccount,
+      upsertBlockBankAccount,
       markInviteSmsCopied,
       reloadFromStorage,
       votePoll,

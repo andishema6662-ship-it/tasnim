@@ -282,7 +282,7 @@ export function createPlatformAdmin(): PlatformAdmin {
           },
           {
             id: 'sm-2b',
-            author: 'پشتیبانی دیارشارژ',
+            author: 'پشتیبانی شارژبان',
             body: 'سهمیه بلوک دیار به ۱ گیگ ارتقا داده شد.',
             at: daysAgo(3),
             fromStaff: true,
@@ -311,7 +311,7 @@ export function createPlatformAdmin(): PlatformAdmin {
           },
           {
             id: 'sm-3b',
-            author: 'پشتیبانی دیارشارژ',
+            author: 'پشتیبانی شارژبان',
             body: 'پس از تأیید پرداخت، ماژول به‌صورت خودکار روشن می‌شود.',
             at: daysAgo(9),
             fromStaff: true,
@@ -796,13 +796,13 @@ export function createPlatformAdmin(): PlatformAdmin {
       enabled: false,
       endpoint: 'https://sms.example.com/api/send',
       apiKey: '',
-      sender: 'DiyarSharj',
+      sender: 'Sharzhban',
     },
     gateway: {
       mode: 'both',
       merchantId: '',
-      callbackUrl: 'https://sharj.diyareminoodari.ir/pay/callback',
-      bankAccountInfo: 'بانک ملت — شماره شبا IR00•••••••• — به نام دیارشارژ',
+      callbackUrl: 'https://sharzhban.ir/pay/callback',
+      bankAccountInfo: 'بانک ملت — شماره شبا IR00•••••••• — به نام شارژبان',
       enabled: true,
     },
     activity: [

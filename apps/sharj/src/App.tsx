@@ -3,6 +3,7 @@ import { FeatureGate } from './components/FeatureGate'
 import { RoleGate } from './components/RoleGate'
 import { Shell } from './components/Shell'
 import { Bills } from './pages/Bills'
+import { BlockAccount } from './pages/BlockAccount'
 import { BlockTickets } from './pages/BlockTickets'
 import { BuildingBroadcasts } from './pages/BuildingBroadcasts'
 import { BuildingPrograms } from './pages/BuildingPrograms'
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="bills" element={<Guarded><Bills /></Guarded>} />
             <Route path="payments" element={<Guarded><Payments /></Guarded>} />
             <Route path="finance" element={<Guarded><Finance /></Guarded>} />
+            <Route path="block-account" element={<Guarded><BlockAccount /></Guarded>} />
             <Route path="debt/:unitId" element={<Guarded><UnitDebtReport /></Guarded>} />
             <Route path="expenses" element={<Guarded><Expenses /></Guarded>} />
             <Route path="polls" element={<Guarded><Polls /></Guarded>} />

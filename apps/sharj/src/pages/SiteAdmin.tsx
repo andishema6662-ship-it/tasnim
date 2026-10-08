@@ -152,7 +152,7 @@ export function SiteAdmin() {
           <div className="brand-mark">
             <div className="logo">د</div>
             <div>
-              <div className="name">دیارشارژ</div>
+              <div className="name">شارژبان</div>
               <span className="tag">پنل مدیریت سایت</span>
             </div>
           </div>
