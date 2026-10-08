@@ -11,6 +11,12 @@ import { computeUnitCharge } from '../lib/charges'
 import { trackingCode } from '../lib/format'
 import { billRemaining, buildInstallments } from '../lib/installments'
 import {
+  approvalProgress,
+  buildDues,
+  buildVotes,
+  computeMonthlyPerUnit,
+} from '../lib/qarz'
+import {
   createEmptyBuildingData,
   createSeed,
   normalizeBuildingData,
@@ -27,6 +33,8 @@ import type {
   NewsItem,
   PlatformState,
   Poll,
+  QarzApprovalThreshold,
+  QarzFund,
   ScopedState,
   Session,
   Suggestion,
@@ -72,6 +80,21 @@ interface StoreApi {
   }) => void
   setSuggestionStatus: (id: string, status: SuggestionStatus) => void
   upsertSuggestionCategory: (category: SuggestionCategory) => void
+  createQarzFund: (input: {
+    title: string
+    totalAmount: number
+    periodMonths: number
+    memberUnitIds: string[]
+    approvalThreshold: QarzApprovalThreshold
+    monthlyPerUnit?: number
+    overrideMonthly?: boolean
+    note?: string
+    submitForApproval: boolean
+  }) => string | null
+  submitQarzForApproval: (fundId: string) => boolean
+  voteQarzFund: (fundId: string, approve: boolean) => boolean
+  payQarzDue: (fundId: string, dueId: string, amount?: number) => string | null
+  closeQarzFund: (fundId: string) => void
   markNotificationsRead: () => void
 }
 
@@ -759,6 +782,240 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [withBuilding])
 
+  const createQarzFund = useCallback(
+    (input: {
+      title: string
+      totalAmount: number
+      periodMonths: number
+      memberUnitIds: string[]
+      approvalThreshold: QarzApprovalThreshold
+      monthlyPerUnit?: number
+      overrideMonthly?: boolean
+      note?: string
+      submitForApproval: boolean
+    }) => {
+      let id: string | null = null
+      setPlatform((p) => {
+        const bid = p.session?.buildingId
+        if (!bid || p.session?.role !== 'manager') return p
+        const members = input.memberUnitIds.filter(Boolean)
+        if (!input.title.trim() || members.length < 1 || input.periodMonths < 1) return p
+        const override = Boolean(input.overrideMonthly && input.monthlyPerUnit)
+        const monthly = override
+          ? Math.round(input.monthlyPerUnit!)
+          : computeMonthlyPerUnit(input.totalAmount, members.length, input.periodMonths)
+        id = `qf-${Date.now()}`
+        const fund: QarzFund = {
+          id,
+          title: input.title.trim(),
+          totalAmount: input.totalAmount,
+          periodMonths: input.periodMonths,
+          monthlyPerUnit: monthly,
+          overrideMonthly: override,
+          memberUnitIds: members,
+          approvalThreshold: input.approvalThreshold,
+          status: input.submitForApproval ? 'awaiting_approval' : 'draft',
+          votes: buildVotes(members),
+          dues: [],
+          payments: [],
+          note: input.note?.trim() || undefined,
+          createdAt: new Date().toISOString(),
+        }
+        return patchBuilding(p, bid, (data) => ({
+          ...data,
+          qarzFunds: [fund, ...data.qarzFunds],
+          notifications: input.submitForApproval
+            ? [
+                {
+                  id: `nt-qarz-${Date.now()}`,
+                  title: 'تأیید صندوق قرض‌الحسنه',
+                  body: `${fund.title} در انتظار رأی واحدهای عضو است.`,
+                  createdAt: new Date().toISOString(),
+                  kind: 'qarz' as const,
+                  read: false,
+                },
+                ...data.notifications,
+              ]
+            : data.notifications,
+        }))
+      })
+      return id
+    },
+    [],
+  )
+
+  const submitQarzForApproval = useCallback((fundId: string) => {
+    let ok = false
+    setPlatform((p) => {
+      const bid = p.session?.buildingId
+      if (!bid || p.session?.role !== 'manager') return p
+      return patchBuilding(p, bid, (data) => {
+        const fund = data.qarzFunds.find((f) => f.id === fundId)
+        if (!fund || fund.status !== 'draft') return data
+        ok = true
+        return {
+          ...data,
+          qarzFunds: data.qarzFunds.map((f) =>
+            f.id === fundId ? { ...f, status: 'awaiting_approval' as const } : f,
+          ),
+          notifications: [
+            {
+              id: `nt-qarz-sub-${Date.now()}`,
+              title: 'تأیید صندوق قرض‌الحسنه',
+              body: `${fund.title} در انتظار رأی واحدهای عضو است.`,
+              createdAt: new Date().toISOString(),
+              kind: 'qarz' as const,
+              read: false,
+            },
+            ...data.notifications,
+          ],
+        }
+      })
+    })
+    return ok
+  }, [])
+
+  const voteQarzFund = useCallback((fundId: string, approve: boolean) => {
+    let ok = false
+    setPlatform((p) => {
+      const bid = p.session?.buildingId
+      const unitId = p.session?.unitId
+      if (!bid || p.session?.role !== 'resident' || !unitId) return p
+      return patchBuilding(p, bid, (data) => {
+        const fund = data.qarzFunds.find((f) => f.id === fundId)
+        if (!fund || fund.status !== 'awaiting_approval') return data
+        if (!fund.memberUnitIds.includes(unitId)) return data
+        const votes = fund.votes.map((v) =>
+          v.unitId === unitId
+            ? { ...v, approved: approve, votedAt: new Date().toISOString() }
+            : v,
+        )
+        let next: QarzFund = { ...fund, votes }
+        const progress = approvalProgress(next)
+        if (progress.passed) {
+          next = {
+            ...next,
+            status: 'active',
+            activatedAt: new Date().toISOString(),
+            dues: buildDues(
+              next.memberUnitIds,
+              next.monthlyPerUnit,
+              next.periodMonths,
+              new Date().toISOString(),
+            ),
+          }
+        }
+        ok = true
+        return {
+          ...data,
+          qarzFunds: data.qarzFunds.map((f) => (f.id === fundId ? next : f)),
+          notifications: progress.passed
+            ? [
+                {
+                  id: `nt-qarz-on-${Date.now()}`,
+                  title: 'صندوق قرض‌الحسنه فعال شد',
+                  body: `${next.title} پس از تأیید اعضا فعال گردید.`,
+                  createdAt: new Date().toISOString(),
+                  kind: 'qarz' as const,
+                  read: false,
+                },
+                ...data.notifications,
+              ]
+            : data.notifications,
+        }
+      })
+    })
+    return ok
+  }, [])
+
+  const payQarzDue = useCallback((fundId: string, dueId: string, amount?: number) => {
+    let code: string | null = null
+    setPlatform((p) => {
+      const bid = p.session?.buildingId
+      if (!bid || !p.session) return p
+      return patchBuilding(p, bid, (data) => {
+        const fund = data.qarzFunds.find((f) => f.id === fundId)
+        if (!fund || fund.status !== 'active') return data
+        const due = fund.dues.find((d) => d.id === dueId)
+        if (!due) return data
+        // resident may only pay own unit; manager any
+        if (p.session!.role === 'resident' && p.session!.unitId !== due.unitId) return data
+        const remain = Math.max(0, due.amount - due.paidAmount)
+        const pay = Math.min(amount ?? remain, remain)
+        if (pay <= 0) return data
+        code = trackingCode()
+        const paidAmount = due.paidAmount + pay
+        const status =
+          paidAmount >= due.amount ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid'
+        const dues = fund.dues.map((d) =>
+          d.id === dueId ? { ...d, paidAmount, status: status as typeof d.status } : d,
+        )
+        const payments = [
+          {
+            id: `qp-${Date.now()}`,
+            fundId,
+            unitId: due.unitId,
+            dueId,
+            amount: pay,
+            trackingCode: code!,
+            createdAt: new Date().toISOString(),
+            recordedBy: p.session!.displayName,
+          },
+          ...fund.payments,
+        ]
+        const allPaid = dues.every((d) => d.status === 'paid')
+        const next: QarzFund = {
+          ...fund,
+          dues,
+          payments,
+          status: allPaid ? 'completed' : fund.status,
+          closedAt: allPaid ? new Date().toISOString() : fund.closedAt,
+        }
+        return {
+          ...data,
+          fundBalance: data.fundBalance + pay,
+          qarzFunds: data.qarzFunds.map((f) => (f.id === fundId ? next : f)),
+          ledger: [
+            {
+              id: `l-qarz-${Date.now()}`,
+              kind: 'income' as const,
+              category: 'قرض‌الحسنه',
+              title: `${fund.title} — ماه ${due.monthIndex}`,
+              amount: pay,
+              note: `کد ${code}`,
+              createdAt: new Date().toISOString(),
+              visibleToResidents: true,
+            },
+            ...data.ledger,
+          ],
+          notifications: [
+            {
+              id: `nt-qarz-pay-${Date.now()}`,
+              title: 'پرداخت صندوق قرض‌الحسنه',
+              body: `مبلغ ${pay.toLocaleString('fa-IR')} تومان — کد ${code}`,
+              createdAt: new Date().toISOString(),
+              kind: 'qarz' as const,
+              read: false,
+            },
+            ...data.notifications,
+          ],
+        }
+      })
+    })
+    return code
+  }, [])
+
+  const closeQarzFund = useCallback((fundId: string) => {
+    withBuilding((data) => ({
+      ...data,
+      qarzFunds: data.qarzFunds.map((f) =>
+        f.id === fundId
+          ? { ...f, status: 'closed' as const, closedAt: new Date().toISOString() }
+          : f,
+      ),
+    }))
+  }, [withBuilding])
+
   const markNotificationsRead = useCallback(() => {
     withBuilding((data) => ({
       ...data,
@@ -793,6 +1050,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addSuggestion,
       setSuggestionStatus,
       upsertSuggestionCategory,
+      createQarzFund,
+      submitQarzForApproval,
+      voteQarzFund,
+      payQarzDue,
+      closeQarzFund,
       markNotificationsRead,
     }),
     [
@@ -821,6 +1083,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addSuggestion,
       setSuggestionStatus,
       upsertSuggestionCategory,
+      createQarzFund,
+      submitQarzForApproval,
+      voteQarzFund,
+      payQarzDue,
+      closeQarzFund,
       markNotificationsRead,
     ],
   )

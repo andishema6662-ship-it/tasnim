@@ -9,6 +9,7 @@ const kindLabel = {
   news: 'خبر',
   meeting: 'جلسه',
   suggestion: 'پیشنهاد',
+  qarz: 'قرض‌الحسنه',
   'sms-stub': 'پیامک',
 } as const
 

@@ -7,6 +7,7 @@ export function More() {
   const isManager = state.session?.role === 'manager'
 
   const links = [
+    { to: '/app/qarz', label: 'صندوق قرض‌الحسنه' },
     { to: '/app/suggestions', label: 'نظرات و پیشنهادات' },
     { to: '/app/meetings', label: 'جلسات، مصوبات و حاضرین' },
     { to: '/app/bills', label: 'قبوض و تقسیط شارژ' },

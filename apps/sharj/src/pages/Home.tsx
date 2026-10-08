@@ -43,9 +43,9 @@ export function Home() {
             <strong>جلسات</strong>
             <span>مصوبات و حاضرین</span>
           </Link>
-          <Link className="quick-link" to="/app/suggestions">
-            <strong>پیشنهادات</strong>
-            <span>نظرات ساکنین</span>
+          <Link className="quick-link" to="/app/qarz">
+            <strong>قرض‌الحسنه</strong>
+            <span>صندوق اعضا</span>
           </Link>
         </div>
         <div className="panel">
@@ -101,9 +101,9 @@ export function Home() {
           <strong>نظرسنجی</strong>
           <span>مشارکت</span>
         </Link>
-        <Link className="quick-link" to="/app/suggestions">
-          <strong>پیشنهادات</strong>
-          <span>نظرات و عکس</span>
+        <Link className="quick-link" to="/app/qarz">
+          <strong>قرض‌الحسنه</strong>
+          <span>صندوق و اقساط</span>
         </Link>
       </div>
       <div className="panel">

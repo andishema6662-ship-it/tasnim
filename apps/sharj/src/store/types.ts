@@ -162,8 +162,72 @@ export interface NotificationItem {
   title: string
   body: string
   createdAt: string
-  kind: 'reminder' | 'payment' | 'poll' | 'news' | 'meeting' | 'suggestion' | 'sms-stub'
+  kind:
+    | 'reminder'
+    | 'payment'
+    | 'poll'
+    | 'news'
+    | 'meeting'
+    | 'suggestion'
+    | 'qarz'
+    | 'sms-stub'
   read: boolean
+}
+
+export type QarzFundStatus = 'draft' | 'awaiting_approval' | 'active' | 'completed' | 'closed'
+export type QarzApprovalThreshold = 'majority' | 'unanimous'
+
+export interface QarzMemberVote {
+  unitId: string
+  /** null = هنوز رأی نداده */
+  approved: boolean | null
+  votedAt?: string
+}
+
+export interface QarzMemberDue {
+  id: string
+  unitId: string
+  monthIndex: number
+  amount: number
+  dueAt: string
+  paidAmount: number
+  status: 'unpaid' | 'partial' | 'paid'
+}
+
+export interface QarzPaymentRecord {
+  id: string
+  fundId: string
+  unitId: string
+  dueId: string
+  amount: number
+  trackingCode: string
+  createdAt: string
+  recordedBy: string
+}
+
+/**
+ * صندوق قرض‌الحسنه ساختمان.
+ * مبلغ ماهانه هر واحد = مبلغ کل ÷ (تعداد واحدهای عضو × تعداد ماه دوره)
+ * مگر اینکه مدیر مبلغ ماهانه را دستی تنظیم کند (overrideMonthly).
+ */
+export interface QarzFund {
+  id: string
+  title: string
+  totalAmount: number
+  periodMonths: number
+  monthlyPerUnit: number
+  /** اگر true، monthlyPerUnit دستی است و از total محاسبه نشده */
+  overrideMonthly: boolean
+  memberUnitIds: string[]
+  approvalThreshold: QarzApprovalThreshold
+  status: QarzFundStatus
+  votes: QarzMemberVote[]
+  dues: QarzMemberDue[]
+  payments: QarzPaymentRecord[]
+  note?: string
+  createdAt: string
+  activatedAt?: string
+  closedAt?: string
 }
 
 export type SuggestionStatus = 'open' | 'resolved' | 'hidden'
@@ -201,6 +265,7 @@ export interface BuildingData {
   meetings: Meeting[]
   suggestionCategories: SuggestionCategory[]
   suggestions: Suggestion[]
+  qarzFunds: QarzFund[]
   notifications: NotificationItem[]
 }
 

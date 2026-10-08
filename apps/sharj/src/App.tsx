@@ -13,6 +13,7 @@ import { News } from './pages/News'
 import { Notifications } from './pages/Notifications'
 import { Payments } from './pages/Payments'
 import { Polls } from './pages/Polls'
+import { QarzFund } from './pages/QarzFund'
 import { Residents } from './pages/Residents'
 import { SiteAdmin } from './pages/SiteAdmin'
 import { Splash } from './pages/Splash'
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="chat" element={<Chat />} />
             <Route path="meetings" element={<Meetings />} />
             <Route path="suggestions" element={<Suggestions />} />
+            <Route path="qarz" element={<QarzFund />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>
