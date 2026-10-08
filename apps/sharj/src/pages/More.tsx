@@ -1,18 +1,28 @@
 import { Link } from 'react-router-dom'
 import { useBuildingFeatures } from '../components/FeatureGate'
-import { isFinanceScoped } from '../lib/rbac'
+import { isFinanceScoped, menuAccessFor, roleAllowsPath, type MenuAccess } from '../lib/rbac'
 import { useBuildingState, useStore } from '../store/StoreContext'
 import type { FeatureModuleId } from '../store/platformTypes'
+import type { Role } from '../store/types'
+
+const ACCESS_BADGE: Record<
+  MenuAccess,
+  { label: string; className: string }
+> = {
+  open: { label: 'باز', className: 'badge ok' },
+  needs_activation: { label: 'نیاز به فعال‌سازی', className: 'badge warn' },
+  role_locked: { label: 'قفل', className: 'badge soon' },
+}
 
 export function More() {
   const { resetDemo } = useStore()
   const state = useBuildingState()
   const features = useBuildingFeatures()
-  const role = state.session?.role
+  const role = (state.session?.role ?? 'resident') as Role
   const isManager = role === 'manager'
-  const isFinance = isFinanceScoped(role ?? 'resident')
+  const isFinance = isFinanceScoped(role)
 
-  type LinkItem = { to: string; label: string; feature?: FeatureModuleId; roles?: string[] }
+  type LinkItem = { to: string; label: string; feature?: FeatureModuleId }
 
   const links: LinkItem[] = [
     { to: '/app/qarz', label: 'صندوق قرض‌الحسنه', feature: 'qarz' },
@@ -21,7 +31,11 @@ export function More() {
       ? [
           { to: '/app/broadcasts', label: 'پیام مدیر به واحدها' },
           { to: '/app/site-proposals', label: 'پیشنهاد به ادمین کل سایت' },
-          { to: '/app/block-tickets', label: 'ارجاع مشکل به مدیر شهرک', feature: 'blockTickets' as const },
+          {
+            to: '/app/block-tickets',
+            label: 'ارجاع مشکل به مدیر شهرک',
+            feature: 'blockTickets' as const,
+          },
         ]
       : []),
     ...(!isFinance
@@ -60,8 +74,18 @@ export function More() {
     { to: '/subscription', label: 'پلن اشتراک نرم‌افزار' },
   ]
 
-  const visible = links.filter((l) => !l.feature || features.has(l.feature))
-  const locked = links.filter((l) => l.feature && !features.has(l.feature))
+  // Same source of truth as RoleGate + FeatureGate — never show «باز» if click would deny
+  const catalog = links
+    .map((l) => ({
+      ...l,
+      access: menuAccessFor(role, l.to, l.feature, features),
+    }))
+    // Hide role-locked items entirely (wrong role); keep activation-needed visible with CTA
+    .filter((l) => l.access !== 'role_locked')
+
+  const openItems = catalog.filter((l) => l.access === 'open')
+  const lockedItems = catalog.filter((l) => l.access === 'needs_activation')
+  const canActivate = isManager || role === 'complexManager' || role === 'siteAdmin'
 
   return (
     <div className="page">
@@ -69,33 +93,51 @@ export function More() {
       <p className="lead">
         {isFinance
           ? 'منوی مالی بلوک — امکانات غیرمالی برای این نقش مخفی است.'
-          : 'ارتباطات، اعلان‌ها و تنظیمات دمو.'}
+          : '«باز» یعنی همین الان قابل ورود است. موارد قفل‌شده نیاز به فعال‌سازی دارند.'}
       </p>
       <div className="panel">
         <div className="list">
-          {visible.map((l) => (
-            <Link className="list-item" key={l.to + l.label} to={l.to}>
-              <div className="title">{l.label}</div>
-              <span className="badge">باز</span>
-            </Link>
-          ))}
+          {openItems.map((l) => {
+            const badge = ACCESS_BADGE.open
+            return (
+              <Link className="list-item" key={l.to + l.label} to={l.to}>
+                <div className="title">{l.label}</div>
+                <span className={badge.className}>{badge.label}</span>
+              </Link>
+            )
+          })}
+          {openItems.length === 0 && <div className="empty">مورد بازی نیست.</div>}
         </div>
       </div>
-      {locked.length > 0 && (isManager || role === 'complexManager') && (
+      {lockedItems.length > 0 && (
         <div className="panel">
           <h3>امکانات نیازمند فعال‌سازی</h3>
           <div className="list">
-            {locked.map((l) => (
-              <div className="list-item" key={`lock-${l.to}`}>
-                <div className="title">{l.label}</div>
-                <Link
-                  className="btn btn-copper"
-                  to={`/app/activate/${l.feature}?buildingId=${encodeURIComponent(state.buildingId)}`}
-                >
-                  فعال‌سازی
-                </Link>
-              </div>
-            ))}
+            {lockedItems.map((l) => {
+              const badge = ACCESS_BADGE.needs_activation
+              return (
+                <div className="list-item" key={`lock-${l.to}`}>
+                  <div>
+                    <div className="title">{l.label}</div>
+                    <div className="sub">
+                      {roleAllowsPath(role, l.to)
+                        ? 'برای این ساختمان فعال نیست.'
+                        : 'نقش شما به این بخش دسترسی ندارد.'}
+                    </div>
+                  </div>
+                  {canActivate && l.feature ? (
+                    <Link
+                      className="btn btn-copper"
+                      to={`/app/activate/${l.feature}?buildingId=${encodeURIComponent(state.buildingId)}`}
+                    >
+                      فعال‌سازی
+                    </Link>
+                  ) : (
+                    <span className={badge.className}>{badge.label}</span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

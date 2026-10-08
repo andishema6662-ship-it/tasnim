@@ -44,6 +44,9 @@ const ROLE_ROUTE_PREFIXES: Record<'manager' | 'financeManager' | 'resident', str
     '/app/suggestions',
     '/app/qarz',
     '/app/block-tickets',
+    '/app/broadcasts',
+    '/app/programs',
+    '/app/site-proposals',
     '/app/notifications',
     '/app/more',
   ],
@@ -74,9 +77,26 @@ const ROLE_ROUTE_PREFIXES: Record<'manager' | 'financeManager' | 'resident', str
     '/app/meetings',
     '/app/suggestions',
     '/app/qarz',
+    '/app/programs',
     '/app/notifications',
     '/app/more',
   ],
+}
+
+/** Menu/link access: same rules as RoleGate + FeatureGate. */
+export type MenuAccess = 'open' | 'needs_activation' | 'role_locked'
+
+export function menuAccessFor(
+  role: Role,
+  path: string,
+  feature: FeatureModuleId | undefined,
+  enabledFeatures: Set<string> | Set<FeatureModuleId>,
+): MenuAccess {
+  // Public/non-building routes (e.g. /subscription) are always open in menu
+  if (!path.startsWith('/app')) return 'open'
+  if (!roleAllowsPath(role, path)) return 'role_locked'
+  if (feature && !enabledFeatures.has(feature)) return 'needs_activation'
+  return 'open'
 }
 
 export function roleAllowsPath(role: Role, pathname: string): boolean {
