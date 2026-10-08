@@ -2661,3 +2661,116 @@ button {
     grid-template-columns: 260px minmax(0, 1fr);
   }
 }
+
+/* —— Manager ops: onboarding + finance tabs —— */
+.onboarding-banner {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius, 14px);
+  border: 1px solid color-mix(in srgb, var(--copper, #c4784a) 35%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--copper, #c4784a) 12%, var(--surface)) 0%, var(--surface) 55%),
+    var(--surface);
+  box-shadow: 0 6px 18px rgba(20, 16, 12, 0.06);
+}
+
+.onboarding-banner__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.onboarding-banner__head strong {
+  font-size: 0.95rem;
+}
+
+.onboarding-banner__head .sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.onboarding-steps {
+  display: grid;
+  gap: 6px;
+}
+
+.onboarding-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.onboarding-step:hover {
+  background: color-mix(in srgb, var(--line) 35%, transparent);
+}
+
+.onboarding-step.current {
+  border-color: color-mix(in srgb, var(--copper, #c4784a) 45%, var(--line));
+  background: color-mix(in srgb, var(--copper, #c4784a) 10%, transparent);
+}
+
+.onboarding-step.done {
+  opacity: 0.72;
+}
+
+.onboarding-step__n {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--line);
+  color: var(--ink);
+}
+
+.onboarding-step.current .onboarding-step__n {
+  background: var(--copper, #c4784a);
+  color: #fff;
+}
+
+.onboarding-step.done .onboarding-step__n {
+  background: var(--mint-soft, #e4f5ec);
+  color: var(--mint, #1f8a5b);
+}
+
+.onboarding-step__title {
+  display: block;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.onboarding-step__hint {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.finance-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.finance-tabs .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}

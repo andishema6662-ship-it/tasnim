@@ -23,7 +23,9 @@ import { Notifications } from './pages/Notifications'
 import { Payments } from './pages/Payments'
 import { Polls } from './pages/Polls'
 import { QarzFund } from './pages/QarzFund'
+import { Reminders } from './pages/Reminders'
 import { Residents } from './pages/Residents'
+import { Services } from './pages/Services'
 import { SiteAdmin } from './pages/SiteAdmin'
 import { Splash } from './pages/Splash'
 import { Subscription } from './pages/Subscription'
@@ -77,6 +79,8 @@ export default function App() {
                 </Guarded>
               }
             />
+            <Route path="reminders" element={<Guarded><Reminders /></Guarded>} />
+            <Route path="services" element={<Guarded><Services /></Guarded>} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

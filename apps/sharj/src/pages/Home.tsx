@@ -54,9 +54,17 @@ export function Home() {
           {features.has('finance') && (
             <Link className="quick-link" to="/app/finance">
               <strong>مالی</strong>
-              <span>هزینه و درآمد</span>
+              <span>صندوق و صورت وضعیت</span>
             </Link>
           )}
+          <Link className="quick-link" to="/app/reminders">
+            <strong>یادآوری</strong>
+            <span>هفته و ماه شمسی</span>
+          </Link>
+          <Link className="quick-link" to="/app/services">
+            <strong>خدمات</strong>
+            <span>سرویس‌کاران بلوک</span>
+          </Link>
           {!isFinance && features.has('meetings') && (
             <Link className="quick-link" to="/app/meetings">
               <strong>جلسات</strong>
@@ -164,6 +172,10 @@ export function Home() {
         <Link className="quick-link" to="/app/programs">
           <strong>برنامه‌ها</strong>
           <span>شهرک و بلوک</span>
+        </Link>
+        <Link className="quick-link" to="/app/services">
+          <strong>خدمات</strong>
+          <span>سرویس‌کاران</span>
         </Link>
       </div>
       <div className="panel">

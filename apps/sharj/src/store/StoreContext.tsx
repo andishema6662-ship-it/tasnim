@@ -54,10 +54,12 @@ import { DEMO_OTP_CODE } from './platformTypes'
 import type {
   Bill,
   BuildingData,
+  BuildingFund,
   BuildingMeta,
   ChargeSchedule,
   DebtParty,
   LedgerEntry,
+  ManagerReminder,
   Meeting,
   NewsItem,
   PlatformState,
@@ -65,6 +67,7 @@ import type {
   QarzApprovalThreshold,
   QarzFund,
   ScopedState,
+  ServiceWorker,
   Session,
   Suggestion,
   SuggestionCategory,
@@ -122,6 +125,14 @@ interface StoreApi {
   addLedger: (entry: Omit<LedgerEntry, 'id' | 'createdAt'>) => void
   updateLedger: (entry: LedgerEntry) => void
   removeLedger: (id: string) => void
+  upsertBuildingFund: (fund: BuildingFund) => void
+  removeBuildingFund: (id: string) => void
+  upsertReminder: (reminder: ManagerReminder) => void
+  removeReminder: (id: string) => void
+  upsertServiceWorker: (worker: ServiceWorker) => void
+  removeServiceWorker: (id: string) => void
+  dismissManagerOnboarding: () => void
+  confirmManagerAccount: () => void
   reloadFromStorage: () => void
   votePoll: (pollId: string, optionId: string) => void
   addPoll: (poll: Omit<Poll, 'id' | 'votedBy' | 'options'> & { options: string[] }) => void
@@ -1703,13 +1714,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return code
   }, [])
 
+  const applyFundDelta = (data: BuildingData, fundId: string | undefined, delta: number) => {
+    if (!data.funds?.length) {
+      return { funds: data.funds, fundBalance: data.fundBalance + delta }
+    }
+    const targetId =
+      fundId && data.funds.some((f) => f.id === fundId)
+        ? fundId
+        : (data.funds.find((f) => f.kind === 'charge')?.id ?? data.funds[0].id)
+    const funds = data.funds.map((f) =>
+      f.id === targetId ? { ...f, balance: f.balance + delta } : f,
+    )
+    return { funds, fundBalance: funds.reduce((s, f) => s + f.balance, 0) }
+  }
+
   const addLedger = useCallback(
     (entry: Omit<LedgerEntry, 'id' | 'createdAt'>) => {
       withBuilding((data) => {
         const delta = entry.kind === 'income' ? entry.amount : -entry.amount
+        const fundPatch = applyFundDelta(data, entry.fundId, delta)
         return {
           ...data,
-          fundBalance: data.fundBalance + delta,
+          ...fundPatch,
           ledger: [
             { ...entry, id: `l-${Date.now()}`, createdAt: new Date().toISOString() },
             ...data.ledger,
@@ -1727,11 +1753,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!prev) return data
         const oldDelta = prev.kind === 'income' ? prev.amount : -prev.amount
         const newDelta = entry.kind === 'income' ? entry.amount : -entry.amount
-        return {
-          ...data,
-          fundBalance: data.fundBalance - oldDelta + newDelta,
-          ledger: data.ledger.map((e) => (e.id === entry.id ? { ...entry } : e)),
-        }
+        let next = { ...data, ledger: data.ledger.map((e) => (e.id === entry.id ? { ...entry } : e)) }
+        next = { ...next, ...applyFundDelta(next, prev.fundId, -oldDelta) }
+        next = { ...next, ...applyFundDelta(next, entry.fundId, newDelta) }
+        return next
       })
     },
     [withBuilding],
@@ -1743,15 +1768,104 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const prev = data.ledger.find((e) => e.id === id)
         if (!prev) return data
         const delta = prev.kind === 'income' ? prev.amount : -prev.amount
+        const fundPatch = applyFundDelta(data, prev.fundId, -delta)
         return {
           ...data,
-          fundBalance: data.fundBalance - delta,
+          ...fundPatch,
           ledger: data.ledger.filter((e) => e.id !== id),
         }
       })
     },
     [withBuilding],
   )
+
+  const upsertBuildingFund = useCallback(
+    (fund: BuildingFund) => {
+      withBuilding((data) => {
+        const exists = data.funds.some((f) => f.id === fund.id)
+        const funds = exists
+          ? data.funds.map((f) => (f.id === fund.id ? { ...fund } : f))
+          : [{ ...fund }, ...data.funds]
+        return { ...data, funds, fundBalance: funds.reduce((s, f) => s + f.balance, 0) }
+      })
+    },
+    [withBuilding],
+  )
+
+  const removeBuildingFund = useCallback(
+    (id: string) => {
+      withBuilding((data) => {
+        if (data.funds.length <= 1) return data
+        const funds = data.funds.filter((f) => f.id !== id)
+        return { ...data, funds, fundBalance: funds.reduce((s, f) => s + f.balance, 0) }
+      })
+    },
+    [withBuilding],
+  )
+
+  const upsertReminder = useCallback(
+    (reminder: ManagerReminder) => {
+      withBuilding((data) => {
+        const exists = data.reminders.some((r) => r.id === reminder.id)
+        return {
+          ...data,
+          reminders: exists
+            ? data.reminders.map((r) => (r.id === reminder.id ? { ...reminder } : r))
+            : [{ ...reminder }, ...data.reminders],
+        }
+      })
+    },
+    [withBuilding],
+  )
+
+  const removeReminder = useCallback(
+    (id: string) => {
+      withBuilding((data) => ({
+        ...data,
+        reminders: data.reminders.filter((r) => r.id !== id),
+      }))
+    },
+    [withBuilding],
+  )
+
+  const upsertServiceWorker = useCallback(
+    (worker: ServiceWorker) => {
+      withBuilding((data) => {
+        const exists = data.serviceWorkers.some((w) => w.id === worker.id)
+        return {
+          ...data,
+          serviceWorkers: exists
+            ? data.serviceWorkers.map((w) => (w.id === worker.id ? { ...worker } : w))
+            : [{ ...worker }, ...data.serviceWorkers],
+        }
+      })
+    },
+    [withBuilding],
+  )
+
+  const removeServiceWorker = useCallback(
+    (id: string) => {
+      withBuilding((data) => ({
+        ...data,
+        serviceWorkers: data.serviceWorkers.filter((w) => w.id !== id),
+      }))
+    },
+    [withBuilding],
+  )
+
+  const dismissManagerOnboarding = useCallback(() => {
+    withBuilding((data) => ({
+      ...data,
+      managerOnboarding: { ...data.managerOnboarding, dismissed: true },
+    }))
+  }, [withBuilding])
+
+  const confirmManagerAccount = useCallback(() => {
+    withBuilding((data) => ({
+      ...data,
+      managerOnboarding: { ...data.managerOnboarding, accountConfirmed: true },
+    }))
+  }, [withBuilding])
 
   const votePoll = useCallback(
     (pollId: string, optionId: string) => {
@@ -2644,6 +2758,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addLedger,
       updateLedger,
       removeLedger,
+      upsertBuildingFund,
+      removeBuildingFund,
+      upsertReminder,
+      removeReminder,
+      upsertServiceWorker,
+      removeServiceWorker,
+      dismissManagerOnboarding,
+      confirmManagerAccount,
       reloadFromStorage,
       votePoll,
       addPoll,
@@ -2718,6 +2840,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addLedger,
       updateLedger,
       removeLedger,
+      upsertBuildingFund,
+      removeBuildingFund,
+      upsertReminder,
+      removeReminder,
+      upsertServiceWorker,
+      removeServiceWorker,
+      dismissManagerOnboarding,
+      confirmManagerAccount,
       reloadFromStorage,
       votePoll,
       addPoll,

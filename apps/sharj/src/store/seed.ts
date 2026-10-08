@@ -38,9 +38,36 @@ export function defaultSuggestionCategories(): SuggestionCategory[] {
   ]
 }
 
+function defaultFunds(balance: number): BuildingData['funds'] {
+  const now = new Date().toISOString()
+  return [
+    {
+      id: 'fund-charge',
+      name: 'صندوق شارژ',
+      kind: 'charge',
+      balance: Math.max(0, Math.round(balance * 0.7)),
+      createdAt: now,
+    },
+    {
+      id: 'fund-operating',
+      name: 'صندوق هزینه‌های جاری',
+      kind: 'operating',
+      balance: Math.max(0, Math.round(balance * 0.3)),
+      createdAt: now,
+    },
+  ]
+}
+
 export function normalizeBuildingData(data: BuildingData): BuildingData {
+  const funds =
+    Array.isArray(data.funds) && data.funds.length > 0
+      ? data.funds
+      : defaultFunds(data.fundBalance ?? 0)
+  const fundBalance = funds.reduce((s, f) => s + f.balance, 0)
   return {
     ...data,
+    funds,
+    fundBalance,
     units: (data.units ?? []).map((u) => ({
       ...u,
       vehicles: Array.isArray(u.vehicles) ? u.vehicles : [],
@@ -51,6 +78,8 @@ export function normalizeBuildingData(data: BuildingData): BuildingData {
         : defaultSuggestionCategories(),
     suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
     qarzFunds: Array.isArray(data.qarzFunds) ? data.qarzFunds : [],
+    reminders: Array.isArray(data.reminders) ? data.reminders : [],
+    serviceWorkers: Array.isArray(data.serviceWorkers) ? data.serviceWorkers : [],
     // Heal legacy polls where option.votes > 0 but votedBy was empty (manager/resident count skew)
     polls: (data.polls ?? []).map((p) => {
       const sum = (p.options ?? []).reduce((s, o) => s + (o.votes || 0), 0)
@@ -88,8 +117,10 @@ export function normalizeBuildingMeta(meta: BuildingMeta): BuildingMeta {
 }
 
 function emptyBuilding(fund = 0): BuildingData {
+  const funds = defaultFunds(fund)
   return {
-    fundBalance: fund,
+    fundBalance: funds.reduce((s, f) => s + f.balance, 0),
+    funds,
     units: [],
     residents: [],
     schedules: [],
@@ -104,12 +135,31 @@ function emptyBuilding(fund = 0): BuildingData {
     suggestions: [],
     qarzFunds: [],
     notifications: [],
+    reminders: [],
+    serviceWorkers: [],
   }
 }
 
 function diyarMinoodari(): BuildingData {
+  const funds = [
+    {
+      id: 'fund-charge',
+      name: 'صندوق شارژ',
+      kind: 'charge' as const,
+      balance: 12_500_000,
+      createdAt: daysAgo(90),
+    },
+    {
+      id: 'fund-operating',
+      name: 'صندوق هزینه‌های جاری',
+      kind: 'operating' as const,
+      balance: 6_250_000,
+      createdAt: daysAgo(90),
+    },
+  ]
   return {
-    fundBalance: 18_750_000,
+    fundBalance: funds.reduce((s, f) => s + f.balance, 0),
+    funds,
     units: [
       {
         id: 'u1',
@@ -598,6 +648,42 @@ function diyarMinoodari(): BuildingData {
         createdAt: daysAgo(0),
         kind: 'reminder',
         read: false,
+      },
+    ],
+    reminders: [
+      {
+        id: 'rm1',
+        title: 'بازدید مخزن آب',
+        description: 'هماهنگی با تأسیسات برای بازدید فصلی مخزن.',
+        at: daysAgo(-3),
+        createdAt: daysAgo(2),
+      },
+      {
+        id: 'rm2',
+        title: 'پیگیری بدهی واحد ۱۰۲',
+        description: 'تماس تلفنی با ساکن برای تسویه مانده.',
+        at: daysAgo(-10),
+        createdAt: daysAgo(1),
+      },
+    ],
+    serviceWorkers: [
+      {
+        id: 'sw1',
+        name: 'احمد کریمی',
+        phone: '09121234567',
+        trade: 'آسانسور',
+        visibleToResidents: true,
+        description: 'سرویس ماهانه آسانسور — شرکت آریا.',
+        createdAt: daysAgo(20),
+      },
+      {
+        id: 'sw2',
+        name: 'مهدی نوری',
+        phone: '09129876543',
+        trade: 'برق',
+        visibleToResidents: false,
+        description: 'فقط برای تماس مدیر در اضطرار برق.',
+        createdAt: daysAgo(12),
       },
     ],
   }
