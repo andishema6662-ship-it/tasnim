@@ -28,7 +28,7 @@ export function ComplexDesk() {
     removeStaff,
   } = useStore()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<DeskTab>('staff')
+  const [tab, setTab] = useState<DeskTab>('reports')
   const [filterBlock, setFilterBlock] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<ComplexTicketStatus | 'all'>('all')
   const [staffForm, setStaffForm] = useState<TechnicalPerson | null>(null)

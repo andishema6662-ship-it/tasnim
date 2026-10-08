@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { JalaliDateField } from '../components/JalaliDateField'
 import { MiniBarChart } from '../components/MiniBarChart'
-import { faDate, faNum, toman, toLocalInput } from '../lib/format'
+import { faDate, faNum, toman } from '../lib/format'
 import { useStore } from '../store/StoreContext'
 import {
   COMPLEX_EXPENSE_CATEGORIES,
@@ -150,16 +151,11 @@ export function ComplexFinance({
               />
             </div>
           </div>
-          <div className="field">
-            <label>تاریخ</label>
-            <input
-              type="date"
-              value={toLocalInput(form.at).slice(0, 10)}
-              onChange={(e) =>
-                setForm({ ...form, at: `${e.target.value}T12:00:00.000Z` })
-              }
-            />
-          </div>
+          <JalaliDateField
+            label="تاریخ (شمسی)"
+            valueIso={form.at}
+            onChangeIso={(iso) => setForm({ ...form, at: iso })}
+          />
           <div className="field">
             <label>بلوک مرتبط (اختیاری)</label>
             <select

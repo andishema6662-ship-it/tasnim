@@ -2,7 +2,14 @@ import { useMemo, useState } from 'react'
 import { useBuildingFeatures } from '../components/FeatureGate'
 import { formulaLabel } from '../lib/charges'
 import { billRemaining, previewInstallments } from '../lib/installments'
-import { faDate, faNum, toman, toLocalInput } from '../lib/format'
+import { JalaliDateValueField } from '../components/JalaliDateField'
+import {
+  faDate,
+  faNum,
+  jalaliDateValueToIso,
+  toman,
+  toJalaliDateValue,
+} from '../lib/format'
 import { useBuildingState, useStore } from '../store/StoreContext'
 import type { Bill, DebtParty } from '../store/types'
 
@@ -13,7 +20,7 @@ export function Bills() {
   const [toast, setToast] = useState<string | null>(null)
   const [planBillId, setPlanBillId] = useState<string | null>(null)
   const [count, setCount] = useState(4)
-  const [startDate, setStartDate] = useState(toLocalInput(new Date().toISOString()).slice(0, 10))
+  const [startDate, setStartDate] = useState(toJalaliDateValue(new Date().toISOString()))
   const [intervalMonths, setIntervalMonths] = useState(1)
   const session = state.session!
   const isManager = session.role === 'manager' || session.role === 'financeManager'
@@ -29,7 +36,7 @@ export function Bills() {
     if (!planBill) return []
     const rem = billRemaining(planBill)
     if (rem <= 0) return []
-    return previewInstallments(rem, count, `${startDate}T12:00:00`, intervalMonths)
+    return previewInstallments(rem, count, jalaliDateValueToIso(startDate), intervalMonths)
   }, [planBill, count, startDate, intervalMonths])
 
   const pay = (billId: string, party: DebtParty) => {
@@ -156,7 +163,7 @@ export function Bills() {
                       onClick={() => {
                         setPlanBillId(b.id)
                         setCount(4)
-                        setStartDate(toLocalInput(new Date().toISOString()).slice(0, 10))
+                        setStartDate(toJalaliDateValue(new Date().toISOString()))
                       }}
                     >
                       {hasPlan ? 'بازتنظیم تقسیط' : 'تقسیط'}
@@ -199,10 +206,11 @@ export function Bills() {
               </select>
             </div>
           </div>
-          <div className="field">
-            <label>تاریخ شروع / اولین سررسید</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
+          <JalaliDateValueField
+            label="تاریخ شروع / اولین سررسید (شمسی)"
+            value={startDate}
+            onChange={setStartDate}
+          />
           <h3 style={{ fontSize: '0.95rem' }}>پیش‌نمایش</h3>
           <div className="list">
             {preview.map((p) => (
@@ -225,7 +233,7 @@ export function Bills() {
                 const ok = createInstallmentPlan(
                   planBill.id,
                   count,
-                  `${startDate}T12:00:00`,
+                  jalaliDateValueToIso(startDate),
                   intervalMonths,
                 )
                 if (ok) {

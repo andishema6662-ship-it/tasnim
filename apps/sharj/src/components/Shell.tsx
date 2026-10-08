@@ -67,7 +67,9 @@ export function Shell() {
         </div>
         <div style={{ textAlign: 'left' }}>
           <div className="meta">{state.session.displayName}</div>
-          <div className="sub">{roleLabel[state.session.role]}</div>
+          <div className="meta" style={{ opacity: 0.85 }}>
+            {roleLabel[state.session.role]}
+          </div>
           {session.viaSiteAdmin && (
             <button
               className="btn-ghost"

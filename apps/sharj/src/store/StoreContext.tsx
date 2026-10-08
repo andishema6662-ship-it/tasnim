@@ -16,6 +16,7 @@ import {
   buildVotes,
   computeMonthlyPerUnit,
 } from '../lib/qarz'
+import { faDateTime } from '../lib/format'
 import {
   createEmptyBuildingData,
   createSeed,
@@ -1179,7 +1180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return patchBuilding(p, bid, (data) => {
         const meeting = data.meetings.find((m) => m.id === meetingId)
         if (!meeting) return data
-        const when = new Date(meeting.scheduledAt).toLocaleString('fa-IR')
+        const when = faDateTime(meeting.scheduledAt)
         const place = meeting.place ? ` — ${meeting.place}` : ''
         return {
           ...data,

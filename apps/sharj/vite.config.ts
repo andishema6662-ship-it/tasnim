@@ -14,7 +14,7 @@ export default defineConfig({
         description: 'مدیریت شارژ، مالی و مشارکت ساکنین ساختمان',
         lang: 'fa',
         dir: 'rtl',
-        theme_color: '#0B3D3A',
+        theme_color: '#4C6FFF',
         background_color: '#E8DCC8',
         display: 'standalone',
         start_url: '/',

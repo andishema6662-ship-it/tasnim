@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { faDateTime, toLocalInput } from '../lib/format'
+import { JalaliDateTimeField } from '../components/JalaliDateField'
+import { faDateTime, localInputToIso, toLocalInput } from '../lib/format'
 import { useBuildingState, useStore } from '../store/StoreContext'
 import type { Meeting, MeetingAttendee } from '../store/types'
 
@@ -90,7 +91,7 @@ export function Meetings() {
 
   const save = () => {
     if (!form.title.trim() || !form.scheduledAt) return
-    const iso = new Date(form.scheduledAt).toISOString()
+    const iso = localInputToIso(form.scheduledAt)
     const resolutions = form.resolutionsText
       .split('\n')
       .map((x) => x.trim())
@@ -230,14 +231,11 @@ export function Meetings() {
             <label>عنوان جلسه</label>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </div>
-          <div className="field">
-            <label>تاریخ و ساعت</label>
-            <input
-              type="datetime-local"
-              value={form.scheduledAt}
-              onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
-            />
-          </div>
+          <JalaliDateTimeField
+            label="تاریخ و ساعت (شمسی)"
+            valueLocal={form.scheduledAt}
+            onChangeLocal={(v) => setForm({ ...form, scheduledAt: v })}
+          />
           <div className="field">
             <label>محل (اختیاری)</label>
             <input value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} />
