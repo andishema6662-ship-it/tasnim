@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Shell } from './components/Shell'
 import { Bills } from './pages/Bills'
+import { BlockTickets } from './pages/BlockTickets'
 import { Charges } from './pages/Charges'
 import { Chat } from './pages/Chat'
+import { ComplexDesk } from './pages/ComplexDesk'
 import { Expenses } from './pages/Expenses'
 import { Finance } from './pages/Finance'
 import { Home } from './pages/Home'
@@ -31,6 +33,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/app/site-admin" element={<SiteAdmin />} />
+          <Route path="/app/complex" element={<ComplexDesk />} />
           <Route path="/app" element={<Shell />}>
             <Route index element={<Home />} />
             <Route path="units" element={<Units />} />
@@ -46,6 +49,7 @@ export default function App() {
             <Route path="meetings" element={<Meetings />} />
             <Route path="suggestions" element={<Suggestions />} />
             <Route path="qarz" element={<QarzFund />} />
+            <Route path="block-tickets" element={<BlockTickets />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

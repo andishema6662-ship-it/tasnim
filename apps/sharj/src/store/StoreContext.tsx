@@ -20,8 +20,19 @@ import {
   createEmptyBuildingData,
   createSeed,
   normalizeBuildingData,
+  normalizeBuildingMeta,
   STORAGE_KEY,
 } from './seed'
+import { createPlatformAdmin } from './seedAdmin'
+import type {
+  ComplexTicket,
+  ComplexTicketStatus,
+  DiscountCode,
+  FeatureModuleId,
+  GatewayConfig,
+  SmsConfig,
+  TariffTier,
+} from './platformTypes'
 import type {
   Bill,
   BuildingData,
@@ -95,6 +106,34 @@ interface StoreApi {
   voteQarzFund: (fundId: string, approve: boolean) => boolean
   payQarzDue: (fundId: string, dueId: string, amount?: number) => string | null
   closeQarzFund: (fundId: string) => void
+  loginComplexManager: (username: string, password: string) => boolean
+  upsertDiscount: (code: DiscountCode) => void
+  upsertTariff: (tier: TariffTier) => void
+  updateSmsConfig: (sms: SmsConfig) => void
+  testSmsStub: () => string
+  updateGatewayConfig: (gw: GatewayConfig) => void
+  reviewSubscriptionPayment: (
+    id: string,
+    status: 'approved' | 'rejected',
+    asRole: 'siteAdmin' | 'manager',
+  ) => void
+  setBuildingStorageQuota: (buildingId: string, mb: number) => void
+  setBuildingFeatures: (buildingId: string, features: FeatureModuleId[]) => void
+  createComplexTicket: (input: {
+    title: string
+    body: string
+    category: string
+  }) => string | null
+  updateComplexTicket: (
+    id: string,
+    patch: {
+      status?: ComplexTicketStatus
+      assignedTeamId?: string
+      resolutionNote?: string
+      category?: string
+    },
+  ) => void
+  logActivity: (label: string, kind?: string, buildingId?: string) => void
   markNotificationsRead: () => void
 }
 
@@ -102,7 +141,9 @@ const StoreContext = createContext<StoreApi | null>(null)
 
 function loadState(): PlatformState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw =
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem('diyarsharj-v2')
     if (raw) {
       const parsed = JSON.parse(raw) as PlatformState
       if (parsed?.buildings && parsed?.byId) {
@@ -110,7 +151,9 @@ function loadState(): PlatformState {
         for (const [id, data] of Object.entries(parsed.byId)) {
           byId[id] = normalizeBuildingData(data)
         }
-        return { ...parsed, byId }
+        const buildings = parsed.buildings.map(normalizeBuildingMeta)
+        const admin = parsed.admin ?? createPlatformAdmin()
+        return { ...parsed, buildings, byId, admin }
       }
     }
   } catch {
@@ -257,27 +300,281 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const upsertBuilding = useCallback((meta: BuildingMeta) => {
     setPlatform((p) => {
-      const exists = p.buildings.some((b) => b.id === meta.id)
-      const buildings = exists
-        ? p.buildings.map((b) => (b.id === meta.id ? meta : b))
-        : [meta, ...p.buildings]
+      const normalized = normalizeBuildingMeta(meta)
+      const exists = p.buildings.some((b) => b.id === normalized.id)
       const byId = { ...p.byId }
-      if (!byId[meta.id]) {
-        byId[meta.id] = createEmptyBuildingData()
+      if (!byId[normalized.id]) {
+        byId[normalized.id] = createEmptyBuildingData()
       }
-      // keep unitCount in sync when possible
-      const liveCount = byId[meta.id].units.length
+      const liveCount = byId[normalized.id].units.length
       const synced = {
-        ...meta,
-        unitCount: liveCount > 0 ? liveCount : meta.unitCount,
+        ...normalized,
+        unitCount: liveCount > 0 ? liveCount : normalized.unitCount,
       }
+      const buildings = exists
+        ? p.buildings.map((b) => (b.id === synced.id ? synced : b))
+        : [synced, ...p.buildings]
       return {
         ...p,
-        buildings: buildings.map((b) => (b.id === synced.id ? synced : b)),
+        buildings,
         byId,
+        admin: {
+          ...p.admin,
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'property',
+              label: exists ? `ویرایش ${synced.name}` : `افزودن ${synced.name}`,
+              buildingId: synced.id,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
       }
     })
   }, [])
+
+  const loginComplexManager = useCallback((username: string, password: string) => {
+    const complex = platform.admin.complexes.find(
+      (c) =>
+        c.username === username.trim() &&
+        c.password === password &&
+        c.status === 'active',
+    )
+    if (!complex) return false
+    setPlatform((p) => ({
+      ...p,
+      session: {
+        role: 'complexManager',
+        complexId: complex.id,
+        displayName: `مدیر شهرک — ${complex.name}`,
+      },
+    }))
+    return true
+  }, [platform.admin.complexes])
+
+  const logActivity = useCallback((label: string, kind = 'info', buildingId?: string) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        activity: [
+          {
+            id: `act-${Date.now()}`,
+            at: new Date().toISOString(),
+            kind,
+            label,
+            buildingId,
+          },
+          ...p.admin.activity,
+        ].slice(0, 80),
+      },
+    }))
+  }, [])
+
+  const upsertDiscount = useCallback((code: DiscountCode) => {
+    setPlatform((p) => {
+      const exists = p.admin.discounts.some((d) => d.id === code.id)
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          discounts: exists
+            ? p.admin.discounts.map((d) => (d.id === code.id ? code : d))
+            : [code, ...p.admin.discounts],
+        },
+      }
+    })
+  }, [])
+
+  const upsertTariff = useCallback((tier: TariffTier) => {
+    setPlatform((p) => {
+      const exists = p.admin.tariffs.some((t) => t.id === tier.id)
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          tariffs: exists
+            ? p.admin.tariffs.map((t) => (t.id === tier.id ? tier : t))
+            : [tier, ...p.admin.tariffs],
+        },
+      }
+    })
+  }, [])
+
+  const updateSmsConfig = useCallback((sms: SmsConfig) => {
+    setPlatform((p) => ({ ...p, admin: { ...p.admin, sms } }))
+  }, [])
+
+  const testSmsStub = useCallback(() => {
+    const msg = 'تست پیامک شبیه‌سازی شد — اتصال واقعی به‌زودی'
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        sms: {
+          ...p.admin.sms,
+          lastTestAt: new Date().toISOString(),
+          lastTestResult: msg,
+        },
+        activity: [
+          {
+            id: `act-sms-${Date.now()}`,
+            at: new Date().toISOString(),
+            kind: 'sms',
+            label: 'تست وب‌سرویس پیامک (stub)',
+          },
+          ...p.admin.activity,
+        ].slice(0, 80),
+      },
+    }))
+    return msg
+  }, [])
+
+  const updateGatewayConfig = useCallback((gw: GatewayConfig) => {
+    setPlatform((p) => ({ ...p, admin: { ...p.admin, gateway: gw } }))
+  }, [])
+
+  const reviewSubscriptionPayment = useCallback(
+    (id: string, status: 'approved' | 'rejected', asRole: 'siteAdmin' | 'manager') => {
+      setPlatform((p) => ({
+        ...p,
+        admin: {
+          ...p.admin,
+          subscriptionPayments: p.admin.subscriptionPayments.map((sp) =>
+            sp.id === id
+              ? {
+                  ...sp,
+                  status,
+                  reviewedAt: new Date().toISOString(),
+                  reviewedBy:
+                    asRole === 'siteAdmin'
+                      ? 'مدیر سایت'
+                      : p.session?.displayName ?? 'مدیر بلوک',
+                }
+              : sp,
+          ),
+          activity: [
+            {
+              id: `act-sub-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'payment',
+              label: `${status === 'approved' ? 'تأیید' : 'رد'} پرداخت اشتراک ${id}`,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }))
+    },
+    [],
+  )
+
+  const setBuildingStorageQuota = useCallback((buildingId: string, mb: number) => {
+    setPlatform((p) => ({
+      ...p,
+      buildings: p.buildings.map((b) =>
+        b.id === buildingId ? { ...b, storageQuotaMb: Math.max(50, mb) } : b,
+      ),
+    }))
+  }, [])
+
+  const setBuildingFeatures = useCallback(
+    (buildingId: string, features: FeatureModuleId[]) => {
+      setPlatform((p) => ({
+        ...p,
+        buildings: p.buildings.map((b) =>
+          b.id === buildingId ? { ...b, enabledFeatures: features } : b,
+        ),
+        admin: {
+          ...p.admin,
+          activity: [
+            {
+              id: `act-feat-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'feature',
+              label: 'به‌روزرسانی امکانات بلوک',
+              buildingId,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }))
+    },
+    [],
+  )
+
+  const createComplexTicket = useCallback(
+    (input: { title: string; body: string; category: string }) => {
+      let id: string | null = null
+      setPlatform((p) => {
+        if (p.session?.role !== 'manager' || !p.session.buildingId) return p
+        const building = p.buildings.find((b) => b.id === p.session!.buildingId)
+        if (!building?.complexId) return p
+        id = `tkt-${Date.now()}`
+        const ticket: ComplexTicket = {
+          id,
+          complexId: building.complexId,
+          buildingId: building.id,
+          category: input.category.trim() || 'سایر',
+          title: input.title.trim(),
+          body: input.body.trim(),
+          status: 'open',
+          createdBy: `${p.session.displayName} (مدیر بلوک)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        return {
+          ...p,
+          admin: {
+            ...p.admin,
+            tickets: [ticket, ...p.admin.tickets],
+            activity: [
+              {
+                id: `act-tkt-${Date.now()}`,
+                at: new Date().toISOString(),
+                kind: 'ticket',
+                label: `تیکت جدید: ${ticket.title}`,
+                buildingId: building.id,
+              },
+              ...p.admin.activity,
+            ].slice(0, 80),
+          },
+        }
+      })
+      return id
+    },
+    [],
+  )
+
+  const updateComplexTicket = useCallback(
+    (
+      id: string,
+      patch: {
+        status?: ComplexTicketStatus
+        assignedTeamId?: string
+        resolutionNote?: string
+        category?: string
+      },
+    ) => {
+      setPlatform((p) => ({
+        ...p,
+        admin: {
+          ...p.admin,
+          tickets: p.admin.tickets.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  ...patch,
+                  updatedAt: new Date().toISOString(),
+                }
+              : t,
+          ),
+        },
+      }))
+    },
+    [],
+  )
 
   const withBuilding = useCallback((fn: (data: BuildingData) => BuildingData) => {
     setPlatform((p) => {
@@ -1055,6 +1352,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       voteQarzFund,
       payQarzDue,
       closeQarzFund,
+      loginComplexManager,
+      upsertDiscount,
+      upsertTariff,
+      updateSmsConfig,
+      testSmsStub,
+      updateGatewayConfig,
+      reviewSubscriptionPayment,
+      setBuildingStorageQuota,
+      setBuildingFeatures,
+      createComplexTicket,
+      updateComplexTicket,
+      logActivity,
       markNotificationsRead,
     }),
     [
@@ -1088,6 +1397,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       voteQarzFund,
       payQarzDue,
       closeQarzFund,
+      loginComplexManager,
+      upsertDiscount,
+      upsertTariff,
+      updateSmsConfig,
+      testSmsStub,
+      updateGatewayConfig,
+      reviewSubscriptionPayment,
+      setBuildingStorageQuota,
+      setBuildingFeatures,
+      createComplexTicket,
+      updateComplexTicket,
+      logActivity,
       markNotificationsRead,
     ],
   )

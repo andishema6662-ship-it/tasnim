@@ -25,6 +25,9 @@ export function Shell() {
   if (session.role === 'siteAdmin' && !session.viaSiteAdmin) {
     return <Navigate to="/app/site-admin" replace />
   }
+  if (session.role === 'complexManager') {
+    return <Navigate to="/app/complex" replace />
+  }
   if (!state) return <Navigate to="/login" replace />
 
   const nav = state.session.role === 'manager' ? managerNav : residentNav

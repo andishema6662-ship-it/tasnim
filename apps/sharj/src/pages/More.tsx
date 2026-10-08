@@ -8,6 +8,7 @@ export function More() {
 
   const links = [
     { to: '/app/qarz', label: 'صندوق قرض‌الحسنه' },
+    ...(isManager ? [{ to: '/app/block-tickets', label: 'ارجاع مشکل به مدیر شهرک' }] : []),
     { to: '/app/suggestions', label: 'نظرات و پیشنهادات' },
     { to: '/app/meetings', label: 'جلسات، مصوبات و حاضرین' },
     { to: '/app/bills', label: 'قبوض و تقسیط شارژ' },

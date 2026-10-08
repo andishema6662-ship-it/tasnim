@@ -4,11 +4,12 @@ import type {
   PlatformState,
   SuggestionCategory,
 } from './types'
+import { ALL_FEATURES, createPlatformAdmin } from './seedAdmin'
 
 const now = Date.now()
 const daysAgo = (d: number) => new Date(now - d * 86400000).toISOString()
 
-export const STORAGE_KEY = 'diyarsharj-v2'
+export const STORAGE_KEY = 'diyarsharj-v3'
 
 /** Tiny demo illustration (SVG data URL) — not a real user photo */
 const DEMO_PHOTO =
@@ -45,6 +46,17 @@ export function normalizeBuildingData(data: BuildingData): BuildingData {
         : defaultSuggestionCategories(),
     suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
     qarzFunds: Array.isArray(data.qarzFunds) ? data.qarzFunds : [],
+  }
+}
+
+export function normalizeBuildingMeta(meta: BuildingMeta): BuildingMeta {
+  return {
+    ...meta,
+    storageQuotaMb: meta.storageQuotaMb ?? 500,
+    enabledFeatures:
+      Array.isArray(meta.enabledFeatures) && meta.enabledFeatures.length > 0
+        ? meta.enabledFeatures
+        : [...ALL_FEATURES],
   }
 }
 
@@ -728,6 +740,9 @@ const buildingMetas: BuildingMeta[] = [
     managerPhone: '0912••••010',
     subscriptionUnits: 4,
     subscriptionMonths: 12,
+    complexId: 'cpx-minoodar',
+    storageQuotaMb: 800,
+    enabledFeatures: [...ALL_FEATURES],
   },
   {
     id: 'bld-sepehr',
@@ -740,11 +755,13 @@ const buildingMetas: BuildingMeta[] = [
     managerPhone: '0912••••020',
     subscriptionUnits: 48,
     subscriptionMonths: 6,
+    storageQuotaMb: 2000,
+    enabledFeatures: [...ALL_FEATURES],
   },
   {
     id: 'bld-aftab',
     name: 'بلوک ب آفتاب',
-    address: 'کرج، مهرشهر',
+    address: 'کرج / شهرک مینودر',
     unitCount: 2,
     type: 'block',
     status: 'active',
@@ -752,6 +769,9 @@ const buildingMetas: BuildingMeta[] = [
     managerPhone: '0912••••030',
     subscriptionUnits: 12,
     subscriptionMonths: 3,
+    complexId: 'cpx-minoodar',
+    storageQuotaMb: 400,
+    enabledFeatures: ALL_FEATURES.filter((f) => f !== 'chat'),
   },
 ]
 
@@ -764,6 +784,7 @@ export function createSeed(): PlatformState {
       'bld-sepehr': sepehrTower(),
       'bld-aftab': aftabBlock(),
     },
+    admin: createPlatformAdmin(),
   }
 }
 

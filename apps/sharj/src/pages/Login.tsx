@@ -3,13 +3,15 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/StoreContext'
 import { SITE_ADMIN_DEMO, buildingTypeLabel, type Role } from '../store/types'
 
-type LoginMode = 'building' | 'siteAdmin'
+type LoginMode = 'building' | 'siteAdmin' | 'complexManager'
+
+const COMPLEX_DEMO = { username: 'complex', password: 'complex123' } as const
 
 export function Login() {
-  const { platform, loginBuilding, loginSiteAdmin } = useStore()
+  const { platform, loginBuilding, loginSiteAdmin, loginComplexManager } = useStore()
   const navigate = useNavigate()
   const [mode, setMode] = useState<LoginMode>('building')
-  const [role, setRole] = useState<Exclude<Role, 'siteAdmin'>>('manager')
+  const [role, setRole] = useState<Exclude<Role, 'siteAdmin' | 'complexManager'>>('manager')
   const activeBuildings = useMemo(
     () => platform.buildings.filter((b) => b.status === 'active'),
     [platform.buildings],
@@ -27,6 +29,14 @@ export function Login() {
     setUnitId(first)
   }
 
+  const onModeChange = (next: LoginMode) => {
+    setMode(next)
+    setError(null)
+    setPassword('')
+    if (next === 'siteAdmin') setUsername(SITE_ADMIN_DEMO.username)
+    else if (next === 'complexManager') setUsername(COMPLEX_DEMO.username)
+  }
+
   return (
     <div className="app-shell auth">
       <div className="page" style={{ paddingTop: 28 }}>
@@ -38,19 +48,19 @@ export function Login() {
           </div>
         </div>
         <h2>ورود</h2>
-        <p className="lead">مدیر سایت همه ساختمان‌ها را مدیریت می‌کند؛ مدیر و ساکن فقط ساختمان خود را می‌بینند.</p>
+        <p className="lead">
+          مدیر سایت همه املاک را می‌بیند؛ مدیر شهرک تیکت‌های فنی بلوک‌ها را؛ مدیر و ساکن فقط ساختمان خود را.
+        </p>
 
         <div className="panel">
           <div className="field">
             <label>نوع ورود</label>
             <select
               value={mode}
-              onChange={(e) => {
-                setMode(e.target.value as LoginMode)
-                setError(null)
-              }}
+              onChange={(e) => onModeChange(e.target.value as LoginMode)}
             >
               <option value="building">مدیر / ساکن ساختمان</option>
+              <option value="complexManager">مدیر شهرک</option>
               <option value="siteAdmin">مدیر سایت (سوپرادمین)</option>
             </select>
           </div>
@@ -89,6 +99,42 @@ export function Login() {
                 }}
               >
                 ورود به پنل سایت
+              </button>
+            </>
+          ) : mode === 'complexManager' ? (
+            <>
+              <div className="field">
+                <label>نام کاربری</label>
+                <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+              </div>
+              <div className="field">
+                <label>رمز عبور</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="complex123"
+                />
+              </div>
+              <div className="sub" style={{ marginBottom: 12 }}>
+                دمو شهرک مینودر: <strong>{COMPLEX_DEMO.username}</strong> /{' '}
+                <strong>{COMPLEX_DEMO.password}</strong>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%' }}
+                onClick={() => {
+                  const ok = loginComplexManager(username, password)
+                  if (!ok) {
+                    setError('نام کاربری یا رمز مدیر شهرک نادرست است.')
+                    return
+                  }
+                  navigate('/app/complex')
+                }}
+              >
+                ورود به میز شهرک
               </button>
             </>
           ) : (

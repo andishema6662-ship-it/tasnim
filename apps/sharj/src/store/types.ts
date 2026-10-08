@@ -1,7 +1,11 @@
-export type Role = 'siteAdmin' | 'manager' | 'resident'
+import type { FeatureModuleId, PlatformAdmin } from './platformTypes'
+
+export type Role = 'siteAdmin' | 'complexManager' | 'manager' | 'resident'
 
 export type BuildingType = 'block' | 'building' | 'tower'
 export type BuildingStatus = 'active' | 'disabled'
+
+export type { FeatureModuleId, PlatformAdmin } from './platformTypes'
 
 export type ChargeFormula = 'fixed' | 'area' | 'perPerson' | 'consumption'
 export type ChargePeriod = 'monthly' | 'seasonal'
@@ -22,6 +26,9 @@ export interface BuildingMeta {
   /** Demo subscription: billed unit count (may differ from live units) */
   subscriptionUnits: number
   subscriptionMonths: number
+  complexId?: string
+  storageQuotaMb: number
+  enabledFeatures: FeatureModuleId[]
 }
 
 export interface Unit {
@@ -273,6 +280,7 @@ export interface Session {
   role: Role
   buildingId?: string
   unitId?: string
+  complexId?: string
   displayName: string
   /** Site admin temporarily managing a building as manager UI */
   viaSiteAdmin?: boolean
@@ -282,6 +290,7 @@ export interface PlatformState {
   session: Session | null
   buildings: BuildingMeta[]
   byId: Record<string, BuildingData>
+  admin: PlatformAdmin
 }
 
 /** Building-scoped view used by existing app screens */
