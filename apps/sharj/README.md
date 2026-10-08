@@ -5,8 +5,9 @@ PWA موبایل‌اول برای **مدیریت شارژ ساختمان** — 
 - Live: https://sharj.diyareminoodari.ir
 - Document root (cPanel): `/home/h430544/sharj`
 - Stack: Vite + React + TypeScript + vite-plugin-pwa
-- داده دمو: `localStorage` کلید `diyarsharj-v2` (چندساختمانی)
-- مدیر سایت دمو: کاربر `admin` / رمز `admin123` → `/app/site-admin`
+- داده دمو: `localStorage` کلید `diyarsharj-v3` (مهاجرت از v2)
+- مدیر سایت: `admin` / `admin123` → `/app/site-admin`
+- مدیر شهرک: `complex` / `complex123` → `/app/complex`
 
 ## توسعه
 
