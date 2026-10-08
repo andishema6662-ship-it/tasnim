@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GroupedBarChart } from '../components/GroupedBarChart'
 import { RequestsDataTable } from '../components/RequestsDataTable'
 import { BroadcastBanner } from '../components/BroadcastBanner'
 import { catalogOrDefault, hasPaidAddon } from '../lib/features'
+import { complexMonthlyCashflow } from '../lib/financeChart'
 import { faDate, faNum } from '../lib/format'
 import {
   STAFF_SPECIALTIES,
@@ -70,6 +72,11 @@ export function ComplexDesk() {
       .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
   }, [platform.admin.tickets, complex, filterBlock, filterStatus])
 
+  const cashflowMonths = useMemo(
+    () => (complex ? complexMonthlyCashflow(platform, complex.id, 6) : []),
+    [platform, complex],
+  )
+
   const flash = (m: string) => {
     setToast(m)
     setTimeout(() => setToast(null), 2200)
@@ -107,9 +114,9 @@ export function ComplexDesk() {
       <div className="page" style={{ paddingTop: 18 }}>
         <header className="topbar">
           <div className="brand-mark">
-            <div className="logo">د</div>
+            <div className="logo">ش</div>
             <div>
-              <div className="name">دیارشارژ</div>
+              <div className="name">شارژبان</div>
               <span className="tag">{complex.name}</span>
             </div>
           </div>
@@ -181,6 +188,23 @@ export function ComplexDesk() {
             <span className="label">نیروی فعال</span>
             <span className="value">{staff.filter((s) => s.active).length}</span>
           </div>
+        </div>
+
+        <div className="panel dash-chart-panel">
+          <div className="page-head" style={{ marginBottom: 8 }}>
+            <h3 style={{ margin: 0 }}>نمودار میله‌ای — ۶ ماه اخیر شهرک</h3>
+            <button type="button" className="btn-ghost" onClick={() => setTab('finance')}>
+              مالی
+            </button>
+          </div>
+          <p className="sub" style={{ marginTop: 0 }}>
+            تجمیع دریافتی/هزینه بلوک‌ها + دفتر مالی شهرک — برچسب ماه شمسی.
+          </p>
+          <GroupedBarChart
+            months={cashflowMonths}
+            seriesALabel="دریافتی / درآمد"
+            seriesBLabel="هزینه"
+          />
         </div>
 
         {tab === 'staff' && (

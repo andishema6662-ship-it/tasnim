@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'دیارشارژ — مدیریت شارژ ساختمان',
-        short_name: 'دیارشارژ',
+        name: 'شارژبان — مدیریت شارژ ساختمان',
+        short_name: 'شارژبان',
         description: 'مدیریت شارژ، مالی و مشارکت ساکنین ساختمان',
         lang: 'fa',
         dir: 'rtl',

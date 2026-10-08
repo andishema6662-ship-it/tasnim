@@ -150,9 +150,9 @@ export function SiteAdmin() {
       <div className="page site-admin-page" style={{ paddingTop: 18 }}>
         <header className="topbar">
           <div className="brand-mark">
-            <div className="logo">د</div>
+            <div className="logo">ش</div>
             <div>
-              <div className="name">دیارشارژ</div>
+              <div className="name">شارژبان</div>
               <span className="tag">پنل مدیریت سایت</span>
             </div>
           </div>

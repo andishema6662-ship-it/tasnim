@@ -22,9 +22,25 @@ export function More() {
   const isManager = role === 'manager'
   const isFinance = isFinanceScoped(role)
 
-  type LinkItem = { to: string; label: string; feature?: FeatureModuleId }
+  type LinkItem = { to: string; label: string; feature?: FeatureModuleId; group?: string }
+
+  const opsLinks: LinkItem[] = [
+    ...(isManager || isFinance
+      ? [
+          { to: '/app/reminders', label: 'یادآوری‌ها', group: 'ops' },
+          { to: '/app/services', label: 'امور خدماتی', group: 'ops' },
+          {
+            to: '/app/finance?tab=status',
+            label: 'مالی — صورت وضعیت و صندوق‌ها',
+            feature: 'finance' as const,
+            group: 'ops',
+          },
+        ]
+      : [{ to: '/app/services', label: 'امور خدماتی', group: 'ops' }]),
+  ]
 
   const links: LinkItem[] = [
+    ...opsLinks,
     { to: '/app/qarz', label: 'صندوق قرض‌الحسنه', feature: 'qarz' },
     { to: '/app/programs', label: 'برنامه‌های جانبی شهرک/بلوک' },
     ...(isManager
@@ -46,7 +62,7 @@ export function More() {
       : []),
     { to: '/app/bills', label: 'قبوض و تقسیط شارژ' },
     { to: '/app/payments', label: 'پرداخت‌ها و رسیدها', feature: 'payments' },
-    { to: '/app/notifications', label: 'اعلان‌ها و یادآوری' },
+    { to: '/app/notifications', label: 'اعلان‌ها' },
     ...(!isFinance
       ? [
           { to: '/app/news', label: 'کانال خبری', feature: 'news' as const },
@@ -78,7 +94,7 @@ export function More() {
   const catalog = links
     .map((l) => ({
       ...l,
-      access: menuAccessFor(role, l.to, l.feature, features),
+      access: menuAccessFor(role, l.to.split('?')[0], l.feature, features),
     }))
     // Hide role-locked items entirely (wrong role); keep activation-needed visible with CTA
     .filter((l) => l.access !== 'role_locked')
@@ -86,18 +102,39 @@ export function More() {
   const openItems = catalog.filter((l) => l.access === 'open')
   const lockedItems = catalog.filter((l) => l.access === 'needs_activation')
   const canActivate = isManager || role === 'complexManager' || role === 'siteAdmin'
+  const opsOpen = openItems.filter((l) => l.group === 'ops')
+  const otherOpen = openItems.filter((l) => l.group !== 'ops')
 
   return (
     <div className="page">
-      <h2>بیشتر</h2>
+      <h2>تنظیمات</h2>
       <p className="lead">
         {isFinance
-          ? 'منوی مالی بلوک — امکانات غیرمالی برای این نقش مخفی است.'
-          : '«باز» یعنی همین الان قابل ورود است. موارد قفل‌شده نیاز به فعال‌سازی دارند.'}
+          ? 'تنظیمات مالی بلوک — امکانات غیرمالی برای این نقش مخفی است.'
+          : 'عملیات بلوک، یادآوری، خدمات و دسترسی به بخش‌های اپ.'}
       </p>
+
+      {opsOpen.length > 0 && (
+        <div className="panel">
+          <h3>عملیات بلوک</h3>
+          <div className="list">
+            {opsOpen.map((l) => {
+              const badge = ACCESS_BADGE.open
+              return (
+                <Link className="list-item" key={l.to + l.label} to={l.to}>
+                  <div className="title">{l.label}</div>
+                  <span className={badge.className}>{badge.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="panel">
+        <h3>منوی تنظیمات</h3>
         <div className="list">
-          {openItems.map((l) => {
+          {otherOpen.map((l) => {
             const badge = ACCESS_BADGE.open
             return (
               <Link className="list-item" key={l.to + l.label} to={l.to}>
@@ -106,7 +143,7 @@ export function More() {
               </Link>
             )
           })}
-          {openItems.length === 0 && <div className="empty">مورد بازی نیست.</div>}
+          {otherOpen.length === 0 && <div className="empty">مورد بازی نیست.</div>}
         </div>
       </div>
       {lockedItems.length > 0 && (
@@ -120,7 +157,7 @@ export function More() {
                   <div>
                     <div className="title">{l.label}</div>
                     <div className="sub">
-                      {roleAllowsPath(role, l.to)
+                      {roleAllowsPath(role, l.to.split('?')[0])
                         ? 'برای این ساختمان فعال نیست.'
                         : 'نقش شما به این بخش دسترسی ندارد.'}
                     </div>

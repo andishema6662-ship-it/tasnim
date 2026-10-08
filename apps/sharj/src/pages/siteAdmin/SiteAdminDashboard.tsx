@@ -1,3 +1,6 @@
+import { useMemo } from 'react'
+import { GroupedBarChart } from '../../components/GroupedBarChart'
+import { adminMonthlySubscriptionSeries } from '../../lib/financeChart'
 import { faDate, faNum, toman } from '../../lib/format'
 import { isSubPaid } from '../../store/platformTypes'
 import type { SiteAdminSection } from '../../store/platformTypes'
@@ -19,6 +22,11 @@ export function SiteAdminDashboard({
     platform.buildings.reduce((n, b) => n + (platform.byId[b.id]?.units.length ?? 0), 0) +
     platform.admin.complexes.length
 
+  const subMonths = useMemo(
+    () => adminMonthlySubscriptionSeries(platform.admin.subscriptionPayments, 6),
+    [platform.admin.subscriptionPayments],
+  )
+
   const shortcuts: { id: SiteAdminSection; label: string; hint: string }[] = [
     { id: 'properties', label: 'املاک', hint: `${faNum(platform.buildings.length)} ملک` },
     { id: 'users', label: 'کاربران', hint: `${faNum(platform.admin.users.length)} نفر` },
@@ -33,7 +41,7 @@ export function SiteAdminDashboard({
       <div className="sa-hero">
         <div>
           <p className="sa-hero__eyebrow">پیشخوان ادمین کل</p>
-          <h3 className="sa-hero__title">سلام، مدیریت پلتفرم دیارشارژ</h3>
+          <h3 className="sa-hero__title">سلام، مدیریت پلتفرم شارژبان</h3>
           <p className="sa-hero__lead">
             نمای کلی املاک، اشتراک‌ها، پشتیبانی و جریان مالی — از اینجا به هر بخش بروید.
           </p>
@@ -66,6 +74,23 @@ export function SiteAdminDashboard({
           <span className="sa-kpi__label">تیکت پشتیبانی باز</span>
           <span className="sa-kpi__value">{faNum(openSupport)}</span>
         </div>
+      </div>
+
+      <div className="panel dash-chart-panel">
+        <div className="page-head" style={{ marginBottom: 8 }}>
+          <h3 style={{ margin: 0 }}>نمودار میله‌ای — اشتراک ۶ ماه</h3>
+          <button type="button" className="btn-ghost" onClick={() => onNavigate('finance')}>
+            مالی
+          </button>
+        </div>
+        <p className="sub" style={{ marginTop: 0 }}>
+          مبلغ اشتراک تأییدشده در برابر فیش‌های در انتظار — ماه شمسی.
+        </p>
+        <GroupedBarChart
+          months={subMonths}
+          seriesALabel="تأییدشده"
+          seriesBLabel="در انتظار"
+        />
       </div>
 
       <h3 className="sa-section-title">میان‌برها</h3>

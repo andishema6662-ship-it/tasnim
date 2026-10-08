@@ -3,6 +3,7 @@ import { FeatureGate } from './components/FeatureGate'
 import { RoleGate } from './components/RoleGate'
 import { Shell } from './components/Shell'
 import { Bills } from './pages/Bills'
+import { BlockAccount } from './pages/BlockAccount'
 import { BlockTickets } from './pages/BlockTickets'
 import { BuildingBroadcasts } from './pages/BuildingBroadcasts'
 import { BuildingPrograms } from './pages/BuildingPrograms'
@@ -23,7 +24,9 @@ import { Notifications } from './pages/Notifications'
 import { Payments } from './pages/Payments'
 import { Polls } from './pages/Polls'
 import { QarzFund } from './pages/QarzFund'
+import { Reminders } from './pages/Reminders'
 import { Residents } from './pages/Residents'
+import { Services } from './pages/Services'
 import { SiteAdmin } from './pages/SiteAdmin'
 import { Splash } from './pages/Splash'
 import { Subscription } from './pages/Subscription'
@@ -58,6 +61,7 @@ export default function App() {
             <Route path="bills" element={<Guarded><Bills /></Guarded>} />
             <Route path="payments" element={<Guarded><Payments /></Guarded>} />
             <Route path="finance" element={<Guarded><Finance /></Guarded>} />
+            <Route path="block-account" element={<Guarded><BlockAccount /></Guarded>} />
             <Route path="debt/:unitId" element={<Guarded><UnitDebtReport /></Guarded>} />
             <Route path="expenses" element={<Guarded><Expenses /></Guarded>} />
             <Route path="polls" element={<Guarded><Polls /></Guarded>} />
@@ -77,6 +81,8 @@ export default function App() {
                 </Guarded>
               }
             />
+            <Route path="reminders" element={<Guarded><Reminders /></Guarded>} />
+            <Route path="services" element={<Guarded><Services /></Guarded>} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

@@ -131,6 +131,24 @@ export interface Payment {
   bankName?: string
 }
 
+export type BuildingFundKind = 'charge' | 'operating' | 'custom'
+
+export const BUILDING_FUND_KIND_LABEL: Record<BuildingFundKind, string> = {
+  charge: 'صندوق شارژ',
+  operating: 'صندوق هزینه‌های جاری',
+  custom: 'صندوق سفارشی',
+}
+
+/** Per-building money pot (charge / operating / custom). */
+export interface BuildingFund {
+  id: string
+  name: string
+  kind: BuildingFundKind
+  balance: number
+  note?: string
+  createdAt: string
+}
+
 export interface LedgerEntry {
   id: string
   kind: LedgerKind
@@ -140,10 +158,67 @@ export interface LedgerEntry {
   note: string
   createdAt: string
   visibleToResidents: boolean
+  fundId?: string
   paymentId?: string
   method?: PaymentMethod
   bankName?: string
   trackingCode?: string
+}
+
+export interface ManagerReminder {
+  id: string
+  title: string
+  description: string
+  /** ISO datetime (date + time) */
+  at: string
+  createdAt: string
+  done?: boolean
+}
+
+export const SERVICE_TRADES = [
+  'برق',
+  'لوله‌کشی',
+  'آسانسور',
+  'نظافت',
+  'باغبانی',
+  'نقاشی',
+  'تأسیسات',
+  'امنیت',
+  'سایر',
+] as const
+
+export type ServiceTrade = (typeof SERVICE_TRADES)[number]
+
+export interface ServiceWorker {
+  id: string
+  name: string
+  phone: string
+  trade: ServiceTrade | string
+  visibleToResidents: boolean
+  description: string
+  createdAt: string
+}
+
+export type OnboardingStepId = 'units' | 'charges' | 'residents' | 'account'
+
+export interface ManagerOnboarding {
+  /**
+   * Legacy: early dismiss. Banner no longer honors this until all steps
+   * are complete (then the banner hides via progress, not dismiss).
+   */
+  dismissed?: boolean
+  /** @deprecated Prefer blockBankAccount; kept for older saved state */
+  accountConfirmed?: boolean
+  /** Manager copied the fixed resident-invite SMS at least once */
+  inviteSmsCopied?: boolean
+}
+
+/** Bank details for the block (onboarding «حساب بلوک»). */
+export interface BlockBankAccount {
+  iban: string
+  cardNumber: string
+  holderName?: string
+  updatedAt: string
 }
 
 export interface PollOption {
@@ -297,7 +372,9 @@ export interface Suggestion {
 }
 
 export interface BuildingData {
+  /** Legacy aggregate; kept in sync with sum of funds (or primary charge fund). */
   fundBalance: number
+  funds: BuildingFund[]
   units: Unit[]
   residents: Resident[]
   schedules: ChargeSchedule[]
@@ -312,6 +389,11 @@ export interface BuildingData {
   suggestions: Suggestion[]
   qarzFunds: QarzFund[]
   notifications: NotificationItem[]
+  reminders: ManagerReminder[]
+  serviceWorkers: ServiceWorker[]
+  managerOnboarding?: ManagerOnboarding
+  /** IBAN + card registered by block manager */
+  blockBankAccount?: BlockBankAccount
 }
 
 export interface Session {

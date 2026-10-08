@@ -23,7 +23,7 @@ export function Units() {
     <div className="page">
       <h2>واحدها</h2>
       <p className="lead">اطلاعات واحد، ساکن، مالک، پارکینگ و خودرو / پلاک.</p>
-      <div className="list">
+      <div className="list list-grid-2">
         {state.units.map((u) => (
           <div className="panel" key={u.id}>
             <div className="list-item" style={{ paddingTop: 0 }}>

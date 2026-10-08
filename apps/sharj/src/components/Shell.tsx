@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BackButton } from './BackButton'
+import { OnboardingBanner } from './OnboardingBanner'
 import { effectiveFeatureSet } from '../lib/features'
 import { roleLabel } from '../lib/rbac'
 import { useStore } from '../store/StoreContext'
 import type { FeatureModuleId } from '../store/platformTypes'
 
-type NavIcon = 'home' | 'units' | 'charges' | 'finance' | 'more' | 'bills' | 'meetings' | 'polls'
+type NavIcon = 'home' | 'units' | 'charges' | 'finance' | 'settings' | 'bills' | 'meetings' | 'polls'
 
 type NavItem = {
   to: string
@@ -80,12 +81,11 @@ function NavSvg({ name }: { name: NavIcon }) {
           <path d="M8 12.2 10.8 15l5.2-6" />
         </svg>
       )
-    case 'more':
+    case 'settings':
       return (
         <svg {...common}>
-          <circle cx="6" cy="12" r="1.6" fill="currentColor" stroke="none" />
-          <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
-          <circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M5.8 5.8l1.6 1.6M16.6 16.6l1.6 1.6M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6" />
         </svg>
       )
   }
@@ -96,7 +96,7 @@ const managerNav: NavItem[] = [
   { to: '/app/units', label: 'واحدها', icon: 'units' },
   { to: '/app/charges', label: 'شارژ', icon: 'charges', feature: 'charges' },
   { to: '/app/finance', label: 'مالی', icon: 'finance', feature: 'finance' },
-  { to: '/app/more', label: 'بیشتر', icon: 'more' },
+  { to: '/app/more', label: 'تنظیمات', icon: 'settings' },
 ]
 
 const financeNav: NavItem[] = [
@@ -104,7 +104,7 @@ const financeNav: NavItem[] = [
   { to: '/app/charges', label: 'شارژ', icon: 'charges', feature: 'charges' },
   { to: '/app/bills', label: 'قبوض', icon: 'bills' },
   { to: '/app/finance', label: 'مالی', icon: 'finance', feature: 'finance' },
-  { to: '/app/more', label: 'بیشتر', icon: 'more' },
+  { to: '/app/more', label: 'تنظیمات', icon: 'settings' },
 ]
 
 const residentNav: NavItem[] = [
@@ -112,7 +112,7 @@ const residentNav: NavItem[] = [
   { to: '/app/bills', label: 'قبوض', icon: 'bills' },
   { to: '/app/meetings', label: 'جلسات', icon: 'meetings', feature: 'meetings' },
   { to: '/app/polls', label: 'نظرسنجی', icon: 'polls', feature: 'polls' },
-  { to: '/app/more', label: 'بیشتر', icon: 'more' },
+  { to: '/app/more', label: 'تنظیمات', icon: 'settings' },
 ]
 
 const NESTED = /^\/app\/(?!$|more$)/
@@ -158,10 +158,10 @@ export function Shell() {
           {showBack ? (
             <BackButton fallback="/app" label="بازگشت" className="back-ico-btn" />
           ) : (
-            <div className="logo">د</div>
+            <div className="logo">ش</div>
           )}
           <div>
-            <div className="name">دیارشارژ</div>
+            <div className="name">شارژبان</div>
             <span className="tag">{state.buildingName}</span>
           </div>
         </div>
@@ -247,6 +247,7 @@ export function Shell() {
         }}
       >
         {pulling && <div className="pull-hint">رها کنید برای بروزرسانی…</div>}
+        <OnboardingBanner />
         <Outlet />
       </div>
       <nav className="bottom-nav" aria-label="ناوبری اصلی">

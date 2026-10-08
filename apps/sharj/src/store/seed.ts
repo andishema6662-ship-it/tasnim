@@ -38,9 +38,36 @@ export function defaultSuggestionCategories(): SuggestionCategory[] {
   ]
 }
 
+function defaultFunds(balance: number): BuildingData['funds'] {
+  const now = new Date().toISOString()
+  return [
+    {
+      id: 'fund-charge',
+      name: 'صندوق شارژ',
+      kind: 'charge',
+      balance: Math.max(0, Math.round(balance * 0.7)),
+      createdAt: now,
+    },
+    {
+      id: 'fund-operating',
+      name: 'صندوق هزینه‌های جاری',
+      kind: 'operating',
+      balance: Math.max(0, Math.round(balance * 0.3)),
+      createdAt: now,
+    },
+  ]
+}
+
 export function normalizeBuildingData(data: BuildingData): BuildingData {
+  const funds =
+    Array.isArray(data.funds) && data.funds.length > 0
+      ? data.funds
+      : defaultFunds(data.fundBalance ?? 0)
+  const fundBalance = funds.reduce((s, f) => s + f.balance, 0)
   return {
     ...data,
+    funds,
+    fundBalance,
     units: (data.units ?? []).map((u) => ({
       ...u,
       vehicles: Array.isArray(u.vehicles) ? u.vehicles : [],
@@ -51,6 +78,8 @@ export function normalizeBuildingData(data: BuildingData): BuildingData {
         : defaultSuggestionCategories(),
     suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
     qarzFunds: Array.isArray(data.qarzFunds) ? data.qarzFunds : [],
+    reminders: Array.isArray(data.reminders) ? data.reminders : [],
+    serviceWorkers: Array.isArray(data.serviceWorkers) ? data.serviceWorkers : [],
     // Heal legacy polls where option.votes > 0 but votedBy was empty (manager/resident count skew)
     polls: (data.polls ?? []).map((p) => {
       const sum = (p.options ?? []).reduce((s, o) => s + (o.votes || 0), 0)
@@ -88,8 +117,10 @@ export function normalizeBuildingMeta(meta: BuildingMeta): BuildingMeta {
 }
 
 function emptyBuilding(fund = 0): BuildingData {
+  const funds = defaultFunds(fund)
   return {
-    fundBalance: fund,
+    fundBalance: funds.reduce((s, f) => s + f.balance, 0),
+    funds,
     units: [],
     residents: [],
     schedules: [],
@@ -104,12 +135,31 @@ function emptyBuilding(fund = 0): BuildingData {
     suggestions: [],
     qarzFunds: [],
     notifications: [],
+    reminders: [],
+    serviceWorkers: [],
   }
 }
 
 function diyarMinoodari(): BuildingData {
+  const funds = [
+    {
+      id: 'fund-charge',
+      name: 'صندوق شارژ',
+      kind: 'charge' as const,
+      balance: 12_500_000,
+      createdAt: daysAgo(90),
+    },
+    {
+      id: 'fund-operating',
+      name: 'صندوق هزینه‌های جاری',
+      kind: 'operating' as const,
+      balance: 6_250_000,
+      createdAt: daysAgo(90),
+    },
+  ]
   return {
-    fundBalance: 18_750_000,
+    fundBalance: funds.reduce((s, f) => s + f.balance, 0),
+    funds,
     units: [
       {
         id: 'u1',
@@ -308,6 +358,50 @@ function diyarMinoodari(): BuildingData {
         method: 'online-demo',
         bankName: 'بانک ملت — حساب مجتمع (دمو)',
       },
+      {
+        id: 'pay-seed-2',
+        billId: 'b2',
+        unitId: 'u2',
+        amount: 2_400_000,
+        party: 'owner',
+        trackingCode: 'DS-SEED-1002',
+        createdAt: daysAgo(18),
+        method: 'card',
+        bankName: 'بانک ملت — حساب مجتمع (دمو)',
+      },
+      {
+        id: 'pay-seed-3',
+        billId: 'b2',
+        unitId: 'u3',
+        amount: 3_100_000,
+        party: 'resident',
+        trackingCode: 'DS-SEED-0880',
+        createdAt: daysAgo(45),
+        method: 'online-demo',
+        bankName: 'بانک ملت — حساب مجتمع (دمو)',
+      },
+      {
+        id: 'pay-seed-4',
+        billId: 'b4',
+        unitId: 'u4',
+        amount: 1_800_000,
+        party: 'resident',
+        trackingCode: 'DS-SEED-0750',
+        createdAt: daysAgo(72),
+        method: 'cash',
+        bankName: 'صندوق ساختمان',
+      },
+      {
+        id: 'pay-seed-5',
+        billId: 'b1',
+        unitId: 'u1',
+        amount: 2_200_000,
+        party: 'owner',
+        trackingCode: 'DS-SEED-0620',
+        createdAt: daysAgo(100),
+        method: 'transfer',
+        bankName: 'بانک ملت — حساب مجتمع (دمو)',
+      },
     ],
     ledger: [
       {
@@ -319,6 +413,51 @@ function diyarMinoodari(): BuildingData {
         note: 'شرکت خدماتی آبان',
         createdAt: daysAgo(6),
         visibleToResidents: true,
+        fundId: 'fund-operating',
+      },
+      {
+        id: 'l-exp-2',
+        kind: 'expense',
+        category: 'آسانسور',
+        title: 'سرویس آسانسور شهریور',
+        amount: 2_800_000,
+        note: 'قرارداد ماهانه',
+        createdAt: daysAgo(32),
+        visibleToResidents: true,
+        fundId: 'fund-operating',
+      },
+      {
+        id: 'l-exp-3',
+        kind: 'expense',
+        category: 'برق',
+        title: 'قبض مشاعات مرداد',
+        amount: 1_950_000,
+        note: '',
+        createdAt: daysAgo(58),
+        visibleToResidents: true,
+        fundId: 'fund-operating',
+      },
+      {
+        id: 'l-exp-4',
+        kind: 'expense',
+        category: 'فضای سبز',
+        title: 'نگهداری فضای سبز تیر',
+        amount: 1_200_000,
+        note: '',
+        createdAt: daysAgo(88),
+        visibleToResidents: true,
+        fundId: 'fund-operating',
+      },
+      {
+        id: 'l-exp-5',
+        kind: 'expense',
+        category: 'نظافت',
+        title: 'مواد شوینده خرداد',
+        amount: 780_000,
+        note: '',
+        createdAt: daysAgo(118),
+        visibleToResidents: true,
+        fundId: 'fund-operating',
       },
       {
         id: 'l3',
@@ -332,6 +471,7 @@ function diyarMinoodari(): BuildingData {
         method: 'online-demo',
         bankName: 'بانک ملت — حساب مجتمع (دمو)',
         trackingCode: 'DS-SEED-0901',
+        fundId: 'fund-charge',
       },
       {
         id: 'l-pay-seed',
@@ -346,6 +486,7 @@ function diyarMinoodari(): BuildingData {
         method: 'online-demo',
         bankName: 'بانک ملت — حساب مجتمع (دمو)',
         trackingCode: 'DS-SEED-1001',
+        fundId: 'fund-charge',
       },
     ],
     polls: [
@@ -598,6 +739,42 @@ function diyarMinoodari(): BuildingData {
         createdAt: daysAgo(0),
         kind: 'reminder',
         read: false,
+      },
+    ],
+    reminders: [
+      {
+        id: 'rm1',
+        title: 'بازدید مخزن آب',
+        description: 'هماهنگی با تأسیسات برای بازدید فصلی مخزن.',
+        at: daysAgo(-3),
+        createdAt: daysAgo(2),
+      },
+      {
+        id: 'rm2',
+        title: 'پیگیری بدهی واحد ۱۰۲',
+        description: 'تماس تلفنی با ساکن برای تسویه مانده.',
+        at: daysAgo(-10),
+        createdAt: daysAgo(1),
+      },
+    ],
+    serviceWorkers: [
+      {
+        id: 'sw1',
+        name: 'احمد کریمی',
+        phone: '09121234567',
+        trade: 'آسانسور',
+        visibleToResidents: true,
+        description: 'سرویس ماهانه آسانسور — شرکت آریا.',
+        createdAt: daysAgo(20),
+      },
+      {
+        id: 'sw2',
+        name: 'مهدی نوری',
+        phone: '09129876543',
+        trade: 'برق',
+        visibleToResidents: false,
+        description: 'فقط برای تماس مدیر در اضطرار برق.',
+        createdAt: daysAgo(12),
       },
     ],
   }

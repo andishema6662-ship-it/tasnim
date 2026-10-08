@@ -2,13 +2,13 @@
 
 Monorepo-style workspace. Newsroom admin lives on branch `cursor/newsroom-admin-fa-5a6f` (PR #2).
 
-## Building charge PWA — دیارشارژ
+## Building charge PWA — شارژبان
 
 - Path: [`apps/sharj/`](apps/sharj/)
-- Live: https://sharj.diyareminoodari.ir
-- cPanel docroot: `/home/h430544/sharj` (subdomain `sharj.diyareminoodari.ir`, separate from main news site)
+- Live (target): https://sharzhban.ir — cPanel home `/home/h432694` (docroot TBD / typically `public_html`)
+- Previous: https://sharj.diyareminoodari.ir (`/home/h430544/sharj`)
 
 ```bash
 cd apps/sharj && npm install && npm run build
-# deploy dist/ → /home/h430544/sharj
+# deploy dist/ → sharzhban.ir docroot under /home/h432694
 ```
