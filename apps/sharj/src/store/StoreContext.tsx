@@ -41,11 +41,14 @@ import type {
   SideProgram,
   SiteSuggestion,
   SiteSuggestionStatus,
+  SiteSupportStatus,
+  SiteSupportTicket,
   SmsConfig,
   SubPeriodMonths,
   SubscriptionPayment,
   TariffTier,
   TechnicalPerson,
+  TechnicalTeam,
 } from './platformTypes'
 import { DEMO_OTP_CODE } from './platformTypes'
 import type {
@@ -140,7 +143,34 @@ interface StoreApi {
     overrideMonthly?: boolean
     note?: string
     submitForApproval: boolean
+    /** Site admin: create on this building (or first block of complex) */
+    buildingId?: string
+    assignedComplexId?: string
+    createdBySiteAdmin?: boolean
   }) => string | null
+  /** Site admin: create fund(s) for a block or every block in a complex */
+  createSiteQarzAssignment: (input: {
+    title: string
+    totalAmount: number
+    periodMonths: number
+    approvalThreshold: QarzApprovalThreshold
+    note?: string
+    target: 'block' | 'complex'
+    buildingId?: string
+    complexId?: string
+    submitForApproval?: boolean
+  }) => number
+  upsertTeam: (team: TechnicalTeam) => void
+  removeTeam: (id: string) => void
+  upsertSupportTicket: (ticket: SiteSupportTicket) => void
+  replySupportTicket: (id: string, body: string, fromStaff?: boolean) => void
+  setSupportTicketStatus: (id: string, status: SiteSupportStatus) => void
+  sendSiteChat: (threadId: string, body: string) => void
+  ensureSiteChatThread: (input: {
+    title: string
+    peerName: string
+    peerRole: string
+  }) => string
   submitQarzForApproval: (fundId: string) => boolean
   voteQarzFund: (fundId: string, approve: boolean) => boolean
   payQarzDue: (fundId: string, dueId: string, amount?: number) => string | null
@@ -235,13 +265,38 @@ function loadState(): PlatformState {
           otpChallenges: Array.isArray(parsed.admin?.otpChallenges)
             ? parsed.admin.otpChallenges
             : [],
-          users: (Array.isArray(parsed.admin?.users) && parsed.admin.users.length > 0
-            ? parsed.admin.users
-            : seeded.users
-          ).map((u) => {
-            const seed = seeded.users.find((s) => s.id === u.id || s.username === u.username)
-            return { ...u, phone: u.phone ?? seed?.phone }
-          }),
+          teams: (Array.isArray(parsed.admin?.teams) ? parsed.admin.teams : seeded.teams).map(
+            (t) => ({
+              ...t,
+              active: t.active !== false,
+            }),
+          ),
+          supportTickets: Array.isArray(parsed.admin?.supportTickets)
+            ? parsed.admin.supportTickets
+            : seeded.supportTickets,
+          siteChatThreads: Array.isArray(parsed.admin?.siteChatThreads)
+            ? parsed.admin.siteChatThreads
+            : seeded.siteChatThreads,
+          siteChatMessages: Array.isArray(parsed.admin?.siteChatMessages)
+            ? parsed.admin.siteChatMessages
+            : seeded.siteChatMessages,
+          changelog: Array.isArray(parsed.admin?.changelog)
+            ? parsed.admin.changelog
+            : seeded.changelog,
+          users: (() => {
+            const base =
+              Array.isArray(parsed.admin?.users) && parsed.admin.users.length > 0
+                ? parsed.admin.users
+                : seeded.users
+            const byUsername = new Map(base.map((u) => [u.username, u]))
+            for (const seed of seeded.users) {
+              if (!byUsername.has(seed.username)) byUsername.set(seed.username, seed)
+            }
+            return [...byUsername.values()].map((u) => {
+              const seed = seeded.users.find((s) => s.id === u.id || s.username === u.username)
+              return { ...u, phone: u.phone ?? seed?.phone }
+            })
+          })(),
           complexes: (Array.isArray(parsed.admin?.complexes)
             ? parsed.admin.complexes
             : seeded.complexes
@@ -1944,11 +1999,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       overrideMonthly?: boolean
       note?: string
       submitForApproval: boolean
+      buildingId?: string
+      assignedComplexId?: string
+      createdBySiteAdmin?: boolean
     }) => {
       let id: string | null = null
       setPlatform((p) => {
-        const bid = p.session?.buildingId
-        if (!bid || p.session?.role !== 'manager') return p
+        const role = p.session?.role
+        const bid =
+          input.buildingId ||
+          (role === 'manager' || role === 'siteAdmin' ? p.session?.buildingId : undefined)
+        if (!bid) return p
+        if (role !== 'manager' && role !== 'siteAdmin') return p
         const members = input.memberUnitIds.filter(Boolean)
         if (!input.title.trim() || members.length < 1 || input.periodMonths < 1) return p
         const override = Boolean(input.overrideMonthly && input.monthlyPerUnit)
@@ -1971,6 +2033,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           payments: [],
           note: input.note?.trim() || undefined,
           createdAt: new Date().toISOString(),
+          createdBySiteAdmin: input.createdBySiteAdmin || role === 'siteAdmin',
+          assignedComplexId: input.assignedComplexId,
         }
         return patchBuilding(p, bid, (data) => ({
           ...data,
@@ -1989,6 +2053,268 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               ]
             : data.notifications,
         }))
+      })
+      return id
+    },
+    [],
+  )
+
+  const createSiteQarzAssignment = useCallback(
+    (input: {
+      title: string
+      totalAmount: number
+      periodMonths: number
+      approvalThreshold: QarzApprovalThreshold
+      note?: string
+      target: 'block' | 'complex'
+      buildingId?: string
+      complexId?: string
+      submitForApproval?: boolean
+    }) => {
+      let created = 0
+      setPlatform((p) => {
+        if (p.session?.role !== 'siteAdmin') return p
+        if (!input.title.trim() || input.periodMonths < 1) return p
+        let buildingIds: string[] = []
+        if (input.target === 'block' && input.buildingId) {
+          buildingIds = [input.buildingId]
+        } else if (input.target === 'complex' && input.complexId) {
+          const cpx = p.admin.complexes.find((c) => c.id === input.complexId)
+          buildingIds = cpx?.blockIds?.length
+            ? [...cpx.blockIds]
+            : p.buildings.filter((b) => b.complexId === input.complexId).map((b) => b.id)
+        }
+        if (buildingIds.length === 0) return p
+        let next = p
+        const stamp = Date.now()
+        for (let i = 0; i < buildingIds.length; i++) {
+          const bid = buildingIds[i]
+          const data = next.byId[bid]
+          if (!data) continue
+          const members = data.units.map((u) => u.id)
+          if (members.length < 1) continue
+          const monthly = computeMonthlyPerUnit(
+            input.totalAmount,
+            members.length,
+            input.periodMonths,
+          )
+          const fund: QarzFund = {
+            id: `qf-site-${stamp}-${i}`,
+            title: input.title.trim(),
+            totalAmount: input.totalAmount,
+            periodMonths: input.periodMonths,
+            monthlyPerUnit: monthly,
+            overrideMonthly: false,
+            memberUnitIds: members,
+            approvalThreshold: input.approvalThreshold,
+            status: input.submitForApproval ? 'awaiting_approval' : 'draft',
+            votes: buildVotes(members),
+            dues: [],
+            payments: [],
+            note: input.note?.trim() || undefined,
+            createdAt: new Date().toISOString(),
+            createdBySiteAdmin: true,
+            assignedComplexId:
+              input.target === 'complex' ? input.complexId : undefined,
+          }
+          created += 1
+          next = patchBuilding(next, bid, (d) => ({
+            ...d,
+            qarzFunds: [fund, ...d.qarzFunds],
+          }))
+        }
+        if (created === 0) return p
+        return {
+          ...next,
+          admin: {
+            ...next.admin,
+            activity: [
+              {
+                id: `act-${stamp}`,
+                at: new Date().toISOString(),
+                kind: 'qarz',
+                label: `ایجاد مرکزی صندوق «${input.title.trim()}» (${created} محل)`,
+              },
+              ...next.admin.activity,
+            ].slice(0, 80),
+          },
+        }
+      })
+      return created
+    },
+    [],
+  )
+
+  const upsertTeam = useCallback((team: TechnicalTeam) => {
+    setPlatform((p) => {
+      const list = p.admin.teams ?? []
+      const exists = list.some((t) => t.id === team.id)
+      const next = { ...team, active: team.active !== false }
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          teams: exists
+            ? list.map((t) => (t.id === team.id ? next : t))
+            : [next, ...list],
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'team',
+              label: exists ? `ویرایش تیم ${team.name}` : `افزودن تیم ${team.name}`,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
+
+  const removeTeam = useCallback((id: string) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        teams: (p.admin.teams ?? []).filter((t) => t.id !== id),
+        tickets: p.admin.tickets.map((t) =>
+          t.assignedTeamId === id ? { ...t, assignedTeamId: undefined } : t,
+        ),
+      },
+    }))
+  }, [])
+
+  const upsertSupportTicket = useCallback((ticket: SiteSupportTicket) => {
+    setPlatform((p) => {
+      const list = p.admin.supportTickets ?? []
+      const exists = list.some((t) => t.id === ticket.id)
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          supportTickets: exists
+            ? list.map((t) => (t.id === ticket.id ? ticket : t))
+            : [ticket, ...list],
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'support',
+              label: exists
+                ? `بروزرسانی تیکت پشتیبانی: ${ticket.subject}`
+                : `تیکت پشتیبانی جدید: ${ticket.subject}`,
+              buildingId: ticket.buildingId,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
+
+  const replySupportTicket = useCallback(
+    (id: string, body: string, fromStaff = true) => {
+      const text = body.trim()
+      if (!text) return
+      setPlatform((p) => ({
+        ...p,
+        admin: {
+          ...p.admin,
+          supportTickets: (p.admin.supportTickets ?? []).map((t) => {
+            if (t.id !== id) return t
+            const at = new Date().toISOString()
+            return {
+              ...t,
+              status: fromStaff ? ('answered' as SiteSupportStatus) : t.status,
+              updatedAt: at,
+              messages: [
+                ...t.messages,
+                {
+                  id: `sm-${Date.now()}`,
+                  author: fromStaff
+                    ? p.session?.displayName || 'پشتیبانی'
+                    : t.requesterName,
+                  body: text,
+                  at,
+                  fromStaff,
+                },
+              ],
+            }
+          }),
+        },
+      }))
+    },
+    [],
+  )
+
+  const setSupportTicketStatus = useCallback((id: string, status: SiteSupportStatus) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        supportTickets: (p.admin.supportTickets ?? []).map((t) =>
+          t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t,
+        ),
+      },
+    }))
+  }, [])
+
+  const sendSiteChat = useCallback((threadId: string, body: string) => {
+    const text = body.trim()
+    if (!text) return
+    setPlatform((p) => {
+      const at = new Date().toISOString()
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          siteChatMessages: [
+            ...(p.admin.siteChatMessages ?? []),
+            {
+              id: `scm-${Date.now()}`,
+              threadId,
+              author: p.session?.displayName || 'ادمین',
+              body: text,
+              at,
+              mine: true,
+            },
+          ],
+          siteChatThreads: (p.admin.siteChatThreads ?? []).map((th) =>
+            th.id === threadId ? { ...th, updatedAt: at, unread: 0 } : th,
+          ),
+        },
+      }
+    })
+  }, [])
+
+  const ensureSiteChatThread = useCallback(
+    (input: { title: string; peerName: string; peerRole: string }) => {
+      let id = `sch-${Date.now()}`
+      setPlatform((p) => {
+        const existing = (p.admin.siteChatThreads ?? []).find(
+          (t) => t.peerName === input.peerName && t.title === input.title,
+        )
+        if (existing) {
+          id = existing.id
+          return p
+        }
+        return {
+          ...p,
+          admin: {
+            ...p.admin,
+            siteChatThreads: [
+              {
+                id,
+                title: input.title,
+                peerName: input.peerName,
+                peerRole: input.peerRole,
+                unread: 0,
+                updatedAt: new Date().toISOString(),
+              },
+              ...(p.admin.siteChatThreads ?? []),
+            ],
+          },
+        }
       })
       return id
     },
@@ -2210,6 +2536,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSuggestionStatus,
       upsertSuggestionCategory,
       createQarzFund,
+      createSiteQarzAssignment,
       submitQarzForApproval,
       voteQarzFund,
       payQarzDue,
@@ -2232,6 +2559,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateComplexTicket,
       upsertStaff,
       removeStaff,
+      upsertTeam,
+      removeTeam,
+      upsertSupportTicket,
+      replySupportTicket,
+      setSupportTicketStatus,
+      sendSiteChat,
+      ensureSiteChatThread,
       upsertComplexLedger,
       removeComplexLedger,
       logActivity,
@@ -2272,6 +2606,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSuggestionStatus,
       upsertSuggestionCategory,
       createQarzFund,
+      createSiteQarzAssignment,
       submitQarzForApproval,
       voteQarzFund,
       payQarzDue,
@@ -2294,6 +2629,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateComplexTicket,
       upsertStaff,
       removeStaff,
+      upsertTeam,
+      removeTeam,
+      upsertSupportTicket,
+      replySupportTicket,
+      setSupportTicketStatus,
+      sendSiteChat,
+      ensureSiteChatThread,
       upsertComplexLedger,
       removeComplexLedger,
       logActivity,

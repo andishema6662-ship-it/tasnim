@@ -97,7 +97,7 @@ export function canModerateSuggestions(role: Role): boolean {
 }
 
 export function canCreateQarzFund(role: Role): boolean {
-  return role === 'manager'
+  return role === 'manager' || role === 'siteAdmin'
 }
 
 export function canEditResidents(role: Role): boolean {

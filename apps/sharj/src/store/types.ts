@@ -242,6 +242,10 @@ export interface QarzFund {
   createdAt: string
   activatedAt?: string
   closedAt?: string
+  /** Created centrally by site admin */
+  createdBySiteAdmin?: boolean
+  /** When assigned to a whole complex (fund still lives on a block buildingId) */
+  assignedComplexId?: string
 }
 
 export type SuggestionStatus = 'open' | 'resolved' | 'hidden'

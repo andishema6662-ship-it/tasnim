@@ -182,9 +182,89 @@ export interface Complex {
 
 export interface TechnicalTeam {
   id: string
-  complexId: string
+  /** Omit / empty = site-level team (not tied to one complex) */
+  complexId?: string
   name: string
   specialty: string
+  phone?: string
+  note?: string
+  active: boolean
+}
+
+export type SiteSupportStatus = 'open' | 'pending' | 'answered' | 'closed'
+export type SiteSupportPriority = 'low' | 'normal' | 'high'
+
+export const SITE_SUPPORT_STATUS_LABEL: Record<SiteSupportStatus, string> = {
+  open: 'باز',
+  pending: 'در انتظار',
+  answered: 'پاسخ‌داده‌شده',
+  closed: 'بسته‌شده',
+}
+
+export const SITE_SUPPORT_PRIORITY_LABEL: Record<SiteSupportPriority, string> = {
+  low: 'کم',
+  normal: 'عادی',
+  high: 'بالا',
+}
+
+export interface SiteSupportMessage {
+  id: string
+  author: string
+  body: string
+  at: string
+  fromStaff: boolean
+}
+
+export interface SiteSupportTicket {
+  id: string
+  subject: string
+  category: string
+  priority: SiteSupportPriority
+  status: SiteSupportStatus
+  requesterName: string
+  requesterRole?: string
+  complexId?: string
+  buildingId?: string
+  body: string
+  messages: SiteSupportMessage[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SiteChatThread {
+  id: string
+  title: string
+  peerName: string
+  peerRole: string
+  unread: number
+  updatedAt: string
+}
+
+export interface SiteChatMessage {
+  id: string
+  threadId: string
+  author: string
+  body: string
+  at: string
+  mine: boolean
+}
+
+export type ChangelogKind = 'new' | 'improve' | 'fix' | 'security'
+
+export const CHANGELOG_KIND_LABEL: Record<ChangelogKind, string> = {
+  new: 'جدید',
+  improve: 'بهبود',
+  fix: 'رفع اشکال',
+  security: 'امنیت',
+}
+
+export interface ChangelogEntry {
+  id: string
+  version: string
+  title: string
+  body: string
+  kind: ChangelogKind
+  at: string
 }
 
 /** Individual contractor / technician assignable on tickets */
@@ -482,14 +562,20 @@ export interface PlatformAdmin {
   siteSuggestions: SiteSuggestion[]
   /** Active OTP challenges (demo / stub SMS) */
   otpChallenges: OtpChallenge[]
+  supportTickets: SiteSupportTicket[]
+  siteChatThreads: SiteChatThread[]
+  siteChatMessages: SiteChatMessage[]
+  changelog: ChangelogEntry[]
   sms: SmsConfig
   gateway: GatewayConfig
   activity: ActivityEvent[]
 }
 
 export type SiteAdminSection =
+  | 'dashboard'
   | 'properties'
   | 'users'
+  | 'teams'
   | 'subscriptions'
   | 'tariffs'
   | 'discounts'
@@ -497,6 +583,7 @@ export type SiteAdminSection =
   | 'features'
   | 'finance'
   | 'activity'
+  | 'changelog'
   | 'sms'
   | 'gateway'
   | 'qarz'
@@ -504,3 +591,25 @@ export type SiteAdminSection =
   | 'broadcasts'
   | 'programs'
   | 'proposals'
+  | 'support'
+  | 'chat'
+
+/** User-list filter chips (manager subtypes by building type) */
+export type SiteUserFilter =
+  | 'all'
+  | 'complexManager'
+  | 'blockManager'
+  | 'buildingManager'
+  | 'towerManager'
+  | 'financeManager'
+  | 'siteAdmin'
+
+export const SITE_USER_FILTER_LABEL: Record<SiteUserFilter, string> = {
+  all: 'همه',
+  complexManager: 'مدیر شهرک',
+  blockManager: 'مدیر بلوک',
+  buildingManager: 'مدیر ساختمان',
+  towerManager: 'مدیر برج',
+  financeManager: 'مدیر مالی',
+  siteAdmin: 'ادمین کل',
+}
