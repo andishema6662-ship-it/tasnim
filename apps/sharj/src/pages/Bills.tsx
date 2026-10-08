@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { formulaLabel } from '../lib/charges'
 import { faDate, toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 import type { DebtParty } from '../store/types'
 
 export function Bills() {
-  const { state, payBill } = useStore()
+  const { payBill } = useStore()
+  const state = useBuildingState()
   const [toast, setToast] = useState<string | null>(null)
   const session = state.session!
   const bills =

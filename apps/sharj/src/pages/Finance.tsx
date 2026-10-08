@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { faDate, toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 import type { LedgerKind } from '../store/types'
 
 export function Finance() {
-  const { state, addLedger } = useStore()
+  const { addLedger } = useStore()
+  const state = useBuildingState()
   const [kind, setKind] = useState<LedgerKind>('expense')
   const [category, setCategory] = useState('نظافت')
   const [title, setTitle] = useState('')

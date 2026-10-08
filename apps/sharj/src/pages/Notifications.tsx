@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { faDate } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 
 const kindLabel = {
   reminder: 'یادآوری',
@@ -12,7 +12,8 @@ const kindLabel = {
 } as const
 
 export function Notifications() {
-  const { state, markNotificationsRead } = useStore()
+  const { markNotificationsRead } = useStore()
+  const state = useBuildingState()
 
   useEffect(() => {
     const t = setTimeout(() => markNotificationsRead(), 800)

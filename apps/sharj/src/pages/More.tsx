@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 
 export function More() {
-  const { state, resetDemo } = useStore()
+  const { resetDemo } = useStore()
+  const state = useBuildingState()
   const isManager = state.session?.role === 'manager'
 
   const links = [

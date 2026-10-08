@@ -13,12 +13,15 @@ export function Splash() {
         </div>
         <div className="visual" role="img" aria-label="نمای مجتمع مسکونی" />
         <h1>شارژ شفاف، ساختمان آرام</h1>
-        <p>محاسبه شارژ، پرداخت آنلاین، نظرسنجی و بیلان مالی — مخصوص مدیر و ساکنین.</p>
+        <p>چند ساختمان روی یک پلتفرم — شارژ، مالی، جلسات و مشارکت ساکنین.</p>
         <div className="cta-row">
           <Link className="btn btn-primary" to="/login">
             ورود به پنل
           </Link>
-          <Link className="btn btn-secondary" to="/subscription">
+          <Link className="btn btn-secondary" to="/login">
+            مدیر سایت / سوپرادمین
+          </Link>
+          <Link className="btn btn-ghost" to="/subscription">
             مشاهده پلن اشتراک
           </Link>
         </div>

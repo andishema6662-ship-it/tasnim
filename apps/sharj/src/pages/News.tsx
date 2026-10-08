@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { faDate } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 
 export function News() {
-  const { state, addNews } = useStore()
+  const { addNews } = useStore()
+  const state = useBuildingState()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const isManager = state.session?.role === 'manager'

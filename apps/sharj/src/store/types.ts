@@ -1,4 +1,7 @@
-export type Role = 'manager' | 'resident'
+export type Role = 'siteAdmin' | 'manager' | 'resident'
+
+export type BuildingType = 'block' | 'building' | 'tower'
+export type BuildingStatus = 'active' | 'disabled'
 
 export type ChargeFormula = 'fixed' | 'area' | 'perPerson' | 'consumption'
 export type ChargePeriod = 'monthly' | 'seasonal'
@@ -6,6 +9,20 @@ export type DebtParty = 'owner' | 'resident'
 export type BillStatus = 'unpaid' | 'partial' | 'paid'
 export type PollAudience = 'residents' | 'owners'
 export type LedgerKind = 'expense' | 'income'
+
+export interface BuildingMeta {
+  id: string
+  name: string
+  address: string
+  unitCount: number
+  type: BuildingType
+  status: BuildingStatus
+  managerName: string
+  managerPhone?: string
+  /** Demo subscription: billed unit count (may differ from live units) */
+  subscriptionUnits: number
+  subscriptionMonths: number
+}
 
 export interface Unit {
   id: string
@@ -16,7 +33,7 @@ export interface Unit {
   ownerName: string
   residentName: string
   parkingSpot?: string
-  balance: number // negative = debtor, positive = creditor
+  balance: number
 }
 
 export interface Resident {
@@ -35,7 +52,7 @@ export interface ChargeSchedule {
   dayOfMonth: number
   period: ChargePeriod
   active: boolean
-  ownerSharePercent: number // rest goes to resident
+  ownerSharePercent: number
   lastRunAt?: string
 }
 
@@ -88,7 +105,7 @@ export interface Poll {
   audience: PollAudience
   options: PollOption[]
   closesAt: string
-  votedBy: string[] // session keys
+  votedBy: string[]
 }
 
 export interface NewsItem {
@@ -135,16 +152,8 @@ export interface NotificationItem {
   read: boolean
 }
 
-export interface Session {
-  role: Role
-  unitId?: string
-  displayName: string
-}
-
-export interface AppState {
-  buildingName: string
+export interface BuildingData {
   fundBalance: number
-  session: Session | null
   units: Unit[]
   residents: Resident[]
   schedules: ChargeSchedule[]
@@ -156,4 +165,42 @@ export interface AppState {
   chat: ChatMessage[]
   meetings: Meeting[]
   notifications: NotificationItem[]
+}
+
+export interface Session {
+  role: Role
+  buildingId?: string
+  unitId?: string
+  displayName: string
+  /** Site admin temporarily managing a building as manager UI */
+  viaSiteAdmin?: boolean
+}
+
+export interface PlatformState {
+  session: Session | null
+  buildings: BuildingMeta[]
+  byId: Record<string, BuildingData>
+}
+
+/** Building-scoped view used by existing app screens */
+export interface ScopedState extends BuildingData {
+  buildingId: string
+  buildingName: string
+  session: Session
+}
+
+export const SITE_ADMIN_DEMO = {
+  username: 'admin',
+  password: 'admin123',
+} as const
+
+export const buildingTypeLabel: Record<BuildingType, string> = {
+  block: 'بلوک',
+  building: 'ساختمان',
+  tower: 'برج',
+}
+
+export const buildingStatusLabel: Record<BuildingStatus, string> = {
+  active: 'فعال',
+  disabled: 'غیرفعال',
 }

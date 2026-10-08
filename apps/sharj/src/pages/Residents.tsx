@@ -1,7 +1,7 @@
-import { useStore } from '../store/StoreContext'
+import { useBuildingState } from '../store/StoreContext'
 
 export function Residents() {
-  const { state } = useStore()
+  const state = useBuildingState()
   return (
     <div className="page">
       <h2>ساکنین</h2>

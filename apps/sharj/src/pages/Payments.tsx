@@ -1,8 +1,8 @@
 import { faDate, toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState } from '../store/StoreContext'
 
 export function Payments() {
-  const { state } = useStore()
+  const state = useBuildingState()
   const session = state.session!
   const payments =
     session.role === 'resident'

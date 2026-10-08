@@ -14,6 +14,7 @@ import { Notifications } from './pages/Notifications'
 import { Payments } from './pages/Payments'
 import { Polls } from './pages/Polls'
 import { Residents } from './pages/Residents'
+import { SiteAdmin } from './pages/SiteAdmin'
 import { Splash } from './pages/Splash'
 import { Subscription } from './pages/Subscription'
 import { Units } from './pages/Units'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/" element={<Splash />} />
           <Route path="/login" element={<Login />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/app/site-admin" element={<SiteAdmin />} />
           <Route path="/app" element={<Shell />}>
             <Route index element={<Home />} />
             <Route path="units" element={<Units />} />

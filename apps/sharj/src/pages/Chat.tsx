@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { faDate } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 
 export function Chat() {
-  const { state, sendChat } = useStore()
+  const { sendChat } = useStore()
+  const state = useBuildingState()
   const [text, setText] = useState('')
 
   return (

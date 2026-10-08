@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { formulaLabel, periodLabel } from '../lib/charges'
 import { faNum, toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 import type { ChargeFormula, ChargePeriod, ChargeSchedule } from '../store/types'
 
 export function Charges() {
-  const { state, runSchedule, upsertSchedule } = useStore()
+  const { runSchedule, upsertSchedule } = useStore()
+  const state = useBuildingState()
   const [toast, setToast] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: 'شارژ جدید',

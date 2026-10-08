@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState } from '../store/StoreContext'
 
 export function Units() {
-  const { state } = useStore()
+  const state = useBuildingState()
   return (
     <div className="page">
       <h2>واحدها</h2>

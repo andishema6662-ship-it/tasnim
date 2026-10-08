@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState } from '../store/StoreContext'
 
 export function Home() {
-  const { state } = useStore()
+  const state = useBuildingState()
   const session = state.session!
   const unpaid = state.bills.filter((b) => b.status !== 'paid')
   const myBills =

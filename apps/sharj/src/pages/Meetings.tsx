@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { faDateTime, toLocalInput } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 import type { Meeting, MeetingAttendee } from '../store/types'
 
 function emptyForm(defaults?: Partial<Meeting>): {
@@ -35,7 +35,8 @@ function emptyForm(defaults?: Partial<Meeting>): {
 }
 
 export function Meetings() {
-  const { state, upsertMeeting, notifyMeeting } = useStore()
+  const { upsertMeeting, notifyMeeting } = useStore()
+  const state = useBuildingState()
   const isManager = state.session?.role === 'manager'
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)

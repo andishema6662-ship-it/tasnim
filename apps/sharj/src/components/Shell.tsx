@@ -18,12 +18,16 @@ const residentNav = [
 ]
 
 export function Shell() {
-  const { state, logout } = useStore()
+  const { state, session, logout, returnToSiteAdmin } = useStore()
   const navigate = useNavigate()
-  const session = state.session
-  if (!session) return <Navigate to="/login" replace />
 
-  const nav = session.role === 'manager' ? managerNav : residentNav
+  if (!session) return <Navigate to="/login" replace />
+  if (session.role === 'siteAdmin' && !session.viaSiteAdmin) {
+    return <Navigate to="/app/site-admin" replace />
+  }
+  if (!state) return <Navigate to="/login" replace />
+
+  const nav = state.session.role === 'manager' ? managerNav : residentNav
   const unread = state.notifications.filter((n) => !n.read).length
 
   return (
@@ -37,7 +41,19 @@ export function Shell() {
           </div>
         </div>
         <div style={{ textAlign: 'left' }}>
-          <div className="meta">{session.displayName}</div>
+          <div className="meta">{state.session.displayName}</div>
+          {session.viaSiteAdmin && (
+            <button
+              className="btn-ghost"
+              type="button"
+              onClick={() => {
+                returnToSiteAdmin()
+                navigate('/app/site-admin')
+              }}
+            >
+              پنل سایت
+            </button>
+          )}
           <button
             className="btn-ghost"
             type="button"

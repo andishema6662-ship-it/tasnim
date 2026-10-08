@@ -1,8 +1,8 @@
 import { faDate, toman } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState } from '../store/StoreContext'
 
 export function Expenses() {
-  const { state } = useStore()
+  const state = useBuildingState()
   const visible = state.ledger.filter((e) => e.visibleToResidents)
   const expenseTotal = visible.filter((e) => e.kind === 'expense').reduce((s, e) => s + e.amount, 0)
   const incomeTotal = visible.filter((e) => e.kind === 'income').reduce((s, e) => s + e.amount, 0)

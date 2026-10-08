@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { faDate } from '../lib/format'
-import { useStore } from '../store/StoreContext'
+import { useBuildingState, useStore } from '../store/StoreContext'
 import type { PollAudience } from '../store/types'
 
 export function Polls() {
-  const { state, votePoll, addPoll } = useStore()
+  const { votePoll, addPoll } = useStore()
+  const state = useBuildingState()
   const session = state.session!
   const [title, setTitle] = useState('')
   const [audience, setAudience] = useState<PollAudience>('residents')
