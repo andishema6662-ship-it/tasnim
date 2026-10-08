@@ -202,10 +202,15 @@ export interface ServiceWorker {
 export type OnboardingStepId = 'units' | 'charges' | 'residents' | 'account'
 
 export interface ManagerOnboarding {
-  /** Hide banner after all steps done or manager dismisses */
+  /**
+   * Legacy: early dismiss. Banner no longer honors this until all steps
+   * are complete (then the banner hides via progress, not dismiss).
+   */
   dismissed?: boolean
   /** Manager confirmed charge + operating funds as block account */
   accountConfirmed?: boolean
+  /** Manager copied the fixed resident-invite SMS at least once */
+  inviteSmsCopied?: boolean
 }
 
 export interface PollOption {

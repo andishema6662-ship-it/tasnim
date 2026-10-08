@@ -2853,3 +2853,32 @@ button {
   flex: 0 0 auto;
   white-space: nowrap;
 }
+
+/* Invite SMS template card */
+.invite-sms-card .invite-sms-text {
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--primary-soft, #e8f0fe) 55%, var(--surface));
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+}
+
+.invite-sms-meta {
+  margin: 0 0 12px;
+  font-size: 0.74rem;
+}
+
+.onboarding-invite {
+  margin-top: 12px;
+}
+
+.onboarding-invite .invite-sms-card {
+  margin-bottom: 0;
+  box-shadow: none;
+}

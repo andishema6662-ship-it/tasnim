@@ -14,9 +14,11 @@ export function managerOnboardingSteps(data: BuildingData): OnboardingStep[] {
     data.units.length > 0 &&
     data.units.every((u) => u.number.trim() && u.residentName.trim() && u.areaSqm > 0)
   const chargesOk = data.schedules.some((s) => s.active)
-  const residentsOk =
+  const rosterOk =
     data.units.length > 0 &&
     data.units.every((u) => data.residents.some((r) => r.unitId === u.id))
+  const inviteOk = Boolean(data.managerOnboarding?.inviteSmsCopied)
+  const residentsOk = rosterOk && inviteOk
   const hasCharge = (data.funds ?? []).some((f) => f.kind === 'charge')
   const hasOperating = (data.funds ?? []).some((f) => f.kind === 'operating')
   const accountOk =
@@ -40,7 +42,7 @@ export function managerOnboardingSteps(data: BuildingData): OnboardingStep[] {
     {
       id: 'residents',
       title: 'دعوت ساکنین',
-      hint: 'حداقل یک ساکن در فهرست ثبت شود',
+      hint: 'کپی پیامک دعوت + ساکنین واحدها',
       to: '/app/residents',
       done: residentsOk,
     },

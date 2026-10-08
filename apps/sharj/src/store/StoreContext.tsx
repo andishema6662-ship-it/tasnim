@@ -133,6 +133,7 @@ interface StoreApi {
   removeServiceWorker: (id: string) => void
   dismissManagerOnboarding: () => void
   confirmManagerAccount: () => void
+  markInviteSmsCopied: () => void
   reloadFromStorage: () => void
   votePoll: (pollId: string, optionId: string) => void
   addPoll: (poll: Omit<Poll, 'id' | 'votedBy' | 'options'> & { options: string[] }) => void
@@ -1867,6 +1868,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [withBuilding])
 
+  const markInviteSmsCopied = useCallback(() => {
+    withBuilding((data) => ({
+      ...data,
+      managerOnboarding: { ...data.managerOnboarding, inviteSmsCopied: true },
+    }))
+  }, [withBuilding])
+
   const votePoll = useCallback(
     (pollId: string, optionId: string) => {
       setPlatform((p) => {
@@ -2766,6 +2774,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeServiceWorker,
       dismissManagerOnboarding,
       confirmManagerAccount,
+      markInviteSmsCopied,
       reloadFromStorage,
       votePoll,
       addPoll,
@@ -2848,6 +2857,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeServiceWorker,
       dismissManagerOnboarding,
       confirmManagerAccount,
+      markInviteSmsCopied,
       reloadFromStorage,
       votePoll,
       addPoll,

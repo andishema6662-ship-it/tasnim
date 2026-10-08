@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom'
 import { managerOnboardingSteps, onboardingProgress } from '../lib/onboarding'
 import { faNum } from '../lib/format'
-import { useBuildingState, useStore } from '../store/StoreContext'
+import { useBuildingState } from '../store/StoreContext'
 
-/** Sticky setup checklist for block/finance managers until complete or dismissed. */
+/**
+ * Sticky setup checklist for block/finance managers.
+ * Stays pinned until every step is complete — no early «بعداً» dismiss.
+ */
 export function OnboardingBanner() {
-  const { dismissManagerOnboarding } = useStore()
   const state = useBuildingState()
   const role = state.session.role
   if (role !== 'manager' && role !== 'financeManager') return null
-  if (state.managerOnboarding?.dismissed) return null
 
   const steps = managerOnboardingSteps(state)
   const { done, total, complete } = onboardingProgress(steps)
@@ -24,13 +25,12 @@ export function OnboardingBanner() {
           <strong>راه‌اندازی بلوک</strong>
           <span className="sub">
             {' '}
-            مرحله {faNum(done + 1)} از {faNum(total)}
+            مرحله {faNum(Math.min(done + 1, total))} از {faNum(total)}
             {next ? ` — بعدی: ${next.title}` : ''}
+            {' · '}
+            تا تکمیل همهٔ مراحل بالای صفحه می‌ماند
           </span>
         </div>
-        <button type="button" className="btn-ghost" onClick={() => dismissManagerOnboarding()}>
-          بعداً
-        </button>
       </div>
       <div className="onboarding-steps" aria-label="مراحل راه‌اندازی">
         {steps.map((s, i) => (
