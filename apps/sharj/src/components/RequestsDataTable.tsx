@@ -15,7 +15,7 @@ type Props<T> = {
   columns: DataColumn<T>[]
   rowKey: (row: T) => string
   emptyText?: string
-  /** Optional status chips */
+  /** Optional status chips / select options */
   statusFilters?: { id: string; label: string }[]
   statusValue?: string
   onStatusChange?: (id: string) => void
@@ -24,8 +24,8 @@ type Props<T> = {
 }
 
 /**
- * Datatable-inspired requests list (search, status chips, paging).
- * Original Taskose styling — not a proprietary CSS clone.
+ * Request list datatable — structure adapted from HexaDash datatable
+ * (support-form toolbar + borderless userDatatable). Original Taskose CSS.
  */
 export function RequestsDataTable<T>({
   title,
@@ -58,68 +58,89 @@ export function RequestsDataTable<T>({
   const slice = filtered.slice(safePage * pageSize, safePage * pageSize + pageSize)
 
   return (
-    <div className="dt-wrap">
-      {(title || toolbar) && (
-        <div className="dt-head">
-          {title ? <h3 className="dt-title">{title}</h3> : <span />}
+    <div className="udt">
+      <div className="udt-breadcrumb">
+        <div className="udt-breadcrumb__title-wrap">
+          {title ? <h3 className="udt-breadcrumb__title">{title}</h3> : <span />}
           {toolbar}
         </div>
-      )}
-      <div className="dt-toolbar">
-        <input
-          className="dt-search"
-          placeholder="جستجو در درخواست‌ها…"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value)
-            setPage(0)
-          }}
-        />
-        {statusFilters && statusFilters.length > 0 && (
-          <div className="dt-chips">
-            {statusFilters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={`sa-chip ${statusValue === f.id ? 'active' : ''}`}
-                onClick={() => {
-                  onStatusChange?.(f.id)
+      </div>
+
+      <div className="udt-support-form">
+        <div className="udt-support-form__inputs">
+          {statusFilters && statusFilters.length > 0 && (
+            <label className="udt-field">
+              <span>وضعیت:</span>
+              <select
+                value={statusValue}
+                onChange={(e) => {
+                  onStatusChange?.(e.target.value)
                   setPage(0)
                 }}
               >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
+                {statusFilters.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button
+            type="button"
+            className="udt-support-form__go"
+            onClick={() => setPage(0)}
+          >
+            جستجو
+          </button>
+        </div>
+        <div className="udt-support-form__search">
+          <input
+            placeholder="جستجو در درخواست‌ها…"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value)
+              setPage(0)
+            }}
+          />
+        </div>
       </div>
-      <div className="dt-meta">
+
+      <div className="udt-meta">
         {faNum(filtered.length)} مورد
         {q.trim() ? ` · فیلتر «${q.trim()}»` : ''}
       </div>
-      <div className="dt-scroll">
-        <table className="dt-table">
-          <thead>
-            <tr>
-              {columns.map((c) => (
-                <th key={c.key}>{c.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {slice.map((row) => (
-              <tr key={rowKey(row)}>
+
+      <div className="udt-panel">
+        <div className="udt-scroll">
+          <table className="udt-table">
+            <thead>
+              <tr>
                 {columns.map((c) => (
-                  <td key={c.key}>{c.render(row)}</td>
+                  <th key={c.key}>
+                    <span className="udt-th">{c.label}</span>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {slice.length === 0 && <div className="empty dt-empty">{emptyText}</div>}
+            </thead>
+            <tbody>
+              {slice.map((row) => (
+                <tr key={rowKey(row)}>
+                  {columns.map((c) => (
+                    <td key={c.key}>
+                      <div className="udt-cell">{c.render(row)}</div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {slice.length === 0 && <div className="empty udt-empty">{emptyText}</div>}
+        </div>
       </div>
+
       {pageCount > 1 && (
-        <div className="dt-pager">
+        <div className="udt-pager">
           <button
             type="button"
             className="btn btn-secondary"

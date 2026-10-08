@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
+import { RequestsDataTable } from '../components/RequestsDataTable'
 import { faDate, faNum } from '../lib/format'
 import type { ComplexTicket, ComplexTicketStatus } from '../store/platformTypes'
 import { useStore } from '../store/StoreContext'
-import { RequestsDataTable } from '../components/RequestsDataTable'
 
 const statusLabel: Record<ComplexTicketStatus, string> = {
   open: 'باز',
@@ -11,14 +11,17 @@ const statusLabel: Record<ComplexTicketStatus, string> = {
 }
 
 /**
- * Complex manager follow-up / tracking board — jobSearch-inspired filters + cards.
+ * Complex manager follow-ups — layout adapted from HexaDash jobSearch
+ * (search bar + filter sidebar + result cards / table). Original Taskose CSS.
  */
 export function ComplexFollowUps({ complexId }: { complexId: string }) {
   const { platform, updateComplexTicket } = useStore()
   const [q, setQ] = useState('')
+  const [locationQ, setLocationQ] = useState('')
   const [status, setStatus] = useState<ComplexTicketStatus | 'all'>('all')
   const [blockId, setBlockId] = useState('all')
   const [category, setCategory] = useState('all')
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest')
   const [view, setView] = useState<'board' | 'table'>('board')
 
   const complex = platform.admin.complexes.find((c) => c.id === complexId)
@@ -26,9 +29,13 @@ export function ComplexFollowUps({ complexId }: { complexId: string }) {
     .map((id) => platform.buildings.find((b) => b.id === id))
     .filter(Boolean)
 
+  const allTickets = useMemo(
+    () => platform.admin.tickets.filter((t) => t.complexId === complexId),
+    [platform.admin.tickets, complexId],
+  )
+
   const tickets = useMemo(() => {
-    return platform.admin.tickets
-      .filter((t) => t.complexId === complexId)
+    const list = allTickets
       .filter((t) => (status === 'all' ? true : t.status === status))
       .filter((t) => (blockId === 'all' ? true : t.buildingId === blockId))
       .filter((t) => (category === 'all' ? true : t.category === category))
@@ -37,29 +44,51 @@ export function ComplexFollowUps({ complexId }: { complexId: string }) {
         const hay = `${t.title} ${t.body} ${t.category} ${t.createdBy}`.toLowerCase()
         return hay.includes(q.trim().toLowerCase())
       })
-      .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
-  }, [platform.admin.tickets, complexId, status, blockId, category, q])
+      .filter((t) => {
+        if (!locationQ.trim()) return true
+        const b = platform.buildings.find((x) => x.id === t.buildingId)
+        return (b?.name ?? '').toLowerCase().includes(locationQ.trim().toLowerCase())
+      })
+      .sort((a, b) =>
+        sort === 'newest'
+          ? +new Date(b.updatedAt) - +new Date(a.updatedAt)
+          : +new Date(a.updatedAt) - +new Date(b.updatedAt),
+      )
+    return list
+  }, [allTickets, status, blockId, category, q, locationQ, sort, platform.buildings])
 
   const categories = useMemo(() => {
-    const set = new Set(platform.admin.tickets.filter((t) => t.complexId === complexId).map((t) => t.category))
-    return [...set]
-  }, [platform.admin.tickets, complexId])
+    return [...new Set(allTickets.map((t) => t.category))]
+  }, [allTickets])
 
-  const counts = useMemo(() => {
-    const all = platform.admin.tickets.filter((t) => t.complexId === complexId)
-    return {
-      open: all.filter((t) => t.status === 'open').length,
-      in_progress: all.filter((t) => t.status === 'in_progress').length,
-      resolved: all.filter((t) => t.status === 'resolved').length,
-    }
-  }, [platform.admin.tickets, complexId])
+  const counts = useMemo(
+    () => ({
+      open: allTickets.filter((t) => t.status === 'open').length,
+      in_progress: allTickets.filter((t) => t.status === 'in_progress').length,
+      resolved: allTickets.filter((t) => t.status === 'resolved').length,
+    }),
+    [allTickets],
+  )
 
   const columns = [
     {
+      key: 'id',
+      label: 'شناسه',
+      render: (t: ComplexTicket) => (
+        <span className="udt-id">#{t.id.slice(-4)}</span>
+      ),
+      searchText: (t: ComplexTicket) => t.id,
+    },
+    {
       key: 'title',
       label: 'عنوان',
-      render: (t: ComplexTicket) => t.title,
-      searchText: (t: ComplexTicket) => t.title,
+      render: (t: ComplexTicket) => (
+        <div className="udt-title-cell">
+          <strong>{t.title}</strong>
+          <span>{t.createdBy}</span>
+        </div>
+      ),
+      searchText: (t: ComplexTicket) => `${t.title} ${t.body}`,
     },
     {
       key: 'block',
@@ -79,11 +108,7 @@ export function ComplexFollowUps({ complexId }: { complexId: string }) {
       key: 'status',
       label: 'وضعیت',
       render: (t: ComplexTicket) => (
-        <span
-          className={`badge ${
-            t.status === 'resolved' ? 'ok' : t.status === 'in_progress' ? 'warn' : 'danger'
-          }`}
-        >
+        <span className={`udt-status udt-status--${t.status}`}>
           {statusLabel[t.status]}
         </span>
       ),
@@ -98,181 +123,271 @@ export function ComplexFollowUps({ complexId }: { complexId: string }) {
   ]
 
   return (
-    <div className="job-track">
-      <div className="job-track__hero">
-        <div>
-          <p className="sa-hero__eyebrow">پیگیری‌های شهرک</p>
-          <h3 className="sa-hero__title">تابلوی پیگیری تیکت‌ها و ارجاع‌ها</h3>
-          <p className="sa-hero__lead">
-            جستجو، فیلتر وضعیت/بلوک/دسته — نمای کارت یا جدول درخواست‌ها.
-          </p>
-        </div>
-        <div className="job-track__stats">
-          <div>
-            <strong>{faNum(counts.open)}</strong>
-            <span>باز</span>
-          </div>
-          <div>
-            <strong>{faNum(counts.in_progress)}</strong>
-            <span>در جریان</span>
-          </div>
-          <div>
-            <strong>{faNum(counts.resolved)}</strong>
-            <span>حل‌شده</span>
-          </div>
+    <div className="js-page">
+      <div className="js-breadcrumb">
+        <h3 className="js-breadcrumb__title">پیگیری‌ها</h3>
+        <div className="js-breadcrumb__trail">
+          <span>میز شهرک</span>
+          <span>/</span>
+          <span className="active">پیگیری درخواست‌ها</span>
         </div>
       </div>
 
-      <div className="job-track__filters">
-        <input
-          className="dt-search"
-          placeholder="جستجوی عنوان، شرح، دسته‌بندی…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <div className="dt-chips">
-          {(
-            [
-              ['all', 'همه'],
-              ['open', 'باز'],
-              ['in_progress', 'در جریان'],
-              ['resolved', 'حل‌شده'],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`sa-chip ${status === id ? 'active' : ''}`}
-              onClick={() => setStatus(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="dt-chips">
-          <button
-            type="button"
-            className={`sa-chip ${blockId === 'all' ? 'active' : ''}`}
-            onClick={() => setBlockId('all')}
-          >
-            همه بلوک‌ها
-          </button>
-          {blocks.map((b) =>
-            b ? (
-              <button
-                key={b.id}
-                type="button"
-                className={`sa-chip ${blockId === b.id ? 'active' : ''}`}
-                onClick={() => setBlockId(b.id)}
-              >
-                {b.name}
-              </button>
-            ) : null,
-          )}
-        </div>
-        <div className="dt-chips">
-          <button
-            type="button"
-            className={`sa-chip ${category === 'all' ? 'active' : ''}`}
-            onClick={() => setCategory('all')}
-          >
-            همه دسته‌ها
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`sa-chip ${category === c ? 'active' : ''}`}
-              onClick={() => setCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-        <div className="dt-chips">
-          <button
-            type="button"
-            className={`sa-chip ${view === 'board' ? 'active' : ''}`}
-            onClick={() => setView('board')}
-          >
-            کارت‌ها
-          </button>
-          <button
-            type="button"
-            className={`sa-chip ${view === 'table' ? 'active' : ''}`}
-            onClick={() => setView('table')}
-          >
-            جدول درخواست‌ها
-          </button>
-        </div>
-      </div>
-
-      {view === 'table' ? (
-        <div className="panel">
-          <RequestsDataTable
-            title="لیست درخواست‌ها"
-            rows={tickets}
-            columns={columns}
-            rowKey={(t) => t.id}
-            emptyText="درخواستی با این فیلتر نیست."
+      {/* Dual search bar — keyword + location */}
+      <div className="js-search-bar">
+        <div className="js-search-bar__field">
+          <label>جستجو</label>
+          <input
+            placeholder="عنوان یا شرح درخواست…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
           />
         </div>
-      ) : (
-        <div className="job-track__grid">
-          {tickets.map((t) => {
-            const b = platform.buildings.find((x) => x.id === t.buildingId)
-            const person = (platform.admin.staff ?? []).find((s) => s.id === t.assignedPersonId)
-            return (
-              <article className="job-card" key={t.id}>
-                <div className="job-card__top">
-                  <span
-                    className={`badge ${
-                      t.status === 'resolved'
-                        ? 'ok'
-                        : t.status === 'in_progress'
-                          ? 'warn'
-                          : 'danger'
-                    }`}
-                  >
-                    {statusLabel[t.status]}
-                  </span>
-                  <span className="job-card__cat">{t.category}</span>
-                </div>
-                <h4 className="job-card__title">{t.title}</h4>
-                <p className="job-card__body">{t.body}</p>
-                <div className="job-card__meta">
-                  {b?.name} · {t.createdBy}
-                  <br />
-                  {faDate(t.updatedAt)}
-                  {person ? ` · ارجاع: ${person.name}` : ''}
-                </div>
-                <div className="grid-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => updateComplexTicket(t.id, { status: 'in_progress' })}
-                  >
-                    در جریان
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() =>
-                      updateComplexTicket(t.id, {
-                        status: 'resolved',
-                        resolutionNote: t.resolutionNote || 'پیگیری و رفع شد',
-                      })
-                    }
-                  >
-                    حل‌شده
-                  </button>
-                </div>
-              </article>
-            )
-          })}
-          {tickets.length === 0 && <div className="empty">موردی برای پیگیری نیست.</div>}
+        <div className="js-search-bar__field">
+          <label>بلوک / محل</label>
+          <input
+            placeholder="نام بلوک…"
+            value={locationQ}
+            onChange={(e) => setLocationQ(e.target.value)}
+          />
         </div>
-      )}
+        <button
+          type="button"
+          className="btn btn-primary js-search-bar__btn"
+          onClick={() => {
+            /* filters are live; button matches template CTA */
+          }}
+        >
+          جستجو
+        </button>
+      </div>
+
+      <div className="js-layout">
+        {/* Filter sidebar */}
+        <aside className="js-filters" aria-label="فیلترها">
+          <div className="js-filters__head">فیلترها</div>
+
+          <section className="js-filter-widget">
+            <h6>وضعیت</h6>
+            <ul className="js-check-list">
+              {(
+                [
+                  ['all', 'همه', allTickets.length],
+                  ['open', 'باز', counts.open],
+                  ['in_progress', 'در جریان', counts.in_progress],
+                  ['resolved', 'حل‌شده', counts.resolved],
+                ] as const
+              ).map(([id, label, n]) => (
+                <li key={id}>
+                  <label className="js-check">
+                    <input
+                      type="radio"
+                      name="js-status"
+                      checked={status === id}
+                      onChange={() => setStatus(id)}
+                    />
+                    <span>
+                      {label} <em>({faNum(n)})</em>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="js-filter-widget">
+            <h6>بلوک</h6>
+            <ul className="js-check-list">
+              <li>
+                <label className="js-check">
+                  <input
+                    type="radio"
+                    name="js-block"
+                    checked={blockId === 'all'}
+                    onChange={() => setBlockId('all')}
+                  />
+                  <span>همه بلوک‌ها</span>
+                </label>
+              </li>
+              {blocks.map((b) =>
+                b ? (
+                  <li key={b.id}>
+                    <label className="js-check">
+                      <input
+                        type="radio"
+                        name="js-block"
+                        checked={blockId === b.id}
+                        onChange={() => setBlockId(b.id)}
+                      />
+                      <span>{b.name}</span>
+                    </label>
+                  </li>
+                ) : null,
+              )}
+            </ul>
+          </section>
+
+          <section className="js-filter-widget">
+            <h6>نوع / دسته</h6>
+            <ul className="js-check-list">
+              <li>
+                <label className="js-check">
+                  <input
+                    type="radio"
+                    name="js-cat"
+                    checked={category === 'all'}
+                    onChange={() => setCategory('all')}
+                  />
+                  <span>همه</span>
+                </label>
+              </li>
+              {categories.map((c) => (
+                <li key={c}>
+                  <label className="js-check">
+                    <input
+                      type="radio"
+                      name="js-cat"
+                      checked={category === c}
+                      onChange={() => setCategory(c)}
+                    />
+                    <span>{c}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+
+        {/* Results */}
+        <div className="js-results">
+          <div className="js-results-top">
+            <span className="js-results-count">
+              نمایش <strong>{faNum(Math.min(1, tickets.length))}</strong>
+              {tickets.length > 0 ? (
+                <>
+                  –<strong>{faNum(tickets.length)}</strong>
+                </>
+              ) : null}{' '}
+              از <strong>{faNum(allTickets.length)}</strong> نتیجه
+            </span>
+            <div className="js-results-tools">
+              <label className="js-sort">
+                مرتب‌سازی:
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as 'newest' | 'oldest')}
+                >
+                  <option value="newest">آخرین</option>
+                  <option value="oldest">قدیمی</option>
+                </select>
+              </label>
+              <div className="js-view-toggle" role="group" aria-label="نمای نتایج">
+                <button
+                  type="button"
+                  className={view === 'board' ? 'active' : ''}
+                  onClick={() => setView('board')}
+                  title="کارت"
+                >
+                  ⊞
+                </button>
+                <button
+                  type="button"
+                  className={view === 'table' ? 'active' : ''}
+                  onClick={() => setView('table')}
+                  title="جدول"
+                >
+                  ☰
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {view === 'table' ? (
+            <div className="js-table-panel">
+              <RequestsDataTable
+                title="جدول درخواست‌ها"
+                rows={tickets}
+                columns={columns}
+                rowKey={(t) => t.id}
+                emptyText="درخواستی با این فیلتر نیست."
+              />
+            </div>
+          ) : (
+            <div className="js-card-grid">
+              {tickets.map((t) => {
+                const b = platform.buildings.find((x) => x.id === t.buildingId)
+                const person = (platform.admin.staff ?? []).find(
+                  (s) => s.id === t.assignedPersonId,
+                )
+                const initial = (t.title.trim()[0] || '؟').toUpperCase()
+                return (
+                  <article className="js-job-card" key={t.id}>
+                    <div className="js-job-card__main">
+                      <div className="js-job-card__identity">
+                        <div className="js-job-card__avatar" aria-hidden>
+                          {initial}
+                        </div>
+                        <div>
+                          <h4 className="js-job-card__title">{t.title}</h4>
+                          <span className="js-job-card__loc">
+                            {b?.name ?? 'بلوک'} · {t.createdBy}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="js-job-card__meta">
+                        <div>
+                          <h6>بروزرسانی</h6>
+                          <span>{faDate(t.updatedAt)}</span>
+                        </div>
+                        <div>
+                          <h6>نوع</h6>
+                          <span>{t.category}</span>
+                        </div>
+                        <div>
+                          <h6>وضعیت</h6>
+                          <span className={`udt-status udt-status--${t.status}`}>
+                            {statusLabel[t.status]}
+                          </span>
+                        </div>
+                        {person && (
+                          <div>
+                            <h6>ارجاع</h6>
+                            <span>{person.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="js-job-card__actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => updateComplexTicket(t.id, { status: 'in_progress' })}
+                      >
+                        در جریان
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() =>
+                          updateComplexTicket(t.id, {
+                            status: 'resolved',
+                            resolutionNote: t.resolutionNote || 'پیگیری و رفع شد',
+                          })
+                        }
+                      >
+                        حل‌شده
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+              {tickets.length === 0 && (
+                <div className="empty js-empty">موردی برای پیگیری نیست.</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
