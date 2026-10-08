@@ -7,8 +7,12 @@ import {
   type ComplexTicketStatus,
   type TechnicalPerson,
 } from '../store/platformTypes'
+import { BroadcastBanner } from '../components/BroadcastBanner'
+import { BroadcastsPanel } from './BroadcastsPanel'
 import { ComplexFinance } from './ComplexFinance'
 import { ComplexReports } from './ComplexReports'
+import { SideProgramsPanel } from './SideProgramsPanel'
+import { SubscriptionReports } from './SubscriptionReports'
 
 const statusLabel: Record<ComplexTicketStatus, string> = {
   open: 'باز',
@@ -16,7 +20,14 @@ const statusLabel: Record<ComplexTicketStatus, string> = {
   resolved: 'حل‌شده',
 }
 
-type DeskTab = 'tickets' | 'staff' | 'reports' | 'finance'
+type DeskTab =
+  | 'tickets'
+  | 'staff'
+  | 'reports'
+  | 'finance'
+  | 'subscriptions'
+  | 'broadcasts'
+  | 'programs'
 
 export function ComplexDesk() {
   const {
@@ -106,14 +117,19 @@ export function ComplexDesk() {
 
         <h2>میز مدیر شهرک</h2>
         <p className="lead">
-          نیروها، تیکت‌ها، گزارش رسیدگی و مالی سطح شهرک.
+          نیروها، تیکت‌ها، اشتراک بلوک‌ها، پیام مدیر، برنامه‌های جانبی و مالی شهرک.
         </p>
+
+        <BroadcastBanner />
 
         <div className="chip-row admin-nav">
           {(
             [
               ['staff', 'نیروهای فنی'],
               ['tickets', 'تیکت‌ها'],
+              ['subscriptions', 'اشتراک'],
+              ['broadcasts', 'پیام مدیر'],
+              ['programs', 'برنامه‌ها'],
               ['reports', 'گزارشات'],
               ['finance', 'مالی'],
             ] as const
@@ -466,6 +482,30 @@ export function ComplexDesk() {
             })}
             {tickets.length === 0 && <div className="empty">تیکتی با این فیلتر نیست.</div>}
           </>
+        )}
+
+        {tab === 'subscriptions' && (
+          <SubscriptionReports
+            buildingIds={complex.blockIds}
+            canReview={false}
+            title={`حق اشتراک بلوک‌های ${complex.name}`}
+          />
+        )}
+
+        {tab === 'broadcasts' && (
+          <BroadcastsPanel
+            role="complexManager"
+            complexId={complex.id}
+            displayName={session.displayName}
+          />
+        )}
+
+        {tab === 'programs' && (
+          <SideProgramsPanel
+            role="complexManager"
+            complexId={complex.id}
+            displayName={session.displayName}
+          />
         )}
 
         {tab === 'reports' && <ComplexReports complexId={complex.id} />}

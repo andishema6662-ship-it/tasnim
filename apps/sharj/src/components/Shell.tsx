@@ -1,4 +1,5 @@
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { effectiveFeatureSet } from '../lib/features'
 import { roleLabel } from '../lib/rbac'
 import { useStore } from '../store/StoreContext'
 import type { FeatureModuleId } from '../store/platformTypes'
@@ -43,7 +44,11 @@ export function Shell() {
   if (!state) return <Navigate to="/login" replace />
 
   const meta = platform.buildings.find((b) => b.id === state.buildingId)
-  const features = new Set(meta?.enabledFeatures ?? [])
+  const features = effectiveFeatureSet(
+    meta,
+    platform.admin.featureCatalog,
+    platform.admin.subscriptionPayments,
+  )
 
   const baseNav =
     state.session.role === 'financeManager'

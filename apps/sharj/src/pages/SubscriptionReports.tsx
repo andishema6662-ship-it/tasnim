@@ -24,8 +24,15 @@ function withinRange(iso: string, range: RangeFilter): boolean {
 
 export function SubscriptionReports({
   onReview,
+  buildingIds,
+  canReview = true,
+  title,
 }: {
-  onReview: (id: string, status: 'approved' | 'rejected') => void
+  onReview?: (id: string, status: 'approved' | 'rejected') => void
+  /** Limit to these building ids (complex-manager scope) */
+  buildingIds?: string[]
+  canReview?: boolean
+  title?: string
 }) {
   const { platform } = useStore()
   const [period, setPeriod] = useState<PeriodFilter>('all')
@@ -33,13 +40,21 @@ export function SubscriptionReports({
   const [range, setRange] = useState<RangeFilter>('all')
   const [view, setView] = useState<ViewTab>('list')
 
+  const scopedBuildings = useMemo(() => {
+    if (!buildingIds) return platform.buildings
+    const set = new Set(buildingIds)
+    return platform.buildings.filter((b) => set.has(b.id))
+  }, [platform.buildings, buildingIds])
+
   const filtered = useMemo(() => {
+    const scope = buildingIds ? new Set(buildingIds) : null
     return platform.admin.subscriptionPayments
+      .filter((sp) => (scope ? scope.has(sp.buildingId) : true))
       .filter((sp) => (period === 'all' ? true : sp.months === period))
       .filter((sp) => (buildingId === 'all' ? true : sp.buildingId === buildingId))
       .filter((sp) => withinRange(sp.createdAt, range))
       .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-  }, [platform.admin.subscriptionPayments, period, buildingId, range])
+  }, [platform.admin.subscriptionPayments, period, buildingId, range, buildingIds])
 
   const paidRows = filtered.filter((sp) => isSubPaid(sp.status))
   const debtRows = filtered.filter((sp) => isSubDebt(sp.status))
@@ -127,7 +142,7 @@ export function SubscriptionReports({
             {SUB_STATUS_LABEL[sp.status]}
           </span>
         </div>
-        {sp.status === 'pending' && (
+        {canReview && onReview && sp.status === 'pending' && (
           <div className="grid-actions">
             <button
               type="button"
@@ -151,6 +166,7 @@ export function SubscriptionReports({
 
   return (
     <>
+      {title ? <h3 style={{ margin: '0 0 10px' }}>{title}</h3> : null}
       <div className="stat-row">
         <div className="stat">
           <span className="label">جمع کل پرداختی</span>
@@ -218,8 +234,8 @@ export function SubscriptionReports({
         <div className="field">
           <label>ساختمان / بلوک</label>
           <select value={buildingId} onChange={(e) => setBuildingId(e.target.value)}>
-            <option value="all">همه املاک</option>
-            {platform.buildings.map((b) => (
+            <option value="all">همه املاک{buildingIds ? ' شهرک' : ''}</option>
+            {scopedBuildings.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
               </option>

@@ -814,6 +814,50 @@ button {
   font-weight: 650;
 }
 
+.broadcast-banner {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(196, 120, 59, 0.16), rgba(11, 61, 58, 0.1)),
+    var(--surface);
+  border: 1px solid rgba(196, 120, 59, 0.35);
+  box-shadow: 0 10px 28px rgba(11, 61, 58, 0.06);
+  animation: broadcast-in 0.45s ease both;
+}
+
+.broadcast-banner__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--copper);
+  margin-bottom: 4px;
+}
+
+.broadcast-banner__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.broadcast-banner__body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+@keyframes broadcast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .jalali-picker {
   display: grid;
   grid-template-columns: 1fr 1.4fr 1fr;

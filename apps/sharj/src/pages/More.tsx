@@ -16,8 +16,12 @@ export function More() {
 
   const links: LinkItem[] = [
     { to: '/app/qarz', label: 'صندوق قرض‌الحسنه', feature: 'qarz' },
+    { to: '/app/programs', label: 'برنامه‌های جانبی شهرک/بلوک' },
     ...(isManager
-      ? [{ to: '/app/block-tickets', label: 'ارجاع مشکل به مدیر شهرک', feature: 'blockTickets' as const }]
+      ? [
+          { to: '/app/broadcasts', label: 'پیام مدیر به واحدها' },
+          { to: '/app/block-tickets', label: 'ارجاع مشکل به مدیر شهرک', feature: 'blockTickets' as const },
+        ]
       : []),
     ...(!isFinance
       ? [

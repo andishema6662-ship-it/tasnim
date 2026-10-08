@@ -4,6 +4,8 @@ import { RoleGate } from './components/RoleGate'
 import { Shell } from './components/Shell'
 import { Bills } from './pages/Bills'
 import { BlockTickets } from './pages/BlockTickets'
+import { BuildingBroadcasts } from './pages/BuildingBroadcasts'
+import { BuildingPrograms } from './pages/BuildingPrograms'
 import { Charges } from './pages/Charges'
 import { Chat } from './pages/Chat'
 import { ComplexDesk } from './pages/ComplexDesk'
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="suggestions" element={<Guarded><Suggestions /></Guarded>} />
             <Route path="qarz" element={<Guarded><QarzFund /></Guarded>} />
             <Route path="block-tickets" element={<Guarded><BlockTickets /></Guarded>} />
+            <Route path="broadcasts" element={<Guarded><BuildingBroadcasts /></Guarded>} />
+            <Route path="programs" element={<Guarded><BuildingPrograms /></Guarded>} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

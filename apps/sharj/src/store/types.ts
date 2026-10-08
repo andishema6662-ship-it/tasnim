@@ -183,6 +183,8 @@ export interface NotificationItem {
     | 'suggestion'
     | 'qarz'
     | 'sms-stub'
+    | 'broadcast'
+    | 'program'
   read: boolean
 }
 

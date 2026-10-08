@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { BroadcastBanner } from '../components/BroadcastBanner'
 import { RequireFeature, useBuildingFeatures } from '../components/FeatureGate'
 import { roleLabel } from '../lib/rbac'
 import { toman } from '../lib/format'
@@ -28,6 +29,7 @@ export function Home() {
             ? 'شارژ، قبوض، صندوق و گزارش مالی — بدون تنظیمات کامل ساختمان.'
             : 'شارژ دوره‌ای، بیلان صندوق و پیگیری بدهی واحدها.'}
         </p>
+        <BroadcastBanner manageTo={isFinance ? undefined : '/app/broadcasts'} />
         <div className="badge" style={{ marginBottom: 10 }}>
           {roleLabel[session.role]}
         </div>
@@ -70,6 +72,12 @@ export function Home() {
             <strong>قبوض</strong>
             <span>پرداخت و تقسیط</span>
           </Link>
+          {!isFinance && (
+            <Link className="quick-link" to="/app/programs">
+              <strong>برنامه‌ها</strong>
+              <span>جانبی شهرک/بلوک</span>
+            </Link>
+          )}
         </div>
         <div className="panel">
           <h3>قبوض باز</h3>
@@ -101,6 +109,7 @@ export function Home() {
     <div className="page">
       <h2>واحد {unit.number}</h2>
       <p className="lead">صورت‌حساب، پرداخت یک‌کلیکی و شفافیت هزینه‌ها.</p>
+      <BroadcastBanner />
       <div className="stat-row">
         <div className="stat">
           <span className="label">بدهی / بستانکاری</span>
@@ -134,6 +143,10 @@ export function Home() {
             <span>صندوق و اقساط</span>
           </Link>
         </RequireFeature>
+        <Link className="quick-link" to="/app/programs">
+          <strong>برنامه‌ها</strong>
+          <span>شهرک و بلوک</span>
+        </Link>
       </div>
       <div className="panel">
         <h3>نزدیک‌ترین قبض</h3>

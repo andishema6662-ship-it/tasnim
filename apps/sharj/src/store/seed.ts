@@ -4,7 +4,8 @@ import type {
   PlatformState,
   SuggestionCategory,
 } from './types'
-import { ALL_FEATURES, createPlatformAdmin } from './seedAdmin'
+import { defaultFeaturesFromCatalog } from '../lib/features'
+import { ALL_FEATURES, createPlatformAdmin, seedDefaultFeatures } from './seedAdmin'
 
 const now = Date.now()
 const daysAgo = (d: number) => new Date(now - d * 86400000).toISOString()
@@ -53,13 +54,15 @@ export function normalizeBuildingMeta(meta: BuildingMeta): BuildingMeta {
   const prev = Array.isArray(meta.enabledFeatures) ? meta.enabledFeatures : null
   let enabledFeatures: typeof ALL_FEATURES
   if (!prev || prev.length === 0) {
-    enabledFeatures = [...ALL_FEATURES]
+    enabledFeatures = seedDefaultFeatures()
   } else {
     const kept = prev.filter((id): id is (typeof ALL_FEATURES)[number] =>
       ALL_FEATURES.includes(id as (typeof ALL_FEATURES)[number]),
     )
-    // New catalog ids not present in older saves default to ON
-    const extras = ALL_FEATURES.filter((id) => !prev.includes(id) && !kept.includes(id))
+    // Newly introduced *included* catalog modules default on; paid add-ons stay off
+    const extras = defaultFeaturesFromCatalog().filter(
+      (id) => !prev.includes(id) && !kept.includes(id),
+    )
     enabledFeatures = [...kept, ...extras]
   }
   return {
@@ -751,7 +754,8 @@ const buildingMetas: BuildingMeta[] = [
     subscriptionMonths: 12,
     complexId: 'cpx-minoodar',
     storageQuotaMb: 800,
-    enabledFeatures: [...ALL_FEATURES],
+    /** Base defaults + paid qarz (seed payment approved) */
+    enabledFeatures: [...seedDefaultFeatures(), 'qarz'],
   },
   {
     id: 'bld-sepehr',
@@ -765,7 +769,8 @@ const buildingMetas: BuildingMeta[] = [
     subscriptionUnits: 48,
     subscriptionMonths: 6,
     storageQuotaMb: 2000,
-    enabledFeatures: [...ALL_FEATURES],
+    /** Base defaults + paid chat (one-time seed payment) */
+    enabledFeatures: [...seedDefaultFeatures(), 'chat'],
   },
   {
     id: 'bld-aftab',
@@ -780,10 +785,8 @@ const buildingMetas: BuildingMeta[] = [
     subscriptionMonths: 3,
     complexId: 'cpx-minoodar',
     storageQuotaMb: 400,
-    /** Demo: several modules off so feature toggles are visible */
-    enabledFeatures: ALL_FEATURES.filter(
-      (f) => !['chat', 'qarz', 'news', 'meetings'].includes(f),
-    ),
+    /** Demo: news off; unpaid meetings request stays inactive */
+    enabledFeatures: seedDefaultFeatures().filter((f) => f !== 'news'),
   },
 ]
 

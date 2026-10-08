@@ -11,6 +11,8 @@ const kindLabel = {
   suggestion: 'پیشنهاد',
   qarz: 'قرض‌الحسنه',
   'sms-stub': 'پیامک',
+  broadcast: 'پیام مدیر',
+  program: 'برنامه جانبی',
 } as const
 
 export function Notifications() {

@@ -1,12 +1,106 @@
-import { FEATURE_CATALOG, type FeatureModuleId, type PlatformAdmin } from './platformTypes'
+import {
+  DEFAULT_FEATURE_CATALOG,
+  type FeatureModuleId,
+  type PlatformAdmin,
+} from './platformTypes'
+import { defaultFeaturesFromCatalog } from '../lib/features'
 
 const now = Date.now()
 const daysAgo = (d: number) => new Date(now - d * 86400000).toISOString()
 
-export const ALL_FEATURES: FeatureModuleId[] = FEATURE_CATALOG.map((f) => f.id)
+export const ALL_FEATURES: FeatureModuleId[] = DEFAULT_FEATURE_CATALOG.map((f) => f.id)
+
+/** Defaults for newly created buildings (excludes unpaid add-ons). */
+export function seedDefaultFeatures(): FeatureModuleId[] {
+  return defaultFeaturesFromCatalog(DEFAULT_FEATURE_CATALOG)
+}
 
 export function createPlatformAdmin(): PlatformAdmin {
   return {
+    featureCatalog: DEFAULT_FEATURE_CATALOG.map((e) => ({ ...e })),
+    broadcasts: [
+      {
+        id: 'bc-1',
+        title: 'قطع موقت آب مشاعات',
+        body: 'فردا از ساعت ۸ تا ۱۲ آب مشاعات قطع است. مخزن را پر کنید.',
+        createdByRole: 'complexManager',
+        createdByName: 'مریم کاظمی',
+        complexId: 'cpx-minoodar',
+        audience: 'complex_members',
+        startsAt: daysAgo(0),
+        endsAt: new Date(now + 3 * 86400000).toISOString(),
+        createdAt: daysAgo(0),
+        active: true,
+      },
+      {
+        id: 'bc-2',
+        title: 'یادآوری شارژ ماه جاری',
+        body: 'مدیران بلوک لطفاً وضعیت وصول شارژ را تا پایان هفته گزارش دهید.',
+        createdByRole: 'siteAdmin',
+        createdByName: 'ادمین کل سایت',
+        audience: 'block_managers',
+        startsAt: daysAgo(1),
+        endsAt: new Date(now + 5 * 86400000).toISOString(),
+        createdAt: daysAgo(1),
+        active: true,
+      },
+      {
+        id: 'bc-3',
+        title: 'جلسه همسایگی بلوک',
+        body: 'پنجشنبه ساعت ۱۸ در لابی — موضوع نظافت راهرو.',
+        createdByRole: 'manager',
+        createdByName: 'حسین توکلی',
+        buildingId: 'bld-diyar',
+        complexId: 'cpx-minoodar',
+        audience: 'building_members',
+        startsAt: daysAgo(0),
+        endsAt: new Date(now + 2 * 86400000).toISOString(),
+        createdAt: daysAgo(0),
+        active: true,
+      },
+    ],
+    sidePrograms: [
+      {
+        id: 'prg-1',
+        scope: 'complex',
+        complexId: 'cpx-minoodar',
+        title: 'فروشگاه محلی مینودر',
+        type: 'shop',
+        description: 'راه‌اندازی غرفه مواد تازه در ورودی شهرک — هر پنجشنبه.',
+        startsAt: new Date(now + 2 * 86400000).toISOString(),
+        endsAt: new Date(now + 90 * 86400000).toISOString(),
+        createdByName: 'مریم کاظمی',
+        createdByRole: 'complexManager',
+        status: 'upcoming',
+      },
+      {
+        id: 'prg-2',
+        scope: 'complex',
+        complexId: 'cpx-minoodar',
+        title: 'برنامه فرهنگی کودک',
+        type: 'cultural',
+        description: 'قصه‌گویی و نقاشی در سالن اجتماعات — جمعه‌ها ساعت ۱۰.',
+        startsAt: daysAgo(7),
+        endsAt: new Date(now + 60 * 86400000).toISOString(),
+        createdByName: 'مریم کاظمی',
+        createdByRole: 'complexManager',
+        status: 'active',
+      },
+      {
+        id: 'prg-3',
+        scope: 'building',
+        buildingId: 'bld-diyar',
+        complexId: 'cpx-minoodar',
+        title: 'اطلاع‌رسانی پارکینگ',
+        type: 'announcement',
+        description: 'شماره‌گذاری مجدد جای پارک و تخصیص موقت مهمان.',
+        startsAt: daysAgo(1),
+        endsAt: new Date(now + 14 * 86400000).toISOString(),
+        createdByName: 'حسین توکلی',
+        createdByRole: 'manager',
+        status: 'active',
+      },
+    ],
     users: [
       {
         id: 'usr-admin',
@@ -383,6 +477,52 @@ export function createPlatformAdmin(): PlatformAdmin {
         reviewedAt: daysAgo(54),
         reviewedBy: 'ادمین کل سایت',
         receiptNote: 'مبلغ ناقص',
+      },
+      {
+        id: 'sp-addon-qarz-diyar',
+        buildingId: 'bld-diyar',
+        amount: 640_000,
+        units: 1,
+        months: 12,
+        method: 'gateway',
+        status: 'paid_demo',
+        trackingCode: 'ADD-QARZ-01',
+        createdAt: daysAgo(15),
+        reviewedAt: daysAgo(15),
+        reviewedBy: 'ادمین کل سایت',
+        addonFeatureId: 'qarz',
+        kind: 'feature_addon',
+        receiptNote: 'خرید افزونه قرض‌الحسنه — ۱۲ ماهه',
+      },
+      {
+        id: 'sp-addon-meet-aftab',
+        buildingId: 'bld-aftab',
+        amount: 150_000,
+        units: 1,
+        months: 3,
+        method: 'bank_receipt',
+        status: 'pending',
+        trackingCode: 'ADD-MEET-02',
+        createdAt: daysAgo(2),
+        addonFeatureId: 'meetings',
+        kind: 'feature_addon',
+        receiptNote: 'درخواست افزونه جلسات — در انتظار تأیید فیش',
+      },
+      {
+        id: 'sp-addon-chat-sepehr',
+        buildingId: 'bld-sepehr',
+        amount: 350_000,
+        units: 1,
+        months: 0,
+        method: 'gateway',
+        status: 'paid_demo',
+        trackingCode: 'ADD-CHAT-03',
+        createdAt: daysAgo(30),
+        reviewedAt: daysAgo(30),
+        reviewedBy: 'ادمین کل سایت',
+        addonFeatureId: 'chat',
+        kind: 'feature_addon',
+        receiptNote: 'خرید یک‌بار چت داخلی',
       },
     ],
     sms: {

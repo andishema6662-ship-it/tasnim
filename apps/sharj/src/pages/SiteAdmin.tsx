@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { defaultFeaturesFromCatalog } from '../lib/features'
 import { faDate, faNum, toman } from '../lib/format'
 import { roleLabel } from '../lib/rbac'
 import {
-  FEATURE_CATALOG,
-  type FeatureModuleId,
+  type Complex,
   type PlatformUser,
   type SiteAdminSection,
   type StaffRole,
 } from '../store/platformTypes'
-import { ALL_FEATURES } from '../store/seedAdmin'
 import { useStore } from '../store/StoreContext'
 import {
   buildingStatusLabel,
@@ -19,6 +18,10 @@ import {
   type BuildingType,
 } from '../store/types'
 import { qarzStatusLabel } from '../lib/qarz'
+import { BroadcastBanner } from '../components/BroadcastBanner'
+import { BroadcastsPanel } from './BroadcastsPanel'
+import { FeatureCatalogAdmin } from './FeatureCatalogAdmin'
+import { SideProgramsPanel } from './SideProgramsPanel'
 import { SubscriptionReports } from './SubscriptionReports'
 
 const SECTIONS: { id: SiteAdminSection; label: string }[] = [
@@ -29,6 +32,8 @@ const SECTIONS: { id: SiteAdminSection; label: string }[] = [
   { id: 'discounts', label: 'تخفیف' },
   { id: 'storage', label: 'فضا' },
   { id: 'features', label: 'امکانات' },
+  { id: 'broadcasts', label: 'پیام مدیر' },
+  { id: 'programs', label: 'برنامه‌ها' },
   { id: 'finance', label: 'مالی' },
   { id: 'activity', label: 'فعالیت' },
   { id: 'sms', label: 'پیامک' },
@@ -37,7 +42,7 @@ const SECTIONS: { id: SiteAdminSection; label: string }[] = [
   { id: 'complex', label: 'شهرک/تیکت' },
 ]
 
-function emptyMeta(): BuildingMeta {
+function emptyMeta(catalogDefaults: BuildingMeta['enabledFeatures']): BuildingMeta {
   return {
     id: `bld-${Date.now()}`,
     name: '',
@@ -50,7 +55,20 @@ function emptyMeta(): BuildingMeta {
     subscriptionUnits: 10,
     subscriptionMonths: 12,
     storageQuotaMb: 500,
-    enabledFeatures: [...ALL_FEATURES],
+    enabledFeatures: [...catalogDefaults],
+  }
+}
+
+function emptyComplex(): Complex {
+  return {
+    id: `cpx-${Date.now()}`,
+    name: '',
+    city: '',
+    managerName: '',
+    username: '',
+    password: '',
+    blockIds: [],
+    status: 'active',
   }
 }
 
@@ -95,7 +113,6 @@ export function SiteAdmin() {
     updateGatewayConfig,
     reviewSubscriptionPayment,
     setBuildingStorageQuota,
-    setBuildingFeatures,
     updateComplexTicket,
     upsertUser,
     upsertComplex,
@@ -103,13 +120,13 @@ export function SiteAdmin() {
   const navigate = useNavigate()
   const [section, setSection] = useState<SiteAdminSection>('properties')
   const [form, setForm] = useState<BuildingMeta | null>(null)
+  const [complexForm, setComplexForm] = useState<Complex | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [discountForm, setDiscountForm] = useState({
     code: '',
     percent: 10,
     maxUses: 50,
   })
-  const [featBuildingId, setFeatBuildingId] = useState(platform.buildings[0]?.id ?? '')
   const [userForm, setUserForm] = useState<PlatformUser | null>(null)
 
   const emptyUser = (): PlatformUser => ({
@@ -212,7 +229,10 @@ export function SiteAdmin() {
         </header>
 
         <h2>مرکز مدیریت پلتفرم</h2>
-        <p className="lead">سایت → شهرک → بلوک/برج — اشتراک، امکانات، مالی و تیکت فنی.</p>
+        <p className="lead">
+          فقط ادمین کل شهرک/ساختمان/بلوک می‌سازد — اشتراک، کاتالوگ امکانات، پیام مدیر و برنامه‌های جانبی.
+        </p>
+        <BroadcastBanner />
 
         <div className="chip-row admin-nav">
           {SECTIONS.map((s) => (
@@ -239,11 +259,19 @@ export function SiteAdmin() {
                 <span className="value">{faNum(platform.admin.complexes.length)}</span>
               </div>
             </div>
+            <p className="sub">
+              ایجاد شهرک، ساختمان، بلوک و برج فقط در اختیار ادمین کل است. مدیر شهرک فقط مشاهده و عملیات
+              تیکت/نیرو/اشتراک محدوده خود را دارد.
+            </p>
             <button
               type="button"
               className="btn btn-copper"
               style={{ width: '100%', marginBottom: 12 }}
-              onClick={() => setForm(emptyMeta())}
+              onClick={() =>
+                setForm(
+                  emptyMeta(defaultFeaturesFromCatalog(platform.admin.featureCatalog)),
+                )
+              }
             >
               افزودن ساختمان / بلوک / برج
             </button>
@@ -663,58 +691,20 @@ export function SiteAdmin() {
           </>
         )}
 
-        {section === 'features' && (
-          <div className="panel">
-            <h3>امکانات هر بلوک</h3>
-            <p className="sub">تغییر بلافاصله ذخیره می‌شود و منو/مسیر اپ همان ساختمان را محدود می‌کند.</p>
-            <div className="field">
-              <label>انتخاب ساختمان</label>
-              <select value={featBuildingId} onChange={(e) => setFeatBuildingId(e.target.value)}>
-                {platform.buildings.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} — {faNum(b.enabledFeatures.length)}/{faNum(FEATURE_CATALOG.length)} فعال
-                  </option>
-                ))}
-              </select>
-            </div>
-            {(() => {
-              const b = platform.buildings.find((x) => x.id === featBuildingId)
-              if (!b) return null
-              return (
-                <div className="feature-toggles">
-                  {FEATURE_CATALOG.map((f) => {
-                    const on = b.enabledFeatures.includes(f.id)
-                    return (
-                      <label key={f.id} className={`feature-toggle ${on ? 'on' : 'off'}`}>
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...b.enabledFeatures, f.id]
-                              : b.enabledFeatures.filter((id) => id !== f.id)
-                            setBuildingFeatures(b.id, next as FeatureModuleId[])
-                            flash(
-                              e.target.checked
-                                ? `«${f.label}» فعال شد`
-                                : `«${f.label}» غیرفعال شد`,
-                            )
-                          }}
-                        />
-                        <span>
-                          <strong>{f.label}</strong>
-                          {f.hint ? <span className="sub"> — {f.hint}</span> : null}
-                        </span>
-                        <span className={`badge ${on ? 'ok' : 'soon'}`}>
-                          {on ? 'فعال' : 'خاموش'}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-              )
-            })()}
-          </div>
+        {section === 'features' && <FeatureCatalogAdmin />}
+
+        {section === 'broadcasts' && (
+          <BroadcastsPanel
+            role="siteAdmin"
+            displayName={session.displayName}
+          />
+        )}
+
+        {section === 'programs' && (
+          <SideProgramsPanel
+            role="siteAdmin"
+            displayName={session.displayName}
+          />
         )}
 
         {section === 'finance' && (
@@ -900,6 +890,123 @@ export function SiteAdmin() {
 
         {section === 'complex' && (
           <>
+            <p className="sub">
+              افزودن شهرک فقط برای ادمین کل است. سپس بلوک‌ها را از تب املاک به شهرک وصل کنید.
+            </p>
+            <button
+              type="button"
+              className="btn btn-copper"
+              style={{ width: '100%', marginBottom: 12 }}
+              onClick={() => setComplexForm(emptyComplex())}
+            >
+              افزودن شهرک
+            </button>
+            {complexForm && (
+              <div className="panel">
+                <h3>شهرک جدید</h3>
+                <div className="field">
+                  <label>نام شهرک</label>
+                  <input
+                    value={complexForm.name}
+                    onChange={(e) => setComplexForm({ ...complexForm, name: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>شهر</label>
+                  <input
+                    value={complexForm.city}
+                    onChange={(e) => setComplexForm({ ...complexForm, city: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>نام مدیر شهرک</label>
+                  <input
+                    value={complexForm.managerName}
+                    onChange={(e) =>
+                      setComplexForm({ ...complexForm, managerName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="grid-actions">
+                  <div className="field">
+                    <label>نام کاربری ورود</label>
+                    <input
+                      value={complexForm.username}
+                      onChange={(e) =>
+                        setComplexForm({ ...complexForm, username: e.target.value.trim() })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>رمز</label>
+                    <input
+                      value={complexForm.password}
+                      onChange={(e) =>
+                        setComplexForm({ ...complexForm, password: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label>بلوک‌های اولیه (اختیاری)</label>
+                  <select
+                    multiple
+                    value={complexForm.blockIds}
+                    onChange={(e) => {
+                      const ids = Array.from(e.target.selectedOptions).map((o) => o.value)
+                      setComplexForm({ ...complexForm, blockIds: ids })
+                    }}
+                    style={{ minHeight: 88 }}
+                  >
+                    {platform.buildings.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setComplexForm(null)}
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (!complexForm.name.trim()) return
+                      const saved: Complex = {
+                        ...complexForm,
+                        name: complexForm.name.trim(),
+                        city: complexForm.city.trim() || '—',
+                        managerName: complexForm.managerName.trim() || 'مدیر شهرک',
+                        username:
+                          complexForm.username.trim() ||
+                          `cpx${String(Date.now()).slice(-4)}`,
+                        password: complexForm.password || 'complex123',
+                      }
+                      upsertComplex(saved)
+                      upsertUser({
+                        id: `usr-cpx-${saved.id}`,
+                        username: saved.username,
+                        password: saved.password,
+                        role: 'complexManager',
+                        displayName: saved.managerName,
+                        complexId: saved.id,
+                        status: 'active',
+                      })
+                      setComplexForm(null)
+                      flash('شهرک و حساب مدیر شهرک ایجاد شد')
+                    }}
+                  >
+                    ذخیره شهرک
+                  </button>
+                </div>
+              </div>
+            )}
             {platform.admin.complexes.map((c) => (
               <div className="panel" key={c.id}>
                 <div className="title">{c.name}</div>

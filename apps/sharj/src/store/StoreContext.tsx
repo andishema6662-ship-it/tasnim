@@ -24,6 +24,8 @@ import {
   normalizeBuildingMeta,
   STORAGE_KEY,
 } from './seed'
+import { resolveProgramStatus } from '../lib/broadcasts'
+import { addonPrice, catalogOrDefault, defaultFeaturesFromCatalog } from '../lib/features'
 import { createPlatformAdmin } from './seedAdmin'
 import type {
   Complex,
@@ -31,10 +33,15 @@ import type {
   ComplexTicket,
   ComplexTicketStatus,
   DiscountCode,
+  FeatureCatalogEntry,
   FeatureModuleId,
   GatewayConfig,
+  ManagerBroadcast,
   PlatformUser,
+  SideProgram,
   SmsConfig,
+  SubPeriodMonths,
+  SubscriptionPayment,
   TariffTier,
   TechnicalPerson,
 } from './platformTypes'
@@ -131,6 +138,20 @@ interface StoreApi {
   ) => void
   setBuildingStorageQuota: (buildingId: string, mb: number) => void
   setBuildingFeatures: (buildingId: string, features: FeatureModuleId[]) => void
+  upsertFeatureCatalog: (catalog: FeatureCatalogEntry[]) => void
+  /** Create pending/demo payment for a paid add-on; activates only when paid/approved */
+  purchaseFeatureAddon: (input: {
+    buildingId: string
+    featureId: FeatureModuleId
+    months?: SubPeriodMonths
+    method?: SubscriptionPayment['method']
+    status?: 'pending' | 'paid_demo'
+    receiptNote?: string
+  }) => string | null
+  upsertBroadcast: (broadcast: ManagerBroadcast) => void
+  deactivateBroadcast: (id: string) => void
+  upsertSideProgram: (program: SideProgram) => void
+  removeSideProgram: (id: string) => void
   createComplexTicket: (input: {
     title: string
     body: string
@@ -182,6 +203,16 @@ function loadState(): PlatformState {
           complexLedger: Array.isArray(parsed.admin?.complexLedger)
             ? parsed.admin.complexLedger
             : seeded.complexLedger,
+          featureCatalog: catalogOrDefault(parsed.admin?.featureCatalog),
+          subscriptionPayments: Array.isArray(parsed.admin?.subscriptionPayments)
+            ? parsed.admin.subscriptionPayments
+            : seeded.subscriptionPayments,
+          broadcasts: Array.isArray(parsed.admin?.broadcasts)
+            ? parsed.admin.broadcasts
+            : seeded.broadcasts,
+          sidePrograms: Array.isArray(parsed.admin?.sidePrograms)
+            ? parsed.admin.sidePrograms
+            : seeded.sidePrograms,
         }
         return { ...parsed, buildings, byId, admin }
       }
@@ -475,8 +506,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const upsertBuilding = useCallback((meta: BuildingMeta) => {
     setPlatform((p) => {
-      const normalized = normalizeBuildingMeta(meta)
-      const exists = p.buildings.some((b) => b.id === normalized.id)
+      // Only site admin may create/edit buildings, blocks, towers
+      if (p.session?.role !== 'siteAdmin') return p
+      const exists = p.buildings.some((b) => b.id === meta.id)
+      const withDefaults: BuildingMeta = exists
+        ? meta
+        : {
+            ...meta,
+            enabledFeatures:
+              meta.enabledFeatures?.length > 0
+                ? meta.enabledFeatures
+                : defaultFeaturesFromCatalog(p.admin.featureCatalog),
+          }
+      const normalized = normalizeBuildingMeta(withDefaults)
       const byId = { ...p.byId }
       if (!byId[normalized.id]) {
         byId[normalized.id] = createEmptyBuildingData()
@@ -542,6 +584,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const upsertComplex = useCallback((complex: Complex) => {
     setPlatform((p) => {
+      // Only site admin may create/edit complexes (شهرک)
+      if (p.session?.role !== 'siteAdmin') return p
       const exists = p.admin.complexes.some((c) => c.id === complex.id)
       const complexes = exists
         ? p.admin.complexes.map((c) => (c.id === complex.id ? complex : c))
@@ -662,34 +706,174 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const reviewSubscriptionPayment = useCallback(
     (id: string, status: 'approved' | 'rejected', asRole: 'siteAdmin' | 'manager') => {
-      setPlatform((p) => ({
+      setPlatform((p) => {
+        const target = p.admin.subscriptionPayments.find((sp) => sp.id === id)
+        let buildings = p.buildings
+        if (status === 'approved' && target?.addonFeatureId) {
+          const fid = target.addonFeatureId
+          buildings = p.buildings.map((b) =>
+            b.id === target.buildingId && !b.enabledFeatures.includes(fid)
+              ? { ...b, enabledFeatures: [...b.enabledFeatures, fid] }
+              : b,
+          )
+        }
+        const label =
+          target?.addonFeatureId != null
+            ? `${status === 'approved' ? 'تأیید' : 'رد'} افزونه ${target.addonFeatureId}`
+            : `${status === 'approved' ? 'تأیید' : 'رد'} پرداخت اشتراک ${id}`
+        return {
+          ...p,
+          buildings,
+          admin: {
+            ...p.admin,
+            subscriptionPayments: p.admin.subscriptionPayments.map((sp) =>
+              sp.id === id
+                ? {
+                    ...sp,
+                    status,
+                    reviewedAt: new Date().toISOString(),
+                    reviewedBy:
+                      asRole === 'siteAdmin'
+                        ? 'مدیر سایت'
+                        : p.session?.displayName ?? 'مدیر بلوک',
+                  }
+                : sp,
+            ),
+            activity: [
+              {
+                id: `act-sub-${Date.now()}`,
+                at: new Date().toISOString(),
+                kind: target?.addonFeatureId ? 'feature' : 'payment',
+                label,
+                buildingId: target?.buildingId,
+              },
+              ...p.admin.activity,
+            ].slice(0, 80),
+          },
+        }
+      })
+    },
+    [],
+  )
+
+  const upsertFeatureCatalog = useCallback((catalog: FeatureCatalogEntry[]) => {
+    setPlatform((p) => {
+      if (p.session?.role !== 'siteAdmin') return p
+      return {
         ...p,
         admin: {
           ...p.admin,
-          subscriptionPayments: p.admin.subscriptionPayments.map((sp) =>
-            sp.id === id
-              ? {
-                  ...sp,
-                  status,
-                  reviewedAt: new Date().toISOString(),
-                  reviewedBy:
-                    asRole === 'siteAdmin'
-                      ? 'مدیر سایت'
-                      : p.session?.displayName ?? 'مدیر بلوک',
-                }
-              : sp,
-          ),
+          featureCatalog: catalog.map((e) => ({ ...e })),
           activity: [
             {
-              id: `act-sub-${Date.now()}`,
+              id: `act-cat-${Date.now()}`,
               at: new Date().toISOString(),
-              kind: 'payment',
-              label: `${status === 'approved' ? 'تأیید' : 'رد'} پرداخت اشتراک ${id}`,
+              kind: 'feature',
+              label: 'به‌روزرسانی کاتالوگ پیش‌فرض امکانات',
             },
             ...p.admin.activity,
           ].slice(0, 80),
         },
-      }))
+      }
+    })
+  }, [])
+
+  const purchaseFeatureAddon = useCallback(
+    (input: {
+      buildingId: string
+      featureId: FeatureModuleId
+      months?: SubPeriodMonths
+      method?: SubscriptionPayment['method']
+      status?: 'pending' | 'paid_demo'
+      receiptNote?: string
+    }): string | null => {
+      let createdId: string | null = null
+      setPlatform((p) => {
+        if (p.session?.role !== 'siteAdmin' && p.session?.role !== 'complexManager') {
+          return p
+        }
+        if (
+          p.session.role === 'complexManager' &&
+          !p.admin.complexes
+            .find((c) => c.id === p.session?.complexId)
+            ?.blockIds.includes(input.buildingId)
+        ) {
+          return p
+        }
+        const catalog = catalogOrDefault(p.admin.featureCatalog)
+        const entry = catalog.find((e) => e.id === input.featureId)
+        if (!entry?.paidAddon) return p
+        const months: SubPeriodMonths =
+          entry.pricingMode === 'one_time' ? 12 : (input.months ?? 12)
+        const amount = addonPrice(entry, entry.pricingMode === 'one_time' ? 12 : months)
+        const status = input.status ?? 'pending'
+        createdId = `sp-addon-${Date.now()}`
+        const payment: SubscriptionPayment = {
+          id: createdId,
+          buildingId: input.buildingId,
+          amount,
+          units: 1,
+          months: entry.pricingMode === 'one_time' ? 0 : months,
+          method: input.method ?? 'bank_receipt',
+          status,
+          trackingCode: trackingCode(),
+          createdAt: new Date().toISOString(),
+          reviewedAt: status === 'paid_demo' ? new Date().toISOString() : undefined,
+          reviewedBy: status === 'paid_demo' ? p.session?.displayName : undefined,
+          receiptNote:
+            input.receiptNote ??
+            `خرید افزونه «${entry.label}» — ${
+              entry.pricingMode === 'one_time' ? 'یک‌بار' : `${months} ماهه`
+            }`,
+          addonFeatureId: input.featureId,
+          kind: 'feature_addon',
+        }
+        let buildings = p.buildings
+        if (status === 'paid_demo') {
+          buildings = p.buildings.map((b) =>
+            b.id === input.buildingId && !b.enabledFeatures.includes(input.featureId)
+              ? { ...b, enabledFeatures: [...b.enabledFeatures, input.featureId] }
+              : b.id === input.buildingId
+                ? b
+                : b,
+          )
+          // ensure feature listed even if already present
+          buildings = buildings.map((b) =>
+            b.id === input.buildingId && !b.enabledFeatures.includes(input.featureId)
+              ? { ...b, enabledFeatures: [...b.enabledFeatures, input.featureId] }
+              : b,
+          )
+        } else {
+          // Mark desired but FeatureGate keeps it off until paid
+          buildings = p.buildings.map((b) =>
+            b.id === input.buildingId && !b.enabledFeatures.includes(input.featureId)
+              ? { ...b, enabledFeatures: [...b.enabledFeatures, input.featureId] }
+              : b,
+          )
+        }
+        return {
+          ...p,
+          buildings,
+          admin: {
+            ...p.admin,
+            subscriptionPayments: [payment, ...p.admin.subscriptionPayments],
+            activity: [
+              {
+                id: `act-addon-${Date.now()}`,
+                at: new Date().toISOString(),
+                kind: 'feature',
+                label:
+                  status === 'paid_demo'
+                    ? `فعال‌سازی افزونه ${entry.label} (پرداخت دمو)`
+                    : `درخواست افزونه ${entry.label}`,
+                buildingId: input.buildingId,
+              },
+              ...p.admin.activity,
+            ].slice(0, 80),
+          },
+        }
+      })
+      return createdId
     },
     [],
   )
@@ -727,6 +911,180 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     [],
   )
+
+  const upsertBroadcast = useCallback((broadcast: ManagerBroadcast) => {
+    setPlatform((p) => {
+      const role = p.session?.role
+      if (
+        role !== 'siteAdmin' &&
+        role !== 'complexManager' &&
+        role !== 'manager'
+      ) {
+        return p
+      }
+      const exists = (p.admin.broadcasts ?? []).some((b) => b.id === broadcast.id)
+      const broadcasts = exists
+        ? (p.admin.broadcasts ?? []).map((b) => (b.id === broadcast.id ? broadcast : b))
+        : [broadcast, ...(p.admin.broadcasts ?? [])]
+
+      // Fan-out notification into relevant building inboxes
+      const byId = { ...p.byId }
+      const targetBuildingIds = new Set<string>()
+      if (broadcast.audience === 'building_members' && broadcast.buildingId) {
+        targetBuildingIds.add(broadcast.buildingId)
+      } else if (
+        (broadcast.audience === 'complex_members' ||
+          broadcast.audience === 'block_managers') &&
+        broadcast.complexId
+      ) {
+        for (const b of p.buildings) {
+          if (b.complexId === broadcast.complexId) targetBuildingIds.add(b.id)
+        }
+      } else if (broadcast.audience === 'complex_managers') {
+        for (const c of p.admin.complexes) {
+          for (const id of c.blockIds) targetBuildingIds.add(id)
+        }
+      }
+      if (!exists) {
+        for (const bid of targetBuildingIds) {
+          const data = byId[bid]
+          if (!data) continue
+          byId[bid] = {
+            ...data,
+            notifications: [
+              {
+                id: `n-bc-${broadcast.id}-${bid}`,
+                title: `پیام مدیر: ${broadcast.title}`,
+                body: broadcast.body,
+                createdAt: broadcast.createdAt,
+                kind: 'broadcast' as const,
+                read: false,
+              },
+              ...data.notifications,
+            ].slice(0, 60),
+          }
+        }
+      }
+
+      return {
+        ...p,
+        byId,
+        admin: {
+          ...p.admin,
+          broadcasts,
+          activity: [
+            {
+              id: `act-bc-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'broadcast',
+              label: exists
+                ? `ویرایش پیام مدیر «${broadcast.title}»`
+                : `ارسال پیام مدیر «${broadcast.title}»`,
+              buildingId: broadcast.buildingId,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
+
+  const deactivateBroadcast = useCallback((id: string) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        broadcasts: (p.admin.broadcasts ?? []).map((b) =>
+          b.id === id ? { ...b, active: false } : b,
+        ),
+      },
+    }))
+  }, [])
+
+  const upsertSideProgram = useCallback((program: SideProgram) => {
+    setPlatform((p) => {
+      const role = p.session?.role
+      if (role !== 'siteAdmin' && role !== 'complexManager' && role !== 'manager') {
+        return p
+      }
+      if (role === 'complexManager' && program.scope === 'complex') {
+        if (program.complexId !== p.session?.complexId) return p
+      }
+      if (role === 'manager') {
+        if (program.scope !== 'building' || program.buildingId !== p.session?.buildingId) {
+          return p
+        }
+      }
+      const withStatus: SideProgram = {
+        ...program,
+        status: resolveProgramStatus(program.startsAt, program.endsAt),
+      }
+      const list = p.admin.sidePrograms ?? []
+      const exists = list.some((x) => x.id === withStatus.id)
+      const sidePrograms = exists
+        ? list.map((x) => (x.id === withStatus.id ? withStatus : x))
+        : [withStatus, ...list]
+
+      const byId = { ...p.byId }
+      if (!exists) {
+        const targets =
+          withStatus.scope === 'building' && withStatus.buildingId
+            ? [withStatus.buildingId]
+            : p.buildings
+                .filter((b) => b.complexId === withStatus.complexId)
+                .map((b) => b.id)
+        for (const bid of targets) {
+          const data = byId[bid]
+          if (!data) continue
+          byId[bid] = {
+            ...data,
+            notifications: [
+              {
+                id: `n-prg-${withStatus.id}-${bid}`,
+                title: `برنامه جانبی: ${withStatus.title}`,
+                body: withStatus.description,
+                createdAt: new Date().toISOString(),
+                kind: 'program' as const,
+                read: false,
+              },
+              ...data.notifications,
+            ].slice(0, 60),
+          }
+        }
+      }
+
+      return {
+        ...p,
+        byId,
+        admin: {
+          ...p.admin,
+          sidePrograms,
+          activity: [
+            {
+              id: `act-prg-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'program',
+              label: exists
+                ? `ویرایش برنامه «${withStatus.title}»`
+                : `ثبت برنامه «${withStatus.title}»`,
+              buildingId: withStatus.buildingId,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
+
+  const removeSideProgram = useCallback((id: string) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        sidePrograms: (p.admin.sidePrograms ?? []).filter((x) => x.id !== id),
+      },
+    }))
+  }, [])
 
   const createComplexTicket = useCallback(
     (input: { title: string; body: string; category: string }) => {
@@ -1670,6 +2028,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reviewSubscriptionPayment,
       setBuildingStorageQuota,
       setBuildingFeatures,
+      upsertFeatureCatalog,
+      purchaseFeatureAddon,
+      upsertBroadcast,
+      deactivateBroadcast,
+      upsertSideProgram,
+      removeSideProgram,
       createComplexTicket,
       updateComplexTicket,
       upsertStaff,
@@ -1722,6 +2086,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reviewSubscriptionPayment,
       setBuildingStorageQuota,
       setBuildingFeatures,
+      upsertFeatureCatalog,
+      purchaseFeatureAddon,
+      upsertBroadcast,
+      deactivateBroadcast,
+      upsertSideProgram,
+      removeSideProgram,
       createComplexTicket,
       updateComplexTicket,
       upsertStaff,
