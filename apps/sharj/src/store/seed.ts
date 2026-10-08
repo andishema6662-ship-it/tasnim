@@ -285,6 +285,42 @@ export function createSeed(): AppState {
         createdAt: daysAgo(1),
       },
     ],
+    meetings: [
+      {
+        id: 'm1',
+        title: 'جلسه هیئت‌مدیره مهر',
+        scheduledAt: daysAgo(-5),
+        place: 'لابی مجتمع',
+        agenda: 'بررسی بودجه رنگ‌آمیزی و آسانسور',
+        resolutions: [],
+        attendees: [],
+        notifiedAt: daysAgo(1),
+        status: 'upcoming',
+        createdAt: daysAgo(2),
+        updatedAt: daysAgo(1),
+      },
+      {
+        id: 'm2',
+        title: 'جلسه عمومی ساکنین شهریور',
+        scheduledAt: daysAgo(20),
+        place: 'سالن اجتماعات',
+        agenda: 'گزارش مالی تابستان و نظافت',
+        resolutions: [
+          'قرارداد نظافت با شرکت آبان تمدید شود.',
+          'هزینه سرویس آسانسور از صندوق مشاعات پرداخت شود.',
+        ],
+        attendees: [
+          { id: 'a1', name: 'رضا محمدی', residentId: 'r1', unitId: 'u1' },
+          { id: 'a2', name: 'سارا احمدی', residentId: 'r2', unitId: 'u2' },
+          { id: 'a3', name: 'مهدی کریمی', residentId: 'r4', unitId: 'u3' },
+          { id: 'a4', name: 'مهمان — نماینده شهرداری', unitId: undefined },
+        ],
+        notifiedAt: daysAgo(25),
+        status: 'done',
+        createdAt: daysAgo(30),
+        updatedAt: daysAgo(19),
+      },
+    ],
     notifications: [
       {
         id: 'nt1',

@@ -16,6 +16,7 @@ import type {
   ChargeSchedule,
   DebtParty,
   LedgerEntry,
+  Meeting,
   NewsItem,
   Poll,
   Role,
@@ -35,6 +36,8 @@ interface StoreApi {
   addPoll: (poll: Omit<Poll, 'id' | 'votedBy' | 'options'> & { options: string[] }) => void
   addNews: (item: Omit<NewsItem, 'id' | 'createdAt'>) => void
   sendChat: (body: string) => void
+  upsertMeeting: (meeting: Meeting) => void
+  notifyMeeting: (meetingId: string) => void
   markNotificationsRead: () => void
 }
 
@@ -43,7 +46,13 @@ const StoreContext = createContext<StoreApi | null>(null)
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as AppState
+    if (raw) {
+      const parsed = JSON.parse(raw) as AppState
+      if (!Array.isArray(parsed.meetings)) {
+        parsed.meetings = createSeed().meetings
+      }
+      return parsed
+    }
   } catch {
     /* ignore */
   }
@@ -342,6 +351,53 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const upsertMeeting = useCallback((meeting: Meeting) => {
+    setState((s) => {
+      const exists = s.meetings.some((m) => m.id === meeting.id)
+      const next = { ...meeting, updatedAt: new Date().toISOString() }
+      return {
+        ...s,
+        meetings: exists
+          ? s.meetings.map((m) => (m.id === meeting.id ? next : m))
+          : [next, ...s.meetings],
+      }
+    })
+  }, [])
+
+  const notifyMeeting = useCallback((meetingId: string) => {
+    setState((s) => {
+      const meeting = s.meetings.find((m) => m.id === meetingId)
+      if (!meeting) return s
+      const when = new Date(meeting.scheduledAt).toLocaleString('fa-IR')
+      const place = meeting.place ? ` — ${meeting.place}` : ''
+      return {
+        ...s,
+        meetings: s.meetings.map((m) =>
+          m.id === meetingId ? { ...m, notifiedAt: new Date().toISOString() } : m,
+        ),
+        notifications: [
+          {
+            id: `nt-meet-${Date.now()}`,
+            title: 'اطلاع‌رسانی جلسه',
+            body: `${meeting.title} · ${when}${place}`,
+            createdAt: new Date().toISOString(),
+            kind: 'meeting' as const,
+            read: false,
+          },
+          {
+            id: `nt-meet-sms-${Date.now()}`,
+            title: 'پیامک جلسه — به‌زودی',
+            body: 'ارسال پیامک واقعی به ساکنین پس از اتصال SMS فعال می‌شود.',
+            createdAt: new Date().toISOString(),
+            kind: 'sms-stub' as const,
+            read: false,
+          },
+          ...s.notifications,
+        ],
+      }
+    })
+  }, [])
+
   const markNotificationsRead = useCallback(() => {
     setState((s) => ({
       ...s,
@@ -363,6 +419,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addPoll,
       addNews,
       sendChat,
+      upsertMeeting,
+      notifyMeeting,
       markNotificationsRead,
     }),
     [
@@ -378,6 +436,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addPoll,
       addNews,
       sendChat,
+      upsertMeeting,
+      notifyMeeting,
       markNotificationsRead,
     ],
   )

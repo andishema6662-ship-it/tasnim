@@ -12,7 +12,7 @@ const managerNav = [
 const residentNav = [
   { to: '/app', end: true, label: 'خانه', ico: '⌂' },
   { to: '/app/bills', label: 'قبوض', ico: '◎' },
-  { to: '/app/expenses', label: 'هزینه‌ها', ico: '◇' },
+  { to: '/app/meetings', label: 'جلسات', ico: '☰' },
   { to: '/app/polls', label: 'نظرسنجی', ico: '✓' },
   { to: '/app/more', label: 'بیشتر', ico: '⋯' },
 ]

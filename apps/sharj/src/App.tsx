@@ -7,6 +7,7 @@ import { Expenses } from './pages/Expenses'
 import { Finance } from './pages/Finance'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
+import { Meetings } from './pages/Meetings'
 import { More } from './pages/More'
 import { News } from './pages/News'
 import { Notifications } from './pages/Notifications'
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="polls" element={<Polls />} />
             <Route path="news" element={<News />} />
             <Route path="chat" element={<Chat />} />
+            <Route path="meetings" element={<Meetings />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

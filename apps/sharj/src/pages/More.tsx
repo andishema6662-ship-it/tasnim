@@ -6,6 +6,7 @@ export function More() {
   const isManager = state.session?.role === 'manager'
 
   const links = [
+    { to: '/app/meetings', label: 'جلسات، مصوبات و حاضرین' },
     { to: '/app/payments', label: 'پرداخت‌ها و رسیدها' },
     { to: '/app/notifications', label: 'اعلان‌ها و یادآوری' },
     { to: '/app/news', label: 'کانال خبری' },
@@ -18,6 +19,7 @@ export function More() {
           { to: '/app/expenses', label: 'نمای شفافیت (ساکنین)' },
         ]
       : [
+          { to: '/app/expenses', label: 'شفافیت هزینه‌ها' },
           { to: '/app/units', label: 'اطلاعات واحد / پارکینگ' },
           { to: '/app/residents', label: 'ساکنین' },
         ]),

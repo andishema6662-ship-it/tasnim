@@ -39,9 +39,9 @@ export function Home() {
             <strong>مالی</strong>
             <span>هزینه و درآمد</span>
           </Link>
-          <Link className="quick-link" to="/app/polls">
-            <strong>نظرسنجی</strong>
-            <span>ساکن / مالک</span>
+          <Link className="quick-link" to="/app/meetings">
+            <strong>جلسات</strong>
+            <span>مصوبات و حاضرین</span>
           </Link>
           <Link className="quick-link" to="/app/units">
             <strong>واحدها</strong>
@@ -101,9 +101,9 @@ export function Home() {
           <strong>نظرسنجی</strong>
           <span>مشارکت</span>
         </Link>
-        <Link className="quick-link" to="/app/news">
-          <strong>اخبار</strong>
-          <span>کانال ساختمان</span>
+        <Link className="quick-link" to="/app/meetings">
+          <strong>جلسات</strong>
+          <span>مصوبات و حاضرین</span>
         </Link>
       </div>
       <div className="panel">

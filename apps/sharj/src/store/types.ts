@@ -105,12 +105,33 @@ export interface ChatMessage {
   createdAt: string
 }
 
+export interface MeetingAttendee {
+  id: string
+  name: string
+  residentId?: string
+  unitId?: string
+}
+
+export interface Meeting {
+  id: string
+  title: string
+  scheduledAt: string
+  place?: string
+  agenda?: string
+  resolutions: string[]
+  attendees: MeetingAttendee[]
+  notifiedAt?: string
+  status: 'upcoming' | 'done'
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NotificationItem {
   id: string
   title: string
   body: string
   createdAt: string
-  kind: 'reminder' | 'payment' | 'poll' | 'news' | 'sms-stub'
+  kind: 'reminder' | 'payment' | 'poll' | 'news' | 'meeting' | 'sms-stub'
   read: boolean
 }
 
@@ -133,5 +154,6 @@ export interface AppState {
   polls: Poll[]
   news: NewsItem[]
   chat: ChatMessage[]
+  meetings: Meeting[]
   notifications: NotificationItem[]
 }

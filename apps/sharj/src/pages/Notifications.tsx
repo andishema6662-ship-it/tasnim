@@ -7,6 +7,7 @@ const kindLabel = {
   payment: 'پرداخت',
   poll: 'نظرسنجی',
   news: 'خبر',
+  meeting: 'جلسه',
   'sms-stub': 'پیامک',
 } as const
 
