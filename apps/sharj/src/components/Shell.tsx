@@ -61,7 +61,7 @@ export function Shell() {
   const unread = state.notifications.filter((n) => !n.read).length
 
   return (
-    <div className="app-shell">
+    <div className="app-shell wide">
       <header className="topbar">
         <div className="brand-mark">
           <div className="logo">د</div>

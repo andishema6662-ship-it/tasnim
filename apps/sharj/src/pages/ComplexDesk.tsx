@@ -10,9 +10,13 @@ import {
 import { BroadcastBanner } from '../components/BroadcastBanner'
 import { BroadcastsPanel } from './BroadcastsPanel'
 import { ComplexFinance } from './ComplexFinance'
+import { ComplexOwnSubscription } from './ComplexOwnSubscription'
 import { ComplexReports } from './ComplexReports'
 import { SideProgramsPanel } from './SideProgramsPanel'
-import { SubscriptionReports } from './SubscriptionReports'
+import {
+  SiteSuggestionsComposer,
+  SiteSuggestionsReview,
+} from './SiteSuggestionsPanel'
 
 const statusLabel: Record<ComplexTicketStatus, string> = {
   open: 'باز',
@@ -28,6 +32,7 @@ type DeskTab =
   | 'subscriptions'
   | 'broadcasts'
   | 'programs'
+  | 'proposals'
 
 export function ComplexDesk() {
   const {
@@ -90,7 +95,7 @@ export function ComplexDesk() {
   })
 
   return (
-    <div className="app-shell auth">
+    <div className="app-shell auth wide">
       <div className="page" style={{ paddingTop: 18 }}>
         <header className="topbar">
           <div className="brand-mark">
@@ -127,9 +132,10 @@ export function ComplexDesk() {
             [
               ['staff', 'نیروهای فنی'],
               ['tickets', 'تیکت‌ها'],
-              ['subscriptions', 'اشتراک'],
+              ['subscriptions', 'اشتراک من'],
               ['broadcasts', 'پیام مدیر'],
               ['programs', 'برنامه‌ها'],
+              ['proposals', 'پیشنهاد به سایت'],
               ['reports', 'گزارشات'],
               ['finance', 'مالی'],
             ] as const
@@ -484,12 +490,20 @@ export function ComplexDesk() {
           </>
         )}
 
-        {tab === 'subscriptions' && (
-          <SubscriptionReports
-            buildingIds={complex.blockIds}
-            canReview={false}
-            title={`حق اشتراک بلوک‌های ${complex.name}`}
-          />
+        {tab === 'subscriptions' && <ComplexOwnSubscription complexId={complex.id} />}
+
+        {tab === 'proposals' && (
+          <>
+            <SiteSuggestionsComposer
+              role="complexManager"
+              complexId={complex.id}
+              displayName={session.displayName}
+            />
+            <SiteSuggestionsReview
+              filterRole="complexManager"
+              complexId={complex.id}
+            />
+          </>
         )}
 
         {tab === 'broadcasts' && (

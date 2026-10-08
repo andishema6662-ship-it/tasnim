@@ -6,6 +6,7 @@ import { Bills } from './pages/Bills'
 import { BlockTickets } from './pages/BlockTickets'
 import { BuildingBroadcasts } from './pages/BuildingBroadcasts'
 import { BuildingPrograms } from './pages/BuildingPrograms'
+import { BuildingSiteSuggestions } from './pages/BuildingSiteSuggestions'
 import { Charges } from './pages/Charges'
 import { Chat } from './pages/Chat'
 import { ComplexDesk } from './pages/ComplexDesk'
@@ -64,6 +65,14 @@ export default function App() {
             <Route path="block-tickets" element={<Guarded><BlockTickets /></Guarded>} />
             <Route path="broadcasts" element={<Guarded><BuildingBroadcasts /></Guarded>} />
             <Route path="programs" element={<Guarded><BuildingPrograms /></Guarded>} />
+            <Route
+              path="site-proposals"
+              element={
+                <Guarded>
+                  <BuildingSiteSuggestions />
+                </Guarded>
+              }
+            />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>

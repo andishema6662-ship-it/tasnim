@@ -49,7 +49,9 @@ export function SubscriptionReports({
   const filtered = useMemo(() => {
     const scope = buildingIds ? new Set(buildingIds) : null
     return platform.admin.subscriptionPayments
-      .filter((sp) => (scope ? scope.has(sp.buildingId) : true))
+      // Site-admin / block reports: buildings only — never complex-manager platform subs
+      .filter((sp) => sp.kind !== 'complex_platform' && !!sp.buildingId)
+      .filter((sp) => (scope ? scope.has(sp.buildingId!) : true))
       .filter((sp) => (period === 'all' ? true : sp.months === period))
       .filter((sp) => (buildingId === 'all' ? true : sp.buildingId === buildingId))
       .filter((sp) => withinRange(sp.createdAt, range))
@@ -65,6 +67,7 @@ export function SubscriptionReports({
   const debtByBuilding = useMemo(() => {
     const map = new Map<string, { name: string; amount: number; count: number }>()
     for (const sp of debtRows) {
+      if (!sp.buildingId) continue
       const b = platform.buildings.find((x) => x.id === sp.buildingId)
       const name = b?.name ?? sp.buildingId
       const cur = map.get(sp.buildingId) ?? { name, amount: 0, count: 0 }
@@ -78,6 +81,7 @@ export function SubscriptionReports({
   const paidByBuilding = useMemo(() => {
     const map = new Map<string, { name: string; amount: number; count: number }>()
     for (const sp of paidRows) {
+      if (!sp.buildingId) continue
       const b = platform.buildings.find((x) => x.id === sp.buildingId)
       const name = b?.name ?? sp.buildingId
       const cur = map.get(sp.buildingId) ?? { name, amount: 0, count: 0 }

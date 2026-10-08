@@ -22,6 +22,7 @@ import { BroadcastBanner } from '../components/BroadcastBanner'
 import { BroadcastsPanel } from './BroadcastsPanel'
 import { FeatureCatalogAdmin } from './FeatureCatalogAdmin'
 import { SideProgramsPanel } from './SideProgramsPanel'
+import { SiteSuggestionsReview } from './SiteSuggestionsPanel'
 import { SubscriptionReports } from './SubscriptionReports'
 
 const SECTIONS: { id: SiteAdminSection; label: string }[] = [
@@ -34,6 +35,7 @@ const SECTIONS: { id: SiteAdminSection; label: string }[] = [
   { id: 'features', label: 'امکانات' },
   { id: 'broadcasts', label: 'پیام مدیر' },
   { id: 'programs', label: 'برنامه‌ها' },
+  { id: 'proposals', label: 'پیشنهادات مدیران' },
   { id: 'finance', label: 'مالی' },
   { id: 'activity', label: 'فعالیت' },
   { id: 'sms', label: 'پیامک' },
@@ -203,7 +205,7 @@ export function SiteAdmin() {
   }
 
   return (
-    <div className="app-shell auth">
+    <div className="app-shell auth wide">
       <div className="page" style={{ paddingTop: 18 }}>
         <header className="topbar">
           <div className="brand-mark">
@@ -706,6 +708,8 @@ export function SiteAdmin() {
             displayName={session.displayName}
           />
         )}
+
+        {section === 'proposals' && <SiteSuggestionsReview filterRole="siteAdmin" />}
 
         {section === 'finance' && (
           <>

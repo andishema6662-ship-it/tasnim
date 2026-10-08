@@ -20,6 +20,7 @@ export function More() {
     ...(isManager
       ? [
           { to: '/app/broadcasts', label: 'پیام مدیر به واحدها' },
+          { to: '/app/site-proposals', label: 'پیشنهاد به ادمین کل سایت' },
           { to: '/app/block-tickets', label: 'ارجاع مشکل به مدیر شهرک', feature: 'blockTickets' as const },
         ]
       : []),

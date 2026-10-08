@@ -39,12 +39,15 @@ import type {
   ManagerBroadcast,
   PlatformUser,
   SideProgram,
+  SiteSuggestion,
+  SiteSuggestionStatus,
   SmsConfig,
   SubPeriodMonths,
   SubscriptionPayment,
   TariffTier,
   TechnicalPerson,
 } from './platformTypes'
+import { DEMO_OTP_CODE } from './platformTypes'
 import type {
   Bill,
   BuildingData,
@@ -79,10 +82,27 @@ interface StoreApi {
     unitId?: string,
   ) => boolean
   loginComplexManager: (username: string, password: string) => boolean
+  /** SMS OTP stub: sends DEMO_OTP_CODE via configured SMS webservice stub */
+  requestSmsOtp: (phone: string) => { ok: boolean; message: string; demoCode?: string }
+  verifySmsOtp: (phone: string, code: string) => boolean
   enterBuildingAsManager: (buildingId: string) => void
   returnToSiteAdmin: () => void
   logout: () => void
   resetDemo: () => void
+  addSiteSuggestion: (input: {
+    title: string
+    body: string
+    category: string
+    fromRole: 'complexManager' | 'manager'
+    fromName: string
+    complexId?: string
+    buildingId?: string
+  }) => void
+  reviewSiteSuggestion: (
+    id: string,
+    status: SiteSuggestionStatus,
+    reviewNote?: string,
+  ) => void
   upsertBuilding: (meta: BuildingMeta) => void
   upsertUser: (user: PlatformUser) => void
   runSchedule: (scheduleId: string) => number
@@ -195,10 +215,6 @@ function loadState(): PlatformState {
         const admin = {
           ...seeded,
           ...parsed.admin,
-          users:
-            Array.isArray(parsed.admin?.users) && parsed.admin.users.length > 0
-              ? parsed.admin.users
-              : seeded.users,
           staff: Array.isArray(parsed.admin?.staff) ? parsed.admin.staff : seeded.staff,
           complexLedger: Array.isArray(parsed.admin?.complexLedger)
             ? parsed.admin.complexLedger
@@ -213,6 +229,33 @@ function loadState(): PlatformState {
           sidePrograms: Array.isArray(parsed.admin?.sidePrograms)
             ? parsed.admin.sidePrograms
             : seeded.sidePrograms,
+          siteSuggestions: Array.isArray(parsed.admin?.siteSuggestions)
+            ? parsed.admin.siteSuggestions
+            : seeded.siteSuggestions,
+          otpChallenges: Array.isArray(parsed.admin?.otpChallenges)
+            ? parsed.admin.otpChallenges
+            : [],
+          users: (Array.isArray(parsed.admin?.users) && parsed.admin.users.length > 0
+            ? parsed.admin.users
+            : seeded.users
+          ).map((u) => {
+            const seed = seeded.users.find((s) => s.id === u.id || s.username === u.username)
+            return { ...u, phone: u.phone ?? seed?.phone }
+          }),
+          complexes: (Array.isArray(parsed.admin?.complexes)
+            ? parsed.admin.complexes
+            : seeded.complexes
+          ).map((c) => {
+            const seed = seeded.complexes.find((s) => s.id === c.id)
+            return {
+              ...c,
+              subscriptionMonths: c.subscriptionMonths ?? seed?.subscriptionMonths,
+              subscriptionAmount: c.subscriptionAmount ?? seed?.subscriptionAmount,
+              subscriptionStatus: c.subscriptionStatus ?? seed?.subscriptionStatus,
+              subscriptionExpiresAt: c.subscriptionExpiresAt ?? seed?.subscriptionExpiresAt,
+              subscriptionTracking: c.subscriptionTracking ?? seed?.subscriptionTracking,
+            }
+          }),
         }
         return { ...parsed, buildings, byId, admin }
       }
@@ -380,6 +423,153 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return false
     },
     [platform.admin.users, platform.admin.complexes, applyStaffSession],
+  )
+
+  const normalizePhone = (phone: string) => phone.replace(/\D/g, '').replace(/^98/, '0')
+
+  const requestSmsOtp = useCallback(
+    (phone: string) => {
+      const normalized = normalizePhone(phone)
+      const user = (platform.admin.users ?? []).find(
+        (u) => u.status === 'active' && u.phone && normalizePhone(u.phone) === normalized,
+      )
+      if (!user) {
+        return { ok: false, message: 'شماره‌ای با این موبایل در سیستم نیست.' }
+      }
+      const code = DEMO_OTP_CODE
+      setPlatform((p) => ({
+        ...p,
+        admin: {
+          ...p.admin,
+          otpChallenges: [
+            {
+              phone: normalized,
+              code,
+              expiresAt: Date.now() + 5 * 60 * 1000,
+              userId: user.id,
+            },
+            ...(p.admin.otpChallenges ?? []).filter((c) => c.phone !== normalized),
+          ].slice(0, 20),
+          sms: {
+            ...p.admin.sms,
+            lastTestAt: new Date().toISOString(),
+            lastTestResult: p.admin.sms.enabled
+              ? `stub OTP به ${normalized} از ${p.admin.sms.endpoint}`
+              : `stub OTP (SMS خاموش) — کد دمو ${code}`,
+          },
+          activity: [
+            {
+              id: `act-otp-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'sms',
+              label: `ارسال کد ورود به ${normalized} (stub)`,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }))
+      return {
+        ok: true,
+        message: 'کد تأیید ارسال شد (شبیه‌سازی پیامک).',
+        demoCode: code,
+      }
+    },
+    [platform.admin.users],
+  )
+
+  const verifySmsOtp = useCallback(
+    (phone: string, code: string) => {
+      const normalized = normalizePhone(phone)
+      const challenge = (platform.admin.otpChallenges ?? []).find(
+        (c) => c.phone === normalized && c.expiresAt > Date.now(),
+      )
+      const accepted =
+        code.trim() === DEMO_OTP_CODE ||
+        (challenge != null && code.trim() === challenge.code)
+      if (!accepted) return false
+      const userId = challenge?.userId
+      const user = (platform.admin.users ?? []).find(
+        (u) =>
+          u.status === 'active' &&
+          (u.id === userId ||
+            (u.phone && normalizePhone(u.phone) === normalized)),
+      )
+      if (!user) return false
+      return applyStaffSession(user)
+    },
+    [platform.admin.otpChallenges, platform.admin.users, applyStaffSession],
+  )
+
+  const addSiteSuggestion = useCallback(
+    (input: {
+      title: string
+      body: string
+      category: string
+      fromRole: 'complexManager' | 'manager'
+      fromName: string
+      complexId?: string
+      buildingId?: string
+    }) => {
+      setPlatform((p) => {
+        const role = p.session?.role
+        if (role !== 'complexManager' && role !== 'manager') return p
+        const suggestion: SiteSuggestion = {
+          id: `ssug-${Date.now()}`,
+          title: input.title,
+          body: input.body,
+          category: input.category,
+          fromRole: input.fromRole,
+          fromName: input.fromName,
+          complexId: input.complexId,
+          buildingId: input.buildingId,
+          status: 'open',
+          createdAt: new Date().toISOString(),
+        }
+        return {
+          ...p,
+          admin: {
+            ...p.admin,
+            siteSuggestions: [suggestion, ...(p.admin.siteSuggestions ?? [])],
+            activity: [
+              {
+                id: `act-ssug-${Date.now()}`,
+                at: new Date().toISOString(),
+                kind: 'suggestion',
+                label: `پیشنهاد به ادمین: ${suggestion.title}`,
+                buildingId: suggestion.buildingId,
+              },
+              ...p.admin.activity,
+            ].slice(0, 80),
+          },
+        }
+      })
+    },
+    [],
+  )
+
+  const reviewSiteSuggestion = useCallback(
+    (id: string, status: SiteSuggestionStatus, reviewNote?: string) => {
+      setPlatform((p) => {
+        if (p.session?.role !== 'siteAdmin') return p
+        return {
+          ...p,
+          admin: {
+            ...p.admin,
+            siteSuggestions: (p.admin.siteSuggestions ?? []).map((s) =>
+              s.id === id
+                ? {
+                    ...s,
+                    status,
+                    reviewNote,
+                    reviewedAt: new Date().toISOString(),
+                  }
+                : s,
+            ),
+          },
+        }
+      })
+    },
+    [],
   )
 
   const loginSiteAdmin = useCallback(
@@ -1993,10 +2183,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       loginStaff,
       loginBuilding,
       loginComplexManager,
+      requestSmsOtp,
+      verifySmsOtp,
       enterBuildingAsManager,
       returnToSiteAdmin,
       logout,
       resetDemo,
+      addSiteSuggestion,
+      reviewSiteSuggestion,
       upsertBuilding,
       upsertUser,
       upsertComplex,
@@ -2051,10 +2245,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       loginStaff,
       loginBuilding,
       loginComplexManager,
+      requestSmsOtp,
+      verifySmsOtp,
       enterBuildingAsManager,
       returnToSiteAdmin,
       logout,
       resetDemo,
+      addSiteSuggestion,
+      reviewSiteSuggestion,
       upsertBuilding,
       upsertUser,
       upsertComplex,

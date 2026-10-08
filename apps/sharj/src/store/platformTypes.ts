@@ -172,6 +172,12 @@ export interface Complex {
   password: string
   blockIds: string[]
   status: 'active' | 'disabled'
+  /** Platform subscription for the complex manager account (not block subs) */
+  subscriptionMonths?: SubPeriodMonths | number
+  subscriptionAmount?: number
+  subscriptionStatus?: SubPaymentStatus
+  subscriptionExpiresAt?: string
+  subscriptionTracking?: string
 }
 
 export interface TechnicalTeam {
@@ -262,7 +268,10 @@ export const SUB_STATUS_LABEL: Record<SubPaymentStatus, string> = {
 
 export interface SubscriptionPayment {
   id: string
-  buildingId: string
+  /** Block/building subscription — omit for complex-level platform sub */
+  buildingId?: string
+  /** Complex manager's own platform subscription */
+  complexId?: string
   amount: number
   units: number
   months: number
@@ -279,7 +288,7 @@ export interface SubscriptionPayment {
    * Activation of that module happens only after approved / paid_demo.
    */
   addonFeatureId?: FeatureModuleId
-  kind?: 'subscription' | 'feature_addon'
+  kind?: 'subscription' | 'feature_addon' | 'complex_platform'
 }
 
 export function isSubPaid(status: SubPaymentStatus): boolean {
@@ -358,8 +367,40 @@ export interface PlatformUser {
   displayName: string
   buildingId?: string
   complexId?: string
+  /** For SMS OTP login (demo) */
+  phone?: string
   status: 'active' | 'disabled'
 }
+
+export type SiteSuggestionStatus = 'open' | 'reviewing' | 'resolved' | 'rejected'
+
+/** Proposals from complex/block managers to site admin */
+export interface SiteSuggestion {
+  id: string
+  title: string
+  body: string
+  category: string
+  fromRole: 'complexManager' | 'manager'
+  fromName: string
+  fromUserId?: string
+  complexId?: string
+  buildingId?: string
+  status: SiteSuggestionStatus
+  createdAt: string
+  reviewedAt?: string
+  reviewNote?: string
+}
+
+export const SITE_SUGGESTION_CATEGORIES = [
+  'امکانات جدید',
+  'تعرفه و اشتراک',
+  'پشتیبانی فنی',
+  'گزارش مشکل',
+  'سایر',
+] as const
+
+/** Fixed demo OTP accepted by SMS stub */
+export const DEMO_OTP_CODE = '12345'
 
 /** Who receives a manager broadcast (hierarchy-scoped). */
 export type BroadcastAudience =
@@ -417,6 +458,13 @@ export interface SideProgram {
   status: 'upcoming' | 'active' | 'ended'
 }
 
+export interface OtpChallenge {
+  phone: string
+  code: string
+  expiresAt: number
+  userId: string
+}
+
 export interface PlatformAdmin {
   users: PlatformUser[]
   complexes: Complex[]
@@ -431,6 +479,9 @@ export interface PlatformAdmin {
   featureCatalog: FeatureCatalogEntry[]
   broadcasts: ManagerBroadcast[]
   sidePrograms: SideProgram[]
+  siteSuggestions: SiteSuggestion[]
+  /** Active OTP challenges (demo / stub SMS) */
+  otpChallenges: OtpChallenge[]
   sms: SmsConfig
   gateway: GatewayConfig
   activity: ActivityEvent[]
@@ -452,3 +503,4 @@ export type SiteAdminSection =
   | 'complex'
   | 'broadcasts'
   | 'programs'
+  | 'proposals'
