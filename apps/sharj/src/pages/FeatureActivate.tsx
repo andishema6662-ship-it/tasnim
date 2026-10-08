@@ -137,7 +137,7 @@ export function FeatureActivate() {
       <div className="page" style={{ paddingTop: 18 }}>
         <header className="topbar">
           <div className="brand-mark">
-            <div className="logo">د</div>
+            <div className="logo">ش</div>
             <div>
               <div className="name">شارژبان</div>
               <span className="tag">فعال‌سازی امکان</span>

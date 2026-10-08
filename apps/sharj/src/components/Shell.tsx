@@ -158,7 +158,7 @@ export function Shell() {
           {showBack ? (
             <BackButton fallback="/app" label="بازگشت" className="back-ico-btn" />
           ) : (
-            <div className="logo">د</div>
+            <div className="logo">ش</div>
           )}
           <div>
             <div className="name">شارژبان</div>

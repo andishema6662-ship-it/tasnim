@@ -5,7 +5,7 @@ export function Splash() {
     <div className="app-shell auth">
       <section className="hero-splash">
         <div className="brand-mark" style={{ marginBottom: 8 }}>
-          <div className="logo">د</div>
+          <div className="logo">ش</div>
           <div>
             <div className="name">شارژبان</div>
             <span className="tag">مدیریت شارژ ساختمان</span>

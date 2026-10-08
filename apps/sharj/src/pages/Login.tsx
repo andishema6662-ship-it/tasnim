@@ -58,7 +58,7 @@ export function Login() {
       <div className="login-layout login-layout--simple">
         <section className="login-card">
           <div className="login-brand">
-            <div className="logo">د</div>
+            <div className="logo">ش</div>
             <div>
               <div className="name">شارژبان</div>
               <span className="tag">مدیریت شارژ ساختمان و شهرک</span>
