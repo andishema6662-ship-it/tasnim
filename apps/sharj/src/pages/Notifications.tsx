@@ -8,6 +8,7 @@ const kindLabel = {
   poll: 'نظرسنجی',
   news: 'خبر',
   meeting: 'جلسه',
+  suggestion: 'پیشنهاد',
   'sms-stub': 'پیامک',
 } as const
 

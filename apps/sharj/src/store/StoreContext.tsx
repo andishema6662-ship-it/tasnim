@@ -9,7 +9,13 @@ import {
 } from 'react'
 import { computeUnitCharge } from '../lib/charges'
 import { trackingCode } from '../lib/format'
-import { createEmptyBuildingData, createSeed, STORAGE_KEY } from './seed'
+import { billRemaining, buildInstallments } from '../lib/installments'
+import {
+  createEmptyBuildingData,
+  createSeed,
+  normalizeBuildingData,
+  STORAGE_KEY,
+} from './seed'
 import type {
   Bill,
   BuildingData,
@@ -23,6 +29,9 @@ import type {
   Poll,
   ScopedState,
   Session,
+  Suggestion,
+  SuggestionCategory,
+  SuggestionStatus,
 } from './types'
 import { SITE_ADMIN_DEMO } from './types'
 
@@ -41,6 +50,13 @@ interface StoreApi {
   runSchedule: (scheduleId: string) => number
   upsertSchedule: (schedule: ChargeSchedule) => void
   payBill: (billId: string, party: DebtParty, amount?: number) => string | null
+  createInstallmentPlan: (
+    billId: string,
+    count: number,
+    startDate: string,
+    intervalMonths?: number,
+  ) => boolean
+  payInstallment: (billId: string, installmentId: string, party?: DebtParty) => string | null
   addLedger: (entry: Omit<LedgerEntry, 'id' | 'createdAt'>) => void
   votePoll: (pollId: string, optionId: string) => void
   addPoll: (poll: Omit<Poll, 'id' | 'votedBy' | 'options'> & { options: string[] }) => void
@@ -48,6 +64,14 @@ interface StoreApi {
   sendChat: (body: string) => void
   upsertMeeting: (meeting: Meeting) => void
   notifyMeeting: (meetingId: string) => void
+  addSuggestion: (input: {
+    categoryId: string
+    title: string
+    body: string
+    photoDataUrl?: string
+  }) => void
+  setSuggestionStatus: (id: string, status: SuggestionStatus) => void
+  upsertSuggestionCategory: (category: SuggestionCategory) => void
   markNotificationsRead: () => void
 }
 
@@ -58,12 +82,46 @@ function loadState(): PlatformState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as PlatformState
-      if (parsed?.buildings && parsed?.byId) return parsed
+      if (parsed?.buildings && parsed?.byId) {
+        const byId: PlatformState['byId'] = {}
+        for (const [id, data] of Object.entries(parsed.byId)) {
+          byId[id] = normalizeBuildingData(data)
+        }
+        return { ...parsed, byId }
+      }
     }
   } catch {
     /* ignore */
   }
   return createSeed()
+}
+
+/** Apply a payment amount to owner/resident shares (party preference). */
+function applyPaymentToShares(
+  bill: Bill,
+  amount: number,
+  party: DebtParty,
+): { paidOwner: number; paidResident: number } {
+  let left = amount
+  let paidOwner = bill.paidOwner
+  let paidResident = bill.paidResident
+  const ownerDue = Math.max(0, bill.ownerShare - paidOwner)
+  const residentDue = Math.max(0, bill.residentShare - paidResident)
+
+  if (party === 'owner') {
+    const o = Math.min(left, ownerDue)
+    paidOwner += o
+    left -= o
+    const r = Math.min(left, residentDue)
+    paidResident += r
+  } else {
+    const r = Math.min(left, residentDue)
+    paidResident += r
+    left -= r
+    const o = Math.min(left, ownerDue)
+    paidOwner += o
+  }
+  return { paidOwner, paidResident }
 }
 
 function billStatus(b: Bill): Bill['status'] {
@@ -527,6 +585,180 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const createInstallmentPlan = useCallback(
+    (billId: string, count: number, startDate: string, intervalMonths = 1) => {
+      let ok = false
+      setPlatform((p) => {
+        const bid = p.session?.buildingId
+        if (!bid || p.session?.role !== 'manager') return p
+        return patchBuilding(p, bid, (data) => {
+          const bill = data.bills.find((b) => b.id === billId)
+          if (!bill || bill.status === 'paid') return data
+          const remaining = billRemaining(bill)
+          if (remaining <= 0) return data
+          const installments = buildInstallments(remaining, count, startDate, intervalMonths)
+          ok = true
+          return {
+            ...data,
+            bills: data.bills.map((b) => (b.id === billId ? { ...b, installments } : b)),
+            notifications: [
+              {
+                id: `nt-inst-${Date.now()}`,
+                title: 'تقسیط شارژ',
+                body: `${bill.title} به ${installments.length} قسط تقسیم شد.`,
+                createdAt: new Date().toISOString(),
+                kind: 'payment' as const,
+                read: false,
+              },
+              ...data.notifications,
+            ],
+          }
+        })
+      })
+      return ok
+    },
+    [],
+  )
+
+  const payInstallment = useCallback(
+    (billId: string, installmentId: string, party: DebtParty = 'resident') => {
+      let code: string | null = null
+      setPlatform((p) => {
+        const bid = p.session?.buildingId
+        if (!bid) return p
+        return patchBuilding(p, bid, (data) => {
+          const bill = data.bills.find((b) => b.id === billId)
+          if (!bill?.installments) return data
+          const inst = bill.installments.find((i) => i.id === installmentId)
+          if (!inst || inst.status === 'paid') return data
+          const pay = Math.min(inst.amount, billRemaining(bill))
+          if (pay <= 0) return data
+          code = trackingCode()
+          const shares = applyPaymentToShares(bill, pay, party)
+          const nextBill: Bill = {
+            ...bill,
+            ...shares,
+            installments: bill.installments.map((i) =>
+              i.id === installmentId
+                ? {
+                    ...i,
+                    status: 'paid' as const,
+                    paidAt: new Date().toISOString(),
+                    paymentId: `pay-${Date.now()}`,
+                  }
+                : i,
+            ),
+          }
+          nextBill.status = billStatus(nextBill)
+          return {
+            ...data,
+            bills: data.bills.map((b) => (b.id === billId ? nextBill : b)),
+            units: data.units.map((u) =>
+              u.id === bill.unitId ? { ...u, balance: u.balance + pay } : u,
+            ),
+            fundBalance: data.fundBalance + pay,
+            payments: [
+              {
+                id: `pay-${Date.now()}`,
+                billId,
+                unitId: bill.unitId,
+                amount: pay,
+                party,
+                trackingCode: code!,
+                createdAt: new Date().toISOString(),
+                method: 'online-demo' as const,
+              },
+              ...data.payments,
+            ],
+            ledger: [
+              {
+                id: `l-inst-${Date.now()}`,
+                kind: 'income' as const,
+                category: 'شارژ',
+                title: `قسط ${inst.index} — ${bill.title}`,
+                amount: pay,
+                note: `کد پیگیری ${code}`,
+                createdAt: new Date().toISOString(),
+                visibleToResidents: true,
+              },
+              ...data.ledger,
+            ],
+            notifications: [
+              {
+                id: `nt-inst-pay-${Date.now()}`,
+                title: 'پرداخت قسط',
+                body: `قسط ${inst.index} پرداخت شد — کد ${code}`,
+                createdAt: new Date().toISOString(),
+                kind: 'payment' as const,
+                read: false,
+              },
+              ...data.notifications,
+            ],
+          }
+        })
+      })
+      return code
+    },
+    [],
+  )
+
+  const addSuggestion = useCallback(
+    (input: { categoryId: string; title: string; body: string; photoDataUrl?: string }) => {
+      setPlatform((p) => {
+        const bid = p.session?.buildingId
+        if (!bid || !p.session) return p
+        const authorName = p.session.displayName
+        const unitId = p.session.unitId
+        const suggestion: Suggestion = {
+          id: `sg-${Date.now()}`,
+          categoryId: input.categoryId,
+          title: input.title.trim(),
+          body: input.body.trim(),
+          photoDataUrl: input.photoDataUrl,
+          authorName,
+          unitId,
+          status: 'open',
+          createdAt: new Date().toISOString(),
+        }
+        return patchBuilding(p, bid, (data) => ({
+          ...data,
+          suggestions: [suggestion, ...data.suggestions],
+          notifications: [
+            {
+              id: `nt-sg-${Date.now()}`,
+              title: 'پیشنهاد جدید',
+              body: suggestion.title,
+              createdAt: new Date().toISOString(),
+              kind: 'suggestion' as const,
+              read: false,
+            },
+            ...data.notifications,
+          ],
+        }))
+      })
+    },
+    [],
+  )
+
+  const setSuggestionStatus = useCallback((id: string, status: SuggestionStatus) => {
+    withBuilding((data) => ({
+      ...data,
+      suggestions: data.suggestions.map((s) => (s.id === id ? { ...s, status } : s)),
+    }))
+  }, [withBuilding])
+
+  const upsertSuggestionCategory = useCallback((category: SuggestionCategory) => {
+    withBuilding((data) => {
+      const exists = data.suggestionCategories.some((c) => c.id === category.id)
+      return {
+        ...data,
+        suggestionCategories: exists
+          ? data.suggestionCategories.map((c) => (c.id === category.id ? category : c))
+          : [...data.suggestionCategories, category],
+      }
+    })
+  }, [withBuilding])
+
   const markNotificationsRead = useCallback(() => {
     withBuilding((data) => ({
       ...data,
@@ -549,6 +781,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       runSchedule,
       upsertSchedule,
       payBill,
+      createInstallmentPlan,
+      payInstallment,
       addLedger,
       votePoll,
       addPoll,
@@ -556,6 +790,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sendChat,
       upsertMeeting,
       notifyMeeting,
+      addSuggestion,
+      setSuggestionStatus,
+      upsertSuggestionCategory,
       markNotificationsRead,
     }),
     [
@@ -572,6 +809,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       runSchedule,
       upsertSchedule,
       payBill,
+      createInstallmentPlan,
+      payInstallment,
       addLedger,
       votePoll,
       addPoll,
@@ -579,6 +818,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sendChat,
       upsertMeeting,
       notifyMeeting,
+      addSuggestion,
+      setSuggestionStatus,
+      upsertSuggestionCategory,
       markNotificationsRead,
     ],
   )

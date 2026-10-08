@@ -1,9 +1,51 @@
-import type { BuildingData, BuildingMeta, PlatformState } from './types'
+import type {
+  BuildingData,
+  BuildingMeta,
+  PlatformState,
+  SuggestionCategory,
+} from './types'
 
 const now = Date.now()
 const daysAgo = (d: number) => new Date(now - d * 86400000).toISOString()
 
 export const STORAGE_KEY = 'diyarsharj-v2'
+
+/** Tiny demo illustration (SVG data URL) — not a real user photo */
+const DEMO_PHOTO =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">
+      <rect width="640" height="400" fill="#0B3D3A"/>
+      <rect x="40" y="80" width="560" height="260" rx="16" fill="#1a5c57"/>
+      <rect x="80" y="140" width="120" height="160" fill="#E8DCC8"/>
+      <rect x="260" y="140" width="120" height="160" fill="#E8DCC8"/>
+      <rect x="440" y="140" width="120" height="160" fill="#E8DCC8"/>
+      <text x="320" y="60" text-anchor="middle" fill="#C4783B" font-size="28" font-family="Tahoma">نمونه پارکینگ</text>
+    </svg>`,
+  )
+
+export function defaultSuggestionCategories(): SuggestionCategory[] {
+  return [
+    { id: 'cat-parking', label: 'پارکینگ', active: true },
+    { id: 'cat-commons', label: 'مشاعات', active: true },
+    { id: 'cat-cleaning', label: 'نظافت', active: true },
+    { id: 'cat-security', label: 'امنیت', active: true },
+    { id: 'cat-elevator', label: 'آسانسور', active: true },
+    { id: 'cat-green', label: 'فضای سبز', active: true },
+    { id: 'cat-other', label: 'سایر', active: true },
+  ]
+}
+
+export function normalizeBuildingData(data: BuildingData): BuildingData {
+  return {
+    ...data,
+    suggestionCategories:
+      Array.isArray(data.suggestionCategories) && data.suggestionCategories.length > 0
+        ? data.suggestionCategories
+        : defaultSuggestionCategories(),
+    suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+  }
+}
 
 function emptyBuilding(fund = 0): BuildingData {
   return {
@@ -18,6 +60,8 @@ function emptyBuilding(fund = 0): BuildingData {
     news: [],
     chat: [],
     meetings: [],
+    suggestionCategories: defaultSuggestionCategories(),
+    suggestions: [],
     notifications: [],
   }
 }
@@ -144,6 +188,36 @@ function diyarMinoodari(): BuildingData {
         status: 'unpaid',
         createdAt: daysAgo(8),
         formula: 'area',
+        installments: [
+          {
+            id: 'inst-b4-1',
+            index: 1,
+            amount: 800_000,
+            dueAt: daysAgo(-3),
+            status: 'unpaid',
+          },
+          {
+            id: 'inst-b4-2',
+            index: 2,
+            amount: 800_000,
+            dueAt: daysAgo(-33),
+            status: 'unpaid',
+          },
+          {
+            id: 'inst-b4-3',
+            index: 3,
+            amount: 800_000,
+            dueAt: daysAgo(-63),
+            status: 'unpaid',
+          },
+          {
+            id: 'inst-b4-4',
+            index: 4,
+            amount: 800_000,
+            dueAt: daysAgo(-93),
+            status: 'unpaid',
+          },
+        ],
       },
     ],
     payments: [],
@@ -226,6 +300,39 @@ function diyarMinoodari(): BuildingData {
         status: 'done',
         createdAt: daysAgo(30),
         updatedAt: daysAgo(19),
+      },
+    ],
+    suggestionCategories: defaultSuggestionCategories(),
+    suggestions: [
+      {
+        id: 'sg1',
+        categoryId: 'cat-parking',
+        title: 'خط‌کشی پارکینگ مثل نمونه موفق',
+        body: 'پیشنهاد می‌کنم مانند این نمونه، جای هر واحد مشخص و خط‌کشی شود تا تداخل کم شود.',
+        photoDataUrl: DEMO_PHOTO,
+        authorName: 'واحد ۱۰۲',
+        unitId: 'u2',
+        status: 'open',
+        createdAt: daysAgo(2),
+      },
+      {
+        id: 'sg2',
+        categoryId: 'cat-cleaning',
+        title: 'افزایش نوبت نظافت راهرو',
+        body: 'با توجه به تردد، هفته‌ای سه بار نظافت راهروها بهتر است.',
+        authorName: 'واحد ۱۰۱',
+        unitId: 'u1',
+        status: 'open',
+        createdAt: daysAgo(5),
+      },
+      {
+        id: 'sg3',
+        categoryId: 'cat-elevator',
+        title: 'نصب آینه در کابین آسانسور',
+        body: 'برای دید بهتر و حس امنیت، آینه کمک می‌کند.',
+        authorName: 'مدیر ساختمان',
+        status: 'resolved',
+        createdAt: daysAgo(18),
       },
     ],
     notifications: [

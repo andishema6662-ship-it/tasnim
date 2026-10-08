@@ -43,9 +43,9 @@ export function Home() {
             <strong>جلسات</strong>
             <span>مصوبات و حاضرین</span>
           </Link>
-          <Link className="quick-link" to="/app/units">
-            <strong>واحدها</strong>
-            <span>{state.units.length} واحد فعال</span>
+          <Link className="quick-link" to="/app/suggestions">
+            <strong>پیشنهادات</strong>
+            <span>نظرات ساکنین</span>
           </Link>
         </div>
         <div className="panel">
@@ -101,9 +101,9 @@ export function Home() {
           <strong>نظرسنجی</strong>
           <span>مشارکت</span>
         </Link>
-        <Link className="quick-link" to="/app/meetings">
-          <strong>جلسات</strong>
-          <span>مصوبات و حاضرین</span>
+        <Link className="quick-link" to="/app/suggestions">
+          <strong>پیشنهادات</strong>
+          <span>نظرات و عکس</span>
         </Link>
       </div>
       <div className="panel">

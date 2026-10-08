@@ -56,6 +56,18 @@ export interface ChargeSchedule {
   lastRunAt?: string
 }
 
+export type InstallmentStatus = 'unpaid' | 'paid'
+
+export interface Installment {
+  id: string
+  index: number
+  amount: number
+  dueAt: string
+  status: InstallmentStatus
+  paidAt?: string
+  paymentId?: string
+}
+
 export interface Bill {
   id: string
   unitId: string
@@ -69,6 +81,8 @@ export interface Bill {
   status: BillStatus
   createdAt: string
   formula: ChargeFormula
+  /** Optional plan on remaining balance */
+  installments?: Installment[]
 }
 
 export interface Payment {
@@ -148,8 +162,29 @@ export interface NotificationItem {
   title: string
   body: string
   createdAt: string
-  kind: 'reminder' | 'payment' | 'poll' | 'news' | 'meeting' | 'sms-stub'
+  kind: 'reminder' | 'payment' | 'poll' | 'news' | 'meeting' | 'suggestion' | 'sms-stub'
   read: boolean
+}
+
+export type SuggestionStatus = 'open' | 'resolved' | 'hidden'
+
+export interface SuggestionCategory {
+  id: string
+  label: string
+  active: boolean
+}
+
+export interface Suggestion {
+  id: string
+  categoryId: string
+  title: string
+  body: string
+  /** Compressed JPEG/PNG data URL for localStorage demo */
+  photoDataUrl?: string
+  authorName: string
+  unitId?: string
+  status: SuggestionStatus
+  createdAt: string
 }
 
 export interface BuildingData {
@@ -164,6 +199,8 @@ export interface BuildingData {
   news: NewsItem[]
   chat: ChatMessage[]
   meetings: Meeting[]
+  suggestionCategories: SuggestionCategory[]
+  suggestions: Suggestion[]
   notifications: NotificationItem[]
 }
 

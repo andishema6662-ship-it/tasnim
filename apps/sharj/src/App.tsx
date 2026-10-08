@@ -17,6 +17,7 @@ import { Residents } from './pages/Residents'
 import { SiteAdmin } from './pages/SiteAdmin'
 import { Splash } from './pages/Splash'
 import { Subscription } from './pages/Subscription'
+import { Suggestions } from './pages/Suggestions'
 import { Units } from './pages/Units'
 import { StoreProvider } from './store/StoreContext'
 
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="news" element={<News />} />
             <Route path="chat" element={<Chat />} />
             <Route path="meetings" element={<Meetings />} />
+            <Route path="suggestions" element={<Suggestions />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
           </Route>
