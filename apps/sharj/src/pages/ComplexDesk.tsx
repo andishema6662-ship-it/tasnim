@@ -7,6 +7,8 @@ import {
   type ComplexTicketStatus,
   type TechnicalPerson,
 } from '../store/platformTypes'
+import { ComplexFinance } from './ComplexFinance'
+import { ComplexReports } from './ComplexReports'
 
 const statusLabel: Record<ComplexTicketStatus, string> = {
   open: 'باز',
@@ -14,7 +16,7 @@ const statusLabel: Record<ComplexTicketStatus, string> = {
   resolved: 'حل‌شده',
 }
 
-type DeskTab = 'tickets' | 'staff'
+type DeskTab = 'tickets' | 'staff' | 'reports' | 'finance'
 
 export function ComplexDesk() {
   const {
@@ -104,24 +106,27 @@ export function ComplexDesk() {
 
         <h2>میز مدیر شهرک</h2>
         <p className="lead">
-          نیروهای فنی و پیمانکار، تیم‌ها، و ارجاع تیکت‌های بلوک‌ها.
+          نیروها، تیکت‌ها، گزارش رسیدگی و مالی سطح شهرک.
         </p>
 
         <div className="chip-row admin-nav">
-          <button
-            type="button"
-            className={`chip ${tab === 'staff' ? 'active' : ''}`}
-            onClick={() => setTab('staff')}
-          >
-            نیروهای فنی
-          </button>
-          <button
-            type="button"
-            className={`chip ${tab === 'tickets' ? 'active' : ''}`}
-            onClick={() => setTab('tickets')}
-          >
-            تیکت‌ها
-          </button>
+          {(
+            [
+              ['staff', 'نیروهای فنی'],
+              ['tickets', 'تیکت‌ها'],
+              ['reports', 'گزارشات'],
+              ['finance', 'مالی'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`chip ${tab === id ? 'active' : ''}`}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="stat-row">
@@ -461,6 +466,12 @@ export function ComplexDesk() {
             })}
             {tickets.length === 0 && <div className="empty">تیکتی با این فیلتر نیست.</div>}
           </>
+        )}
+
+        {tab === 'reports' && <ComplexReports complexId={complex.id} />}
+
+        {tab === 'finance' && (
+          <ComplexFinance complexId={complex.id} displayName={session.displayName} />
         )}
       </div>
       {toast && <div className="toast">{toast}</div>}

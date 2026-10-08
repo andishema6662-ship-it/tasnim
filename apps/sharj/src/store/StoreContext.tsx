@@ -26,6 +26,7 @@ import {
 import { createPlatformAdmin } from './seedAdmin'
 import type {
   Complex,
+  ComplexLedgerEntry,
   ComplexTicket,
   ComplexTicketStatus,
   DiscountCode,
@@ -146,6 +147,8 @@ interface StoreApi {
   ) => void
   upsertStaff: (person: TechnicalPerson) => void
   removeStaff: (id: string) => void
+  upsertComplexLedger: (entry: ComplexLedgerEntry) => void
+  removeComplexLedger: (id: string) => void
   logActivity: (label: string, kind?: string, buildingId?: string) => void
   markNotificationsRead: () => void
 }
@@ -175,6 +178,9 @@ function loadState(): PlatformState {
               ? parsed.admin.users
               : seeded.users,
           staff: Array.isArray(parsed.admin?.staff) ? parsed.admin.staff : seeded.staff,
+          complexLedger: Array.isArray(parsed.admin?.complexLedger)
+            ? parsed.admin.complexLedger
+            : seeded.complexLedger,
         }
         return { ...parsed, buildings, byId, admin }
       }
@@ -835,6 +841,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         tickets: p.admin.tickets.map((t) =>
           t.assignedPersonId === id ? { ...t, assignedPersonId: undefined } : t,
         ),
+      },
+    }))
+  }, [])
+
+  const upsertComplexLedger = useCallback((entry: ComplexLedgerEntry) => {
+    setPlatform((p) => {
+      const list = p.admin.complexLedger ?? []
+      const exists = list.some((e) => e.id === entry.id)
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          complexLedger: exists
+            ? list.map((e) => (e.id === entry.id ? entry : e))
+            : [entry, ...list],
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'complex-finance',
+              label: `${entry.kind === 'expense' ? 'هزینه' : 'درآمد'} شهرک: ${entry.title}`,
+              buildingId: entry.buildingId,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
+
+  const removeComplexLedger = useCallback((id: string) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        complexLedger: (p.admin.complexLedger ?? []).filter((e) => e.id !== id),
       },
     }))
   }, [])
@@ -1631,6 +1673,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateComplexTicket,
       upsertStaff,
       removeStaff,
+      upsertComplexLedger,
+      removeComplexLedger,
       logActivity,
       markNotificationsRead,
     }),
@@ -1681,6 +1725,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateComplexTicket,
       upsertStaff,
       removeStaff,
+      upsertComplexLedger,
+      removeComplexLedger,
       logActivity,
       markNotificationsRead,
     ],

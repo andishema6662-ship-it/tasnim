@@ -168,6 +168,39 @@ export interface ActivityEvent {
   buildingId?: string
 }
 
+export type ComplexLedgerKind = 'expense' | 'income'
+
+export interface ComplexLedgerEntry {
+  id: string
+  complexId: string
+  kind: ComplexLedgerKind
+  category: string
+  title: string
+  amount: number
+  note?: string
+  /** Optional link to a block in the complex */
+  buildingId?: string
+  at: string
+  createdBy: string
+}
+
+export const COMPLEX_EXPENSE_CATEGORIES = [
+  'تاسیسات',
+  'برق',
+  'نظافت',
+  'امنیت',
+  'پیمانکار',
+  'آسانسور',
+  'سایر',
+] as const
+
+export const COMPLEX_INCOME_CATEGORIES = [
+  'سهم بلوک‌ها',
+  'اجاره مشاعات',
+  'کمک/سپرده',
+  'سایر',
+] as const
+
 export type StaffRole = 'siteAdmin' | 'complexManager' | 'manager' | 'financeManager'
 
 export interface PlatformUser {
@@ -187,6 +220,7 @@ export interface PlatformAdmin {
   teams: TechnicalTeam[]
   staff: TechnicalPerson[]
   tickets: ComplexTicket[]
+  complexLedger: ComplexLedgerEntry[]
   discounts: DiscountCode[]
   tariffs: TariffTier[]
   subscriptionPayments: SubscriptionPayment[]
