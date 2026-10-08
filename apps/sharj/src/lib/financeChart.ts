@@ -1,5 +1,6 @@
 import { jalaliMonthName, toJalaliParts } from './format'
-import type { BuildingData } from '../store/types'
+import { isSubPaid, type ComplexLedgerEntry, type SubscriptionPayment } from '../store/platformTypes'
+import type { BuildingData, PlatformState } from '../store/types'
 
 export type MonthCashflow = {
   key: string
@@ -7,9 +8,9 @@ export type MonthCashflow = {
   jm: number
   /** Short Jalali month label, e.g. مهر */
   label: string
-  /** دریافتی‌ها — unit payments */
+  /** Series A (دریافتی / درآمد / تأییدشده) */
   receipts: number
-  /** هزینه‌ها — ledger expenses */
+  /** Series B (هزینه / در انتظار) */
   expenses: number
 }
 
@@ -33,15 +34,7 @@ export function lastJalaliMonthKeys(
   return out
 }
 
-/**
- * Monthly cashflow for manager dashboard:
- * - receipts = sum of Payment.amount by Jalali month
- * - expenses = sum of ledger expense amounts by Jalali month
- */
-export function monthlyReceiptsVsExpenses(
-  data: BuildingData,
-  monthCount = 6,
-): MonthCashflow[] {
+function emptyMonthMap(monthCount: number) {
   const months = lastJalaliMonthKeys(monthCount)
   const map = new Map(
     months.map((m) => [
@@ -56,6 +49,19 @@ export function monthlyReceiptsVsExpenses(
       } satisfies MonthCashflow,
     ]),
   )
+  return { months, map }
+}
+
+/**
+ * Building cashflow:
+ * - receipts = unit payments
+ * - expenses = ledger expenses
+ */
+export function monthlyReceiptsVsExpenses(
+  data: BuildingData,
+  monthCount = 6,
+): MonthCashflow[] {
+  const { months, map } = emptyMonthMap(monthCount)
 
   for (const p of data.payments ?? []) {
     const parts = toJalaliParts(p.createdAt)
@@ -70,6 +76,75 @@ export function monthlyReceiptsVsExpenses(
     if (!parts) continue
     const row = map.get(`${parts.jy}-${parts.jm}`)
     if (row) row.expenses += e.amount
+  }
+
+  return months.map((m) => map.get(m.key)!)
+}
+
+/**
+ * Complex manager: aggregate block buildings' payments/expenses
+ * plus complexLedger income/expense for the complex.
+ */
+export function complexMonthlyCashflow(
+  platform: PlatformState,
+  complexId: string,
+  monthCount = 6,
+): MonthCashflow[] {
+  const complex = platform.admin.complexes.find((c) => c.id === complexId)
+  const blockIds = complex?.blockIds ?? []
+  const { months, map } = emptyMonthMap(monthCount)
+
+  for (const bid of blockIds) {
+    const data = platform.byId[bid]
+    if (!data) continue
+    for (const p of data.payments ?? []) {
+      const parts = toJalaliParts(p.createdAt)
+      if (!parts) continue
+      const row = map.get(`${parts.jy}-${parts.jm}`)
+      if (row) row.receipts += p.amount
+    }
+    for (const e of data.ledger ?? []) {
+      if (e.kind !== 'expense') continue
+      const parts = toJalaliParts(e.createdAt)
+      if (!parts) continue
+      const row = map.get(`${parts.jy}-${parts.jm}`)
+      if (row) row.expenses += e.amount
+    }
+  }
+
+  const ledger: ComplexLedgerEntry[] = (platform.admin.complexLedger ?? []).filter(
+    (e) => e.complexId === complexId,
+  )
+  for (const e of ledger) {
+    const parts = toJalaliParts(e.at)
+    if (!parts) continue
+    const row = map.get(`${parts.jy}-${parts.jm}`)
+    if (!row) continue
+    if (e.kind === 'income') row.receipts += e.amount
+    else row.expenses += e.amount
+  }
+
+  return months.map((m) => map.get(m.key)!)
+}
+
+/**
+ * Site admin: subscription revenue by Jalali month.
+ * - receipts = paid (approved / paid_demo)
+ * - expenses = pending (awaiting review)
+ */
+export function adminMonthlySubscriptionSeries(
+  payments: SubscriptionPayment[],
+  monthCount = 6,
+): MonthCashflow[] {
+  const { months, map } = emptyMonthMap(monthCount)
+
+  for (const p of payments ?? []) {
+    const parts = toJalaliParts(p.createdAt)
+    if (!parts) continue
+    const row = map.get(`${parts.jy}-${parts.jm}`)
+    if (!row) continue
+    if (isSubPaid(p.status)) row.receipts += p.amount
+    else if (p.status === 'pending') row.expenses += p.amount
   }
 
   return months.map((m) => map.get(m.key)!)
