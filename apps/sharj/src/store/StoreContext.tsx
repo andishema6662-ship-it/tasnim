@@ -69,6 +69,7 @@ import type {
   Suggestion,
   SuggestionCategory,
   SuggestionStatus,
+  UnitVehicle,
 } from './types'
 import { SITE_ADMIN_DEMO } from './types'
 
@@ -198,6 +199,7 @@ interface StoreApi {
     status?: 'pending' | 'paid_demo'
     receiptNote?: string
   }) => string | null
+  setUnitVehicles: (unitId: string, vehicles: UnitVehicle[]) => void
   upsertBroadcast: (broadcast: ManagerBroadcast) => void
   deactivateBroadcast: (id: string) => void
   upsertSideProgram: (program: SideProgram) => void
@@ -1034,15 +1036,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }): string | null => {
       let createdId: string | null = null
       setPlatform((p) => {
-        if (p.session?.role !== 'siteAdmin' && p.session?.role !== 'complexManager') {
+        const role = p.session?.role
+        if (role !== 'siteAdmin' && role !== 'complexManager' && role !== 'manager') {
           return p
         }
         if (
-          p.session.role === 'complexManager' &&
+          role === 'complexManager' &&
           !p.admin.complexes
             .find((c) => c.id === p.session?.complexId)
             ?.blockIds.includes(input.buildingId)
         ) {
+          return p
+        }
+        if (role === 'manager' && p.session?.buildingId !== input.buildingId) {
           return p
         }
         const catalog = catalogOrDefault(p.admin.featureCatalog)
@@ -2500,6 +2506,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [withBuilding])
 
+  const setUnitVehicles = useCallback(
+    (unitId: string, vehicles: UnitVehicle[]) => {
+      withBuilding((data) => ({
+        ...data,
+        units: data.units.map((u) =>
+          u.id === unitId
+            ? {
+                ...u,
+                vehicles: vehicles.map((v) => ({
+                  ...v,
+                  plate: v.plate.trim(),
+                  kind: v.kind.trim() || 'سواری',
+                })),
+              }
+            : u,
+        ),
+      }))
+    },
+    [withBuilding],
+  )
+
   const api = useMemo(
     () => ({
       platform,
@@ -2551,6 +2578,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setBuildingFeatures,
       upsertFeatureCatalog,
       purchaseFeatureAddon,
+      setUnitVehicles,
       upsertBroadcast,
       deactivateBroadcast,
       upsertSideProgram,
@@ -2621,6 +2649,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setBuildingFeatures,
       upsertFeatureCatalog,
       purchaseFeatureAddon,
+      setUnitVehicles,
       upsertBroadcast,
       deactivateBroadcast,
       upsertSideProgram,

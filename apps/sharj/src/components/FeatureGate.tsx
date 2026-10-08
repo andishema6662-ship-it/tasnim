@@ -1,22 +1,57 @@
-import { useLocation } from 'react-router-dom'
-import { effectiveFeatureSet } from '../lib/features'
-import { catalogOrDefault } from '../lib/features'
-import { FEATURE_CATALOG, featureForPath } from '../store/platformTypes'
+import { Link, useLocation } from 'react-router-dom'
+import {
+  catalogOrDefault,
+  effectiveFeatureSet,
+  featureEntry,
+} from '../lib/features'
+import { FEATURE_CATALOG, featureForPath, type FeatureModuleId } from '../store/platformTypes'
 import { useBuildingState, useStore } from '../store/StoreContext'
 
-export function FeatureDisabled({ featureLabel }: { featureLabel?: string }) {
+export function FeatureDisabled({
+  featureId,
+  featureLabel,
+  paidAddon,
+}: {
+  featureId?: FeatureModuleId
+  featureLabel?: string
+  paidAddon?: boolean
+}) {
+  const { session } = useStore()
+  const state = useBuildingState()
+  const canUnlock =
+    session?.role === 'manager' ||
+    session?.role === 'complexManager' ||
+    session?.role === 'siteAdmin'
+  const activateTo = featureId
+    ? `/app/activate/${featureId}?buildingId=${encodeURIComponent(state.buildingId)}`
+    : '/app/more'
+
   return (
     <div className="page">
-      <h2>امکان غیرفعال</h2>
-      <p className="lead">
-        {featureLabel
-          ? `«${featureLabel}» برای این ساختمان فعال نیست.`
-          : 'این امکان برای این ساختمان فعال نیست.'}
-      </p>
-      <p className="sub">
-        اگر افزونه پولی است، پس از تأیید پرداخت در پنل سایت فعال می‌شود؛ در غیر این صورت مدیر سایت از
-        بخش امکانات آن را روشن می‌کند.
-      </p>
+      <div className="panel unlock-cta-panel">
+        <h2>امکان غیرفعال</h2>
+        <p className="lead">
+          {featureLabel
+            ? `«${featureLabel}» برای این ساختمان فعال نیست.`
+            : 'این امکان برای این ساختمان فعال نیست.'}
+        </p>
+        {paidAddon ? (
+          <p className="sub">
+            این ماژول افزونه پولی است. برای دیدن تعرفه و پرداخت، دکمه زیر را بزنید — پس از پرداخت موفق
+            بخش باز می‌شود.
+          </p>
+        ) : (
+          <p className="sub">
+            در صورت افزونه پولی بودن، از مسیر فعال‌سازی اقدام کنید؛ وگرنه ادمین سایت از بخش امکانات آن
+            را روشن می‌کند.
+          </p>
+        )}
+        {canUnlock && featureId && (
+          <Link className="btn btn-copper unlock-cta" to={activateTo}>
+            برای فعال‌سازی کلیک کنید
+          </Link>
+        )}
+      </div>
     </div>
   )
 }
@@ -38,10 +73,16 @@ export function FeatureGate({ children }: { children: React.ReactNode }) {
   if (enabled) return <>{children}</>
 
   const catalog = catalogOrDefault(platform.admin.featureCatalog)
+  const entry = featureEntry(featureId, catalog)
   const label =
-    catalog.find((f) => f.id === featureId)?.label ??
-    FEATURE_CATALOG.find((f) => f.id === featureId)?.label
-  return <FeatureDisabled featureLabel={label} />
+    entry?.label ?? FEATURE_CATALOG.find((f) => f.id === featureId)?.label
+  return (
+    <FeatureDisabled
+      featureId={featureId}
+      featureLabel={label}
+      paidAddon={Boolean(entry?.paidAddon)}
+    />
+  )
 }
 
 export function useBuildingFeatures(): Set<string> {
@@ -60,7 +101,7 @@ export function RequireFeature({
   children,
   fallback = null,
 }: {
-  id: import('../store/platformTypes').FeatureModuleId
+  id: FeatureModuleId
   children: React.ReactNode
   fallback?: React.ReactNode
 }) {

@@ -36,6 +36,17 @@ export interface BuildingMeta {
   enabledFeatures: FeatureModuleId[]
 }
 
+export interface UnitVehicle {
+  id: string
+  /** خودرو: سواری، وانت، موتور… */
+  kind: string
+  brand?: string
+  color?: string
+  /** پلاک فارسی — مثلاً ۱۲ب۳۴۵۶۷ */
+  plate: string
+  note?: string
+}
+
 export interface Unit {
   id: string
   number: string
@@ -46,6 +57,7 @@ export interface Unit {
   residentName: string
   parkingSpot?: string
   balance: number
+  vehicles?: UnitVehicle[]
 }
 
 export interface Resident {

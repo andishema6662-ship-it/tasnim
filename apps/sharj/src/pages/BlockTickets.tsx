@@ -1,6 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { RequestsDataTable } from '../components/RequestsDataTable'
 import { faDate } from '../lib/format'
+import type { ComplexTicket } from '../store/platformTypes'
 import { useBuildingState, useStore } from '../store/StoreContext'
+
+const statusLabel = {
+  open: 'باز',
+  in_progress: 'در جریان',
+  resolved: 'حل‌شده',
+} as const
 
 export function BlockTickets() {
   const { platform, createComplexTicket } = useStore()
@@ -11,8 +20,18 @@ export function BlockTickets() {
   const [body, setBody] = useState('')
   const [category, setCategory] = useState('تاسیسات')
   const [toast, setToast] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState('all')
 
-  const mine = platform.admin.tickets.filter((t) => t.buildingId === state.buildingId)
+  const mine = useMemo(
+    () => platform.admin.tickets.filter((t) => t.buildingId === state.buildingId),
+    [platform.admin.tickets, state.buildingId],
+  )
+
+  const rows = useMemo(
+    () =>
+      mine.filter((t) => (statusFilter === 'all' ? true : t.status === statusFilter)),
+    [mine, statusFilter],
+  )
 
   if (!isManager) {
     return (
@@ -77,46 +96,67 @@ export function BlockTickets() {
       </div>
 
       <div className="panel">
-        <h3>تیکت‌های این بلوک</h3>
-        <div className="list">
-          {mine.map((t) => {
-            const person = (platform.admin.staff ?? []).find((s) => s.id === t.assignedPersonId)
-            const team = platform.admin.teams.find((s) => s.id === t.assignedTeamId)
-            return (
-              <div className="list-item" key={t.id}>
-                <div>
-                  <div className="title">{t.title}</div>
-                  <div className="sub">
-                    {t.category} · {faDate(t.updatedAt)}
-                    <br />
-                    {t.body}
-                    {person ? (
-                      <>
-                        <br />
-                        ارجاع‌شده به: {person.name} ({person.specialty})
-                      </>
-                    ) : null}
-                    {team ? (
-                      <>
-                        <br />
-                        تیم: {team.name}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
+        <RequestsDataTable
+          title="جدول درخواست‌های این بلوک"
+          rows={rows}
+          rowKey={(t) => t.id}
+          statusFilters={[
+            { id: 'all', label: 'همه' },
+            { id: 'open', label: 'باز' },
+            { id: 'in_progress', label: 'در جریان' },
+            { id: 'resolved', label: 'حل‌شده' },
+          ]}
+          statusValue={statusFilter}
+          onStatusChange={setStatusFilter}
+          columns={[
+            {
+              key: 'title',
+              label: 'عنوان',
+              render: (t: ComplexTicket) => t.title,
+              searchText: (t) => `${t.title} ${t.body}`,
+            },
+            {
+              key: 'cat',
+              label: 'دسته',
+              render: (t) => t.category,
+              searchText: (t) => t.category,
+            },
+            {
+              key: 'status',
+              label: 'وضعیت',
+              render: (t) => (
                 <span
                   className={`badge ${
-                    t.status === 'resolved' ? 'ok' : t.status === 'in_progress' ? 'warn' : 'danger'
+                    t.status === 'resolved'
+                      ? 'ok'
+                      : t.status === 'in_progress'
+                        ? 'warn'
+                        : 'danger'
                   }`}
                 >
-                  {t.status === 'open' ? 'باز' : t.status === 'in_progress' ? 'در جریان' : 'حل‌شده'}
+                  {statusLabel[t.status]}
                 </span>
-              </div>
-            )
-          })}
-          {mine.length === 0 && <div className="empty">هنوز تیکتی نیست.</div>}
-        </div>
+              ),
+              searchText: (t) => statusLabel[t.status],
+            },
+            {
+              key: 'at',
+              label: 'تاریخ',
+              render: (t) => faDate(t.updatedAt),
+              searchText: (t) => t.updatedAt,
+            },
+          ]}
+        />
       </div>
+
+      <div className="panel">
+        <h3>افزونه‌های قفل‌شده</h3>
+        <p className="sub">اگر بخشی در منو باز نمی‌شود، از مسیر فعال‌سازی اقدام کنید.</p>
+        <Link className="btn btn-copper" to="/app/activate/qarz" style={{ width: '100%' }}>
+          برای فعال‌سازی کلیک کنید — قرض‌الحسنه
+        </Link>
+      </div>
+
       {toast && <div className="toast">{toast}</div>}
     </div>
   )

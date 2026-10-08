@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { RequestsDataTable } from '../components/RequestsDataTable'
+import { BroadcastBanner } from '../components/BroadcastBanner'
+import { catalogOrDefault, hasPaidAddon } from '../lib/features'
 import { faDate, faNum } from '../lib/format'
-import { useStore } from '../store/StoreContext'
 import {
   STAFF_SPECIALTIES,
+  type ComplexTicket,
   type ComplexTicketStatus,
   type TechnicalPerson,
 } from '../store/platformTypes'
-import { BroadcastBanner } from '../components/BroadcastBanner'
+import { useStore } from '../store/StoreContext'
 import { BroadcastsPanel } from './BroadcastsPanel'
 import { ComplexFinance } from './ComplexFinance'
+import { ComplexFollowUps } from './ComplexFollowUps'
 import { ComplexOwnSubscription } from './ComplexOwnSubscription'
 import { ComplexReports } from './ComplexReports'
 import { SideProgramsPanel } from './SideProgramsPanel'
@@ -25,6 +29,7 @@ const statusLabel: Record<ComplexTicketStatus, string> = {
 }
 
 type DeskTab =
+  | 'followups'
   | 'tickets'
   | 'staff'
   | 'reports'
@@ -33,6 +38,7 @@ type DeskTab =
   | 'broadcasts'
   | 'programs'
   | 'proposals'
+  | 'addons'
 
 export function ComplexDesk() {
   const {
@@ -44,11 +50,12 @@ export function ComplexDesk() {
     removeStaff,
   } = useStore()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<DeskTab>('reports')
+  const [tab, setTab] = useState<DeskTab>('followups')
   const [filterBlock, setFilterBlock] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<ComplexTicketStatus | 'all'>('all')
   const [staffForm, setStaffForm] = useState<TechnicalPerson | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [ticketTableStatus, setTicketTableStatus] = useState('all')
 
   const complex = platform.admin.complexes.find((c) => c.id === session?.complexId)
   const staff = (platform.admin.staff ?? []).filter((s) => s.complexId === complex?.id)
@@ -130,8 +137,10 @@ export function ComplexDesk() {
         <div className="chip-row admin-nav">
           {(
             [
+              ['followups', 'پیگیری‌ها'],
+              ['tickets', 'درخواست‌ها'],
               ['staff', 'نیروهای فنی'],
-              ['tickets', 'تیکت‌ها'],
+              ['addons', 'افزونه‌ها'],
               ['subscriptions', 'اشتراک من'],
               ['broadcasts', 'پیام مدیر'],
               ['programs', 'برنامه‌ها'],
@@ -319,6 +328,53 @@ export function ComplexDesk() {
           </>
         )}
 
+        {tab === 'followups' && <ComplexFollowUps complexId={complex.id} />}
+
+        {tab === 'addons' && (
+          <div className="panel">
+            <h3>افزونه‌های پولی بلوک‌ها</h3>
+            <p className="sub">
+              برای امکاناتی که هنوز باز نشده‌اند، از مسیر تعرفه → پرداخت فعال کنید.
+            </p>
+            <div className="list">
+              {blocks.flatMap((b) => {
+                if (!b) return []
+                const catalog = catalogOrDefault(platform.admin.featureCatalog)
+                return catalog
+                  .filter((e) => e.paidAddon)
+                  .map((e) => {
+                    const paid = hasPaidAddon(
+                      b.id,
+                      e.id,
+                      platform.admin.subscriptionPayments,
+                      e,
+                    )
+                    return (
+                      <div className="list-item" key={`${b.id}-${e.id}`}>
+                        <div>
+                          <div className="title">
+                            {e.label} · {b.name}
+                          </div>
+                          <div className="sub">{e.hint ?? 'افزونه پولی'}</div>
+                        </div>
+                        {paid ? (
+                          <span className="badge ok">فعال</span>
+                        ) : (
+                          <Link
+                            className="btn btn-copper"
+                            to={`/app/activate/${e.id}?buildingId=${encodeURIComponent(b.id)}`}
+                          >
+                            برای فعال‌سازی کلیک کنید
+                          </Link>
+                        )}
+                      </div>
+                    )
+                  })
+              })}
+            </div>
+          </div>
+        )}
+
         {tab === 'tickets' && (
           <>
             <div className="chip-row">
@@ -342,151 +398,125 @@ export function ComplexDesk() {
                 ) : null,
               )}
             </div>
-            <div className="chip-row">
-              {(['all', 'open', 'in_progress', 'resolved'] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={`chip ${filterStatus === s ? 'active' : ''}`}
-                  onClick={() => setFilterStatus(s)}
-                >
-                  {s === 'all' ? 'همه وضعیت‌ها' : statusLabel[s]}
-                </button>
-              ))}
+            <div className="panel">
+              <RequestsDataTable
+                title="جدول درخواست‌های شهرک"
+                rows={tickets.filter((t) =>
+                  ticketTableStatus === 'all' ? true : t.status === ticketTableStatus,
+                )}
+                statusFilters={[
+                  { id: 'all', label: 'همه' },
+                  { id: 'open', label: 'باز' },
+                  { id: 'in_progress', label: 'در جریان' },
+                  { id: 'resolved', label: 'حل‌شده' },
+                ]}
+                statusValue={ticketTableStatus}
+                onStatusChange={(id) => {
+                  setTicketTableStatus(id)
+                  setFilterStatus(id as ComplexTicketStatus | 'all')
+                }}
+                rowKey={(t) => t.id}
+                columns={[
+                  {
+                    key: 'title',
+                    label: 'عنوان',
+                    render: (t: ComplexTicket) => t.title,
+                    searchText: (t) => `${t.title} ${t.body}`,
+                  },
+                  {
+                    key: 'block',
+                    label: 'بلوک',
+                    render: (t) =>
+                      platform.buildings.find((b) => b.id === t.buildingId)?.name ?? '—',
+                    searchText: (t) =>
+                      platform.buildings.find((b) => b.id === t.buildingId)?.name ?? '',
+                  },
+                  {
+                    key: 'cat',
+                    label: 'دسته',
+                    render: (t) => t.category,
+                    searchText: (t) => t.category,
+                  },
+                  {
+                    key: 'status',
+                    label: 'وضعیت',
+                    render: (t) => (
+                      <span
+                        className={`badge ${
+                          t.status === 'resolved'
+                            ? 'ok'
+                            : t.status === 'in_progress'
+                              ? 'warn'
+                              : 'danger'
+                        }`}
+                      >
+                        {statusLabel[t.status]}
+                      </span>
+                    ),
+                    searchText: (t) => statusLabel[t.status],
+                  },
+                  {
+                    key: 'actions',
+                    label: 'عملیات',
+                    render: (t) => (
+                      <div className="grid-actions">
+                        <select
+                          value={t.assignedPersonId ?? ''}
+                          onChange={(e) => {
+                            const pid = e.target.value || null
+                            updateComplexTicket(t.id, {
+                              assignedPersonId: pid,
+                              status: pid || t.assignedTeamId ? 'in_progress' : t.status,
+                            })
+                          }}
+                        >
+                          <option value="">ارجاع…</option>
+                          {staff
+                            .filter((s) => s.active || s.id === t.assignedPersonId)
+                            .map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() =>
+                            updateComplexTicket(t.id, {
+                              status: 'resolved',
+                              resolutionNote: 'رفع شد توسط مدیر شهرک',
+                            })
+                          }
+                        >
+                          حل
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             </div>
-
             {tickets.map((t) => {
               const b = platform.buildings.find((x) => x.id === t.buildingId)
-              const team = platform.admin.teams.find((x) => x.id === t.assignedTeamId)
               const person = staff.find((x) => x.id === t.assignedPersonId)
               return (
-                <div className="panel" key={t.id}>
-                  <div className="list-item" style={{ paddingTop: 0 }}>
-                    <div>
-                      <div className="title">{t.title}</div>
-                      <div className="sub">
-                        بلوک: {b?.name} · دسته: {t.category}
+                <div className="panel" key={`detail-${t.id}`}>
+                  <div className="title">{t.title}</div>
+                  <div className="sub">
+                    {b?.name} · {t.category} · {faDate(t.updatedAt)}
+                    <br />
+                    {t.body}
+                    {person ? (
+                      <>
                         <br />
-                        {t.createdBy} · {faDate(t.updatedAt)}
-                        <br />
-                        {t.body}
-                        {person ? (
-                          <>
-                            <br />
-                            ارجاع به فرد: <strong>{person.name}</strong> ({person.specialty}
-                            {person.phone ? ` · ${person.phone}` : ''})
-                          </>
-                        ) : null}
-                        {team ? (
-                          <>
-                            <br />
-                            تیم: {team.name} ({team.specialty})
-                          </>
-                        ) : null}
-                        {t.resolutionNote ? (
-                          <>
-                            <br />
-                            نتیجه: {t.resolutionNote}
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                    <span
-                      className={`badge ${
-                        t.status === 'resolved'
-                          ? 'ok'
-                          : t.status === 'in_progress'
-                            ? 'warn'
-                            : 'danger'
-                      }`}
-                    >
-                      {statusLabel[t.status]}
-                    </span>
-                  </div>
-                  <div className="field">
-                    <label>دسته</label>
-                    <select
-                      value={t.category}
-                      onChange={(e) => updateComplexTicket(t.id, { category: e.target.value })}
-                    >
-                      {['آسانسور', 'برق', 'نظافت', 'تاسیسات', 'امنیت', 'سایر'].map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>ارجاع به فرد فنی / پیمانکار</label>
-                    <select
-                      value={t.assignedPersonId ?? ''}
-                      onChange={(e) => {
-                        const pid = e.target.value || null
-                        updateComplexTicket(t.id, {
-                          assignedPersonId: pid,
-                          status: pid || t.assignedTeamId ? 'in_progress' : t.status,
-                        })
-                        if (pid) flash('تیکت به فرد ارجاع شد')
-                      }}
-                    >
-                      <option value="">— بدون فرد —</option>
-                      {staff
-                        .filter((s) => s.active || s.id === t.assignedPersonId)
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} — {s.specialty}
-                            {!s.active ? ' (غیرفعال)' : ''}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>ارجاع به تیم (اختیاری)</label>
-                    <select
-                      value={t.assignedTeamId ?? ''}
-                      onChange={(e) =>
-                        updateComplexTicket(t.id, {
-                          assignedTeamId: e.target.value || null,
-                          status:
-                            e.target.value || t.assignedPersonId ? 'in_progress' : t.status,
-                        })
-                      }
-                    >
-                      <option value="">— بدون تیم —</option>
-                      {platform.admin.teams
-                        .filter((tm) => tm.complexId === complex.id)
-                        .map((tm) => (
-                          <option key={tm.id} value={tm.id}>
-                            {tm.name} — {tm.specialty}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  <div className="grid-actions">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => updateComplexTicket(t.id, { status: 'in_progress' })}
-                    >
-                      در جریان
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() =>
-                        updateComplexTicket(t.id, {
-                          status: 'resolved',
-                          resolutionNote: t.resolutionNote || 'رفع شد توسط مدیر شهرک',
-                        })
-                      }
-                    >
-                      حل‌شده
-                    </button>
+                        ارجاع: {person.name}
+                      </>
+                    ) : null}
                   </div>
                 </div>
               )
             })}
-            {tickets.length === 0 && <div className="empty">تیکتی با این فیلتر نیست.</div>}
           </>
         )}
 

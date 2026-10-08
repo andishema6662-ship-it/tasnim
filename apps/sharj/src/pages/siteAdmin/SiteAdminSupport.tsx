@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { RequestsDataTable } from '../../components/RequestsDataTable'
 import { faDate, faNum } from '../../lib/format'
 import {
   SITE_SUPPORT_PRIORITY_LABEL,
@@ -271,33 +272,65 @@ export function SiteAdminSupport({ onFlash }: { onFlash: (m: string) => void }) 
           تیکت جدید
         </button>
       </div>
-      <div className="sub" style={{ marginBottom: 10 }}>
-        {faNum(filtered.length)} تیکت
-      </div>
-      <div className="list">
-        {filtered.map((t) => (
-          <button
-            type="button"
-            key={t.id}
-            className="sa-ticket-row"
-            onClick={() => openDetail(t.id)}
-          >
-            <div>
-              <div className="title">{t.subject}</div>
-              <div className="sub">
-                {t.requesterName} · {t.category} · {faDate(t.updatedAt)}
-              </div>
-            </div>
-            <span
-              className={`badge ${
-                t.status === 'closed' ? 'soon' : t.status === 'answered' ? 'ok' : 'warn'
-              }`}
-            >
-              {SITE_SUPPORT_STATUS_LABEL[t.status]}
-            </span>
-          </button>
-        ))}
-        {filtered.length === 0 && <div className="empty">تیکتی نیست.</div>}
+      <div className="panel">
+        <RequestsDataTable
+          title={`جدول درخواست‌های پشتیبانی (${faNum(filtered.length)})`}
+          rows={filtered}
+          rowKey={(t) => t.id}
+          statusFilters={[
+            { id: 'all', label: 'همه' },
+            ...(Object.keys(SITE_SUPPORT_STATUS_LABEL) as SiteSupportStatus[]).map((s) => ({
+              id: s,
+              label: SITE_SUPPORT_STATUS_LABEL[s],
+            })),
+          ]}
+          statusValue={statusFilter}
+          onStatusChange={(id) => setStatusFilter(id as SiteSupportStatus | 'all')}
+          columns={[
+            {
+              key: 'subject',
+              label: 'موضوع',
+              render: (t) => (
+                <button type="button" className="btn-ghost" onClick={() => openDetail(t.id)}>
+                  {t.subject}
+                </button>
+              ),
+              searchText: (t) => `${t.subject} ${t.body}`,
+            },
+            {
+              key: 'who',
+              label: 'درخواست‌کننده',
+              render: (t) => t.requesterName,
+              searchText: (t) => t.requesterName,
+            },
+            {
+              key: 'cat',
+              label: 'دسته',
+              render: (t) => t.category,
+              searchText: (t) => t.category,
+            },
+            {
+              key: 'status',
+              label: 'وضعیت',
+              render: (t) => (
+                <span
+                  className={`badge ${
+                    t.status === 'closed' ? 'soon' : t.status === 'answered' ? 'ok' : 'warn'
+                  }`}
+                >
+                  {SITE_SUPPORT_STATUS_LABEL[t.status]}
+                </span>
+              ),
+              searchText: (t) => SITE_SUPPORT_STATUS_LABEL[t.status],
+            },
+            {
+              key: 'at',
+              label: 'بروزرسانی',
+              render: (t) => faDate(t.updatedAt),
+              searchText: (t) => t.updatedAt,
+            },
+          ]}
+        />
       </div>
     </div>
   )

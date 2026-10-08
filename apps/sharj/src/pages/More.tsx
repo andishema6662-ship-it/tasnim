@@ -61,6 +61,7 @@ export function More() {
   ]
 
   const visible = links.filter((l) => !l.feature || features.has(l.feature))
+  const locked = links.filter((l) => l.feature && !features.has(l.feature))
 
   return (
     <div className="page">
@@ -80,6 +81,24 @@ export function More() {
           ))}
         </div>
       </div>
+      {locked.length > 0 && (isManager || role === 'complexManager') && (
+        <div className="panel">
+          <h3>امکانات نیازمند فعال‌سازی</h3>
+          <div className="list">
+            {locked.map((l) => (
+              <div className="list-item" key={`lock-${l.to}`}>
+                <div className="title">{l.label}</div>
+                <Link
+                  className="btn btn-copper"
+                  to={`/app/activate/${l.feature}?buildingId=${encodeURIComponent(state.buildingId)}`}
+                >
+                  برای فعال‌سازی کلیک کنید
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {!isFinance && (
         <div className="panel">
           <h3>اتصال‌های آینده</h3>

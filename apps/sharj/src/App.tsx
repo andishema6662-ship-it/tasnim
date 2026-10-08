@@ -11,6 +11,7 @@ import { Charges } from './pages/Charges'
 import { Chat } from './pages/Chat'
 import { ComplexDesk } from './pages/ComplexDesk'
 import { Expenses } from './pages/Expenses'
+import { FeatureActivate } from './pages/FeatureActivate'
 import { Finance } from './pages/Finance'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/" element={<Splash />} />
           <Route path="/login" element={<Login />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/app/activate/:featureId" element={<FeatureActivate />} />
           <Route path="/app/site-admin" element={<SiteAdmin />} />
           <Route path="/app/complex" element={<ComplexDesk />} />
           <Route path="/app" element={<Shell />}>

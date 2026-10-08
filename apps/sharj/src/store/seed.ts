@@ -41,6 +41,10 @@ export function defaultSuggestionCategories(): SuggestionCategory[] {
 export function normalizeBuildingData(data: BuildingData): BuildingData {
   return {
     ...data,
+    units: (data.units ?? []).map((u) => ({
+      ...u,
+      vehicles: Array.isArray(u.vehicles) ? u.vehicles : [],
+    })),
     suggestionCategories:
       Array.isArray(data.suggestionCategories) && data.suggestionCategories.length > 0
         ? data.suggestionCategories
@@ -106,6 +110,15 @@ function diyarMinoodari(): BuildingData {
         residentName: 'رضا محمدی',
         parkingSpot: 'P-01',
         balance: -2_450_000,
+        vehicles: [
+          {
+            id: 'veh-u1-1',
+            kind: 'سواری',
+            brand: 'پژو ۲۰۶',
+            color: 'نقره‌ای',
+            plate: '۱۲ب۳۴۵۶۷',
+          },
+        ],
       },
       {
         id: 'u2',
@@ -117,6 +130,22 @@ function diyarMinoodari(): BuildingData {
         residentName: 'علی نوری',
         parkingSpot: 'P-02',
         balance: -1_100_000,
+        vehicles: [
+          {
+            id: 'veh-u2-1',
+            kind: 'سواری',
+            brand: 'سمند',
+            color: 'سفید',
+            plate: '۲۱ص۱۱۱۲۲',
+          },
+          {
+            id: 'veh-u2-2',
+            kind: 'موتور',
+            brand: 'هوندا',
+            color: 'قرمز',
+            plate: '۳۴۵۶۷-ایران',
+          },
+        ],
       },
       {
         id: 'u3',
@@ -128,6 +157,7 @@ function diyarMinoodari(): BuildingData {
         residentName: 'مهدی کریمی',
         parkingSpot: 'P-05',
         balance: 350_000,
+        vehicles: [],
       },
       {
         id: 'u4',
@@ -139,6 +169,15 @@ function diyarMinoodari(): BuildingData {
         residentName: 'حسین رضایی',
         parkingSpot: 'P-06',
         balance: -3_200_000,
+        vehicles: [
+          {
+            id: 'veh-u4-1',
+            kind: 'سواری',
+            brand: 'تیبا',
+            color: 'مشکی',
+            plate: '۵۵ط۷۸۹۱۱',
+          },
+        ],
       },
     ],
     residents: [
