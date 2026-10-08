@@ -801,9 +801,14 @@ export function createPlatformAdmin(): PlatformAdmin {
     gateway: {
       mode: 'both',
       merchantId: '',
+      merchantConfigured: false,
+      merchantMasked: '',
       callbackUrl: 'https://sharzhban.ir/pay/callback',
       bankAccountInfo: 'بانک ملت — شماره شبا IR00•••••••• — به نام شارژبان',
       enabled: true,
+      sandbox: true,
+      currency: 'IRT',
+      provider: 'zarinpal',
     },
     activity: [
       { id: 'act1', at: daysAgo(0), kind: 'login', label: 'ورود مدیر سایت', buildingId: undefined },

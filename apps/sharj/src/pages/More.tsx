@@ -183,7 +183,7 @@ export function More() {
           <h3>اتصال‌های آینده</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <span className="badge soon">پیامک — به‌زودی</span>
-            <span className="badge soon">درگاه پرداخت — به‌زودی</span>
+            <span className="badge ok">زرین‌پال</span>
           </div>
         </div>
       )}

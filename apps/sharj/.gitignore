@@ -3,6 +3,8 @@ dist
 .DS_Store
 *.local
 dev-dist
+.zarinpal-config.json
+public/api/zarinpal/config.php
 android/app/build
 android/build
 android/.gradle

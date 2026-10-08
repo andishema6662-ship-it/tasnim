@@ -12,6 +12,7 @@ import { SubscriptionReports } from './SubscriptionReports'
 import { SiteAdminChangelog } from './siteAdmin/SiteAdminChangelog'
 import { SiteAdminChat, SiteAdminChatDock } from './siteAdmin/SiteAdminChat'
 import { SiteAdminDashboard } from './siteAdmin/SiteAdminDashboard'
+import { GatewaySettingsPanel } from './siteAdmin/GatewaySettingsPanel'
 import { SiteAdminFinance } from './siteAdmin/SiteAdminFinance'
 import { SiteAdminProperties } from './siteAdmin/SiteAdminProperties'
 import { SiteAdminQarz } from './siteAdmin/SiteAdminQarz'
@@ -81,7 +82,6 @@ export function SiteAdmin() {
     upsertTariff,
     updateSmsConfig,
     testSmsStub,
-    updateGatewayConfig,
     reviewSubscriptionPayment,
     setBuildingStorageQuota,
     updateComplexTicket,
@@ -514,63 +514,7 @@ export function SiteAdmin() {
               </div>
             )}
 
-            {section === 'gateway' && (
-              <div className="panel">
-                <h3>درگاه / فیش بانکی</h3>
-                <div className="field">
-                  <label>حالت</label>
-                  <select
-                    value={platform.admin.gateway.mode}
-                    onChange={(e) =>
-                      updateGatewayConfig({
-                        ...platform.admin.gateway,
-                        mode: e.target.value as typeof platform.admin.gateway.mode,
-                      })
-                    }
-                  >
-                    <option value="gateway">فقط درگاه</option>
-                    <option value="bank_receipt">فقط فیش بانکی</option>
-                    <option value="both">هر دو</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Merchant ID</label>
-                  <input
-                    value={platform.admin.gateway.merchantId}
-                    onChange={(e) =>
-                      updateGatewayConfig({
-                        ...platform.admin.gateway,
-                        merchantId: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>Callback URL</label>
-                  <input
-                    value={platform.admin.gateway.callbackUrl}
-                    onChange={(e) =>
-                      updateGatewayConfig({
-                        ...platform.admin.gateway,
-                        callbackUrl: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>اطلاعات حساب برای فیش</label>
-                  <textarea
-                    value={platform.admin.gateway.bankAccountInfo}
-                    onChange={(e) =>
-                      updateGatewayConfig({
-                        ...platform.admin.gateway,
-                        bankAccountInfo: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            )}
+            {section === 'gateway' && <GatewaySettingsPanel />}
 
             {section === 'complex' && (
               <>
