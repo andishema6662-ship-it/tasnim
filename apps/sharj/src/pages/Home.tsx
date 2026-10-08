@@ -1,6 +1,9 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { BroadcastBanner } from '../components/BroadcastBanner'
+import { GroupedBarChart } from '../components/GroupedBarChart'
 import { RequireFeature, useBuildingFeatures } from '../components/FeatureGate'
+import { monthlyReceiptsVsExpenses } from '../lib/financeChart'
 import { roleLabel } from '../lib/rbac'
 import { toman } from '../lib/format'
 import { useBuildingState } from '../store/StoreContext'
@@ -18,6 +21,11 @@ export function Home() {
     session.role === 'resident'
       ? state.units.find((u) => u.id === session.unitId)?.balance ?? 0
       : state.units.reduce((s, u) => s + Math.min(0, u.balance), 0)
+
+  const cashflowMonths = useMemo(
+    () => monthlyReceiptsVsExpenses(state, 6),
+    [state.payments, state.ledger],
+  )
 
   if (session.role === 'manager' || session.role === 'financeManager') {
     const isFinance = session.role === 'financeManager'
@@ -43,6 +51,18 @@ export function Home() {
             <span className="value">{toman(Math.abs(myDebt))}</span>
             <span className="stat-hint">وضعیت واحدها</span>
           </Link>
+        </div>
+        <div className="panel dash-chart-panel">
+          <div className="page-head" style={{ marginBottom: 8 }}>
+            <h3 style={{ margin: 0 }}>نمودار میله‌ای — ۶ ماه اخیر</h3>
+            <Link className="btn-ghost" to="/app/finance?tab=status">
+              مالی
+            </Link>
+          </div>
+          <p className="sub" style={{ marginTop: 0 }}>
+            دریافتی‌ها (پرداخت واحدها) در برابر هزینه‌های دفتر — برچسب ماه شمسی.
+          </p>
+          <GroupedBarChart months={cashflowMonths} />
         </div>
         <div className="quick-grid">
           {features.has('charges') && (

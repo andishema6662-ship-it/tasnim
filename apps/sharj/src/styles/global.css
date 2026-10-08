@@ -2882,3 +2882,93 @@ button {
   margin-bottom: 0;
   box-shadow: none;
 }
+
+/* Manager dashboard — vertical grouped bar chart */
+.dash-chart-panel {
+  margin-bottom: 14px;
+}
+
+.col-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.col-chart__plot {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 8px 2px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.col-chart__group {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.col-chart__bars {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  min-height: 0;
+}
+
+.col-chart__bar {
+  width: 42%;
+  max-width: 18px;
+  min-height: 0;
+  border-radius: 6px 6px 2px 2px;
+  transition: height 0.35s ease;
+}
+
+.col-chart__bar--receipt {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--mint, #1f8a5b) 85%, #fff), var(--mint, #1f8a5b));
+}
+
+.col-chart__bar--expense {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--copper, #c4784a) 80%, #fff), var(--copper, #c4784a));
+}
+
+.col-chart__xlabel {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.col-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.col-chart__legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+
+.col-chart__max {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: var(--ink);
+  opacity: 0.75;
+}
