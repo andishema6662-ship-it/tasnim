@@ -31,7 +31,7 @@ export function Charges() {
       <h2>شارژ و زمان‌بندی</h2>
       <p className="lead">فرمول‌های ثابت، متراژی، نفری و مصرفی — ثبت دوره‌ای ماهانه یا فصلی.</p>
 
-      <div className="list">
+      <div className="list list-grid-2">
         {state.schedules.map((s) => (
           <div className="panel" key={s.id}>
             <div className="list-item" style={{ paddingTop: 0 }}>

@@ -161,7 +161,7 @@ export function Finance() {
                 </button>
               )}
             </div>
-            <div className="list">
+            <div className="list list-grid-2">
               {state.funds.map((f) => (
                 <div className="list-item" key={f.id}>
                   <div>
@@ -279,7 +279,7 @@ export function Finance() {
           <p className="sub" style={{ marginTop: 0 }}>
             برای گزارش بدهی روی واحد بزنید.
           </p>
-          <div className="list">
+          <div className="list list-grid-2">
             {state.units.map((u) => (
               <Link className="list-item list-item--link" key={u.id} to={`/app/debt/${u.id}`}>
                 <div>
@@ -303,7 +303,7 @@ export function Finance() {
       {tab === 'receipts' && (
         <div className="panel">
           <h3>دریافتی‌ها (پرداخت واحدها)</h3>
-          <div className="list">
+          <div className="list list-grid-2">
             {state.payments.slice(0, 20).map((p) => {
               const u = state.units.find((x) => x.id === p.unitId)
               return (
@@ -479,7 +479,7 @@ export function Finance() {
       {tab === 'commitments' && (
         <div className="panel">
           <h3>تعهدات مالی (قبوض باز)</h3>
-          <div className="list">
+          <div className="list list-grid-2">
             {unpaidBills.map((b) => {
               const u = state.units.find((x) => x.id === b.unitId)
               const due = b.total - b.paidOwner - b.paidResident
@@ -540,7 +540,7 @@ function LedgerList({
   return (
     <div className="panel">
       <h3>فهرست</h3>
-      <div className="list">
+      <div className="list list-grid-2">
         {rows.slice(0, 20).map((e) => {
           const open = expandedId === e.id
           const { method, bank, tracking } = detailFor(e)

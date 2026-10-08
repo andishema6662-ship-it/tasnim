@@ -32,7 +32,7 @@ export function OnboardingBanner() {
           بعداً
         </button>
       </div>
-      <div className="onboarding-steps">
+      <div className="onboarding-steps" aria-label="مراحل راه‌اندازی">
         {steps.map((s, i) => (
           <Link
             key={s.id}
@@ -40,7 +40,7 @@ export function OnboardingBanner() {
             className={`onboarding-step ${s.done ? 'done' : next?.id === s.id ? 'current' : ''}`}
           >
             <span className="onboarding-step__n">{s.done ? '✓' : faNum(i + 1)}</span>
-            <span>
+            <span className="onboarding-step__body">
               <span className="onboarding-step__title">{s.title}</span>
               <span className="onboarding-step__hint">{s.hint}</span>
             </span>
