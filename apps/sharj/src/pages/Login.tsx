@@ -55,36 +55,15 @@ export function Login() {
 
   return (
     <div className="app-shell auth login-shell">
-      <div className="login-layout">
-        <section className="login-hero">
-          <div className="brand-mark">
-            <div className="logo" style={{ background: 'rgba(255,255,255,0.2)', boxShadow: 'none' }}>
-              د
-            </div>
+      <div className="login-layout login-layout--simple">
+        <section className="login-card">
+          <div className="login-brand">
+            <div className="logo">د</div>
             <div>
               <div className="name">دیارشارژ</div>
               <span className="tag">مدیریت شارژ ساختمان و شهرک</span>
             </div>
           </div>
-          <h1>ورود امن و سریع به پنل</h1>
-          <p>
-            با پیامک یک‌بارمصرف یا نام کاربری وارد شوید. روی دسکتاپ تمام‌صفحه؛ روی موبایل جمع‌وجور و
-            خوانا.
-          </p>
-          <div className="chip-row" style={{ marginTop: 22 }}>
-            <span className="chip active" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-              OTP پیامکی
-            </span>
-            <span className="chip" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}>
-              رمز عبور
-            </span>
-            <span className="chip" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}>
-              چهار نقش
-            </span>
-          </div>
-        </section>
-
-        <section className="login-card">
           <div className="chip-row admin-nav">
             <button
               type="button"

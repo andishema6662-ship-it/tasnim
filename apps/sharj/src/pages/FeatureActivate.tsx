@@ -143,7 +143,14 @@ export function FeatureActivate() {
               <span className="tag">فعال‌سازی امکان</span>
             </div>
           </div>
-          <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => {
+              if (window.history.length > 1) navigate(-1)
+              else navigate('/app/more')
+            }}
+          >
             بازگشت
           </button>
         </header>

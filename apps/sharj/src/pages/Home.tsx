@@ -38,10 +38,11 @@ export function Home() {
             <span className="label">مانده صندوق</span>
             <span className="value">{toman(state.fundBalance)}</span>
           </div>
-          <div className="stat">
+          <Link className="stat stat--link" to="/app/finance">
             <span className="label">جمع بدهی واحدها</span>
             <span className="value">{toman(Math.abs(myDebt))}</span>
-          </div>
+            <span className="stat-hint">وضعیت واحدها</span>
+          </Link>
         </div>
         <div className="quick-grid">
           {features.has('charges') && (
@@ -105,16 +106,33 @@ export function Home() {
   }
 
   const unit = state.units.find((u) => u.id === session.unitId)!
+  const pendingQarz = state.qarzFunds.filter(
+    (f) =>
+      f.status === 'awaiting_approval' &&
+      f.votes.some((v) => v.unitId === session.unitId && v.approved === null),
+  )
   return (
     <div className="page">
       <h2>واحد {unit.number}</h2>
       <p className="lead">صورت‌حساب، پرداخت یک‌کلیکی و شفافیت هزینه‌ها.</p>
       <BroadcastBanner />
+      {pendingQarz.length > 0 && (
+        <div className="panel qarz-vote-banner">
+          <h3>صندوق قرض‌الحسنه در انتظار رأی شما</h3>
+          <p className="sub" style={{ marginTop: 0 }}>
+            {pendingQarz.map((f) => f.title).join(' · ')}
+          </p>
+          <Link className="btn btn-primary" to="/app/qarz" style={{ width: '100%' }}>
+            مشاهده و تأیید
+          </Link>
+        </div>
+      )}
       <div className="stat-row">
-        <div className="stat">
+        <Link className="stat stat--link" to={`/app/debt/${unit.id}`}>
           <span className="label">بدهی / بستانکاری</span>
           <span className="value">{toman(unit.balance)}</span>
-        </div>
+          <span className="stat-hint">گزارش و روند بدهی</span>
+        </Link>
         <div className="stat">
           <span className="label">قبوض باز</span>
           <span className="value">{myBills.length}</span>

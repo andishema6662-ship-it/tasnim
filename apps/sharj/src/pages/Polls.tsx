@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { faDate } from '../lib/format'
+import { BackButton } from '../components/BackButton'
+import { faDate, faNum } from '../lib/format'
 import { useBuildingState, useStore } from '../store/StoreContext'
 import type { PollAudience } from '../store/types'
 
@@ -26,11 +27,15 @@ export function Polls() {
 
   return (
     <div className="page">
+      <div className="page-head">
+        <BackButton fallback="/app" />
+      </div>
       <h2>نظرسنجی</h2>
-      <p className="lead">مخاطب جدا برای ساکنین و مالکین؛ رأی و نتیجه درجا.</p>
+      <p className="lead">مخاطب جدا برای ساکنین و مالکین؛ رأی و نتیجه یکسان برای همه نقش‌ها.</p>
 
       {visiblePolls.map((p) => {
-        const total = p.options.reduce((s, o) => s + o.votes, 0) || 1
+        const totalVotes = p.options.reduce((s, o) => s + o.votes, 0)
+        const total = totalVotes || 1
         const voted = p.votedBy.includes(voterKey)
         return (
           <div className="panel" key={p.id}>
@@ -39,6 +44,8 @@ export function Polls() {
                 <div className="title">{p.title}</div>
                 <div className="sub">
                   مخاطب: {p.audience === 'residents' ? 'ساکنین' : 'مالکین'} · تا {faDate(p.closesAt)}
+                  <br />
+                  مجموع آرا: {faNum(totalVotes)}
                 </div>
               </div>
               <span className="badge">{p.audience === 'residents' ? 'ساکنین' : 'مالکین'}</span>
@@ -50,7 +57,7 @@ export function Polls() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                     <span style={{ fontWeight: 600 }}>{o.label}</span>
                     <span className="sub">
-                      {o.votes} رأی ({pct}٪)
+                      {faNum(o.votes)} رأی ({faNum(pct)}٪)
                     </span>
                   </div>
                   <div className="progress">

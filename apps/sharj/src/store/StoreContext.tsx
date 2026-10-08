@@ -120,6 +120,9 @@ interface StoreApi {
   ) => boolean
   payInstallment: (billId: string, installmentId: string, party?: DebtParty) => string | null
   addLedger: (entry: Omit<LedgerEntry, 'id' | 'createdAt'>) => void
+  updateLedger: (entry: LedgerEntry) => void
+  removeLedger: (id: string) => void
+  reloadFromStorage: () => void
   votePoll: (pollId: string, optionId: string) => void
   addPoll: (poll: Omit<Poll, 'id' | 'votedBy' | 'options'> & { options: string[] }) => void
   addNews: (item: Omit<NewsItem, 'id' | 'createdAt'>) => void
@@ -377,9 +380,46 @@ function patchBuilding(
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [platform, setPlatform] = useState<PlatformState>(() => loadState())
 
+  const reloadFromStorage = useCallback(() => {
+    setPlatform(loadState())
+  }, [])
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(platform))
+    try {
+      const bc = new BroadcastChannel('diyarsharj-sync')
+      bc.postMessage({ t: Date.now() })
+      bc.close()
+    } catch {
+      /* BroadcastChannel unavailable */
+    }
   }, [platform])
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY || e.key === null) setPlatform(loadState())
+    }
+    const onFocus = () => setPlatform(loadState())
+    const onVis = () => {
+      if (document.visibilityState === 'visible') setPlatform(loadState())
+    }
+    let bc: BroadcastChannel | null = null
+    try {
+      bc = new BroadcastChannel('diyarsharj-sync')
+      bc.onmessage = () => setPlatform(loadState())
+    } catch {
+      /* ignore */
+    }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVis)
+      bc?.close()
+    }
+  }, [])
 
   const session = platform.session
 
@@ -1588,6 +1628,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const pay = Math.min(amount ?? due, due)
         if (pay <= 0) return data
         code = trackingCode()
+        const payId = `pay-${Date.now()}`
+        const bankName =
+          p.admin.gateway.bankAccountInfo?.trim() || 'بانک ملت — حساب مجتمع (دمو)'
         const bills = data.bills.map((b) => {
           if (b.id !== billId) return b
           const next = {
@@ -1606,7 +1649,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           fundBalance: data.fundBalance + pay,
           payments: [
             {
-              id: `pay-${Date.now()}`,
+              id: payId,
               billId,
               unitId: bill.unitId,
               amount: pay,
@@ -1614,6 +1657,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               trackingCode: code!,
               createdAt: new Date().toISOString(),
               method: 'online-demo' as const,
+              bankName,
             },
             ...data.payments,
           ],
@@ -1627,6 +1671,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               note: `کد پیگیری ${code}`,
               createdAt: new Date().toISOString(),
               visibleToResidents: true,
+              paymentId: payId,
+              method: 'online-demo' as const,
+              bankName,
+              trackingCode: code!,
             },
             ...data.ledger,
           ],
@@ -1666,6 +1714,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             { ...entry, id: `l-${Date.now()}`, createdAt: new Date().toISOString() },
             ...data.ledger,
           ],
+        }
+      })
+    },
+    [withBuilding],
+  )
+
+  const updateLedger = useCallback(
+    (entry: LedgerEntry) => {
+      withBuilding((data) => {
+        const prev = data.ledger.find((e) => e.id === entry.id)
+        if (!prev) return data
+        const oldDelta = prev.kind === 'income' ? prev.amount : -prev.amount
+        const newDelta = entry.kind === 'income' ? entry.amount : -entry.amount
+        return {
+          ...data,
+          fundBalance: data.fundBalance - oldDelta + newDelta,
+          ledger: data.ledger.map((e) => (e.id === entry.id ? { ...entry } : e)),
+        }
+      })
+    },
+    [withBuilding],
+  )
+
+  const removeLedger = useCallback(
+    (id: string) => {
+      withBuilding((data) => {
+        const prev = data.ledger.find((e) => e.id === id)
+        if (!prev) return data
+        const delta = prev.kind === 'income' ? prev.amount : -prev.amount
+        return {
+          ...data,
+          fundBalance: data.fundBalance - delta,
+          ledger: data.ledger.filter((e) => e.id !== id),
         }
       })
     },
@@ -1869,6 +1950,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const pay = Math.min(inst.amount, billRemaining(bill))
           if (pay <= 0) return data
           code = trackingCode()
+          const payId = `pay-${Date.now()}`
+          const bankName =
+            p.admin.gateway.bankAccountInfo?.trim() || 'بانک ملت — حساب مجتمع (دمو)'
           const shares = applyPaymentToShares(bill, pay, party)
           const nextBill: Bill = {
             ...bill,
@@ -1879,7 +1963,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                     ...i,
                     status: 'paid' as const,
                     paidAt: new Date().toISOString(),
-                    paymentId: `pay-${Date.now()}`,
+                    paymentId: payId,
                   }
                 : i,
             ),
@@ -1894,7 +1978,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             fundBalance: data.fundBalance + pay,
             payments: [
               {
-                id: `pay-${Date.now()}`,
+                id: payId,
                 billId,
                 unitId: bill.unitId,
                 amount: pay,
@@ -1902,6 +1986,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 trackingCode: code!,
                 createdAt: new Date().toISOString(),
                 method: 'online-demo' as const,
+                bankName,
               },
               ...data.payments,
             ],
@@ -1915,6 +2000,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 note: `کد پیگیری ${code}`,
                 createdAt: new Date().toISOString(),
                 visibleToResidents: true,
+                paymentId: payId,
+                method: 'online-demo' as const,
+                bankName,
+                trackingCode: code!,
               },
               ...data.ledger,
             ],
@@ -2553,6 +2642,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createInstallmentPlan,
       payInstallment,
       addLedger,
+      updateLedger,
+      removeLedger,
+      reloadFromStorage,
       votePoll,
       addPoll,
       addNews,
@@ -2624,6 +2716,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createInstallmentPlan,
       payInstallment,
       addLedger,
+      updateLedger,
+      removeLedger,
+      reloadFromStorage,
       votePoll,
       addPoll,
       addNews,

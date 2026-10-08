@@ -76,6 +76,7 @@ export function SiteAdmin() {
     session,
     logout,
     resetDemo,
+    reloadFromStorage,
     upsertDiscount,
     upsertTariff,
     updateSmsConfig,
@@ -167,16 +168,27 @@ export function SiteAdmin() {
             </button>
             <div style={{ textAlign: 'left' }}>
               <div className="meta">{session.displayName}</div>
-              <button
-                className="btn-ghost"
-                type="button"
-                onClick={() => {
-                  logout()
-                  navigate('/')
-                }}
-              >
-                خروج
-              </button>
+              <div className="topbar-actions">
+                <button
+                  className="btn-ghost refresh-btn"
+                  type="button"
+                  title="بروزرسانی داده"
+                  aria-label="بروزرسانی داده"
+                  onClick={() => reloadFromStorage()}
+                >
+                  ↻
+                </button>
+                <button
+                  className="btn-ghost"
+                  type="button"
+                  onClick={() => {
+                    logout()
+                    navigate('/')
+                  }}
+                >
+                  خروج
+                </button>
+              </div>
             </div>
           </div>
         </header>

@@ -45,6 +45,7 @@ export function ComplexDesk() {
     platform,
     session,
     logout,
+    reloadFromStorage,
     updateComplexTicket,
     upsertStaff,
     removeStaff,
@@ -114,16 +115,27 @@ export function ComplexDesk() {
           </div>
           <div style={{ textAlign: 'left' }}>
             <div className="meta">{session.displayName}</div>
-            <button
-              className="btn-ghost"
-              type="button"
-              onClick={() => {
-                logout()
-                navigate('/')
-              }}
-            >
-              خروج
-            </button>
+            <div className="topbar-actions">
+              <button
+                className="btn-ghost refresh-btn"
+                type="button"
+                title="بروزرسانی داده"
+                aria-label="بروزرسانی داده"
+                onClick={() => reloadFromStorage()}
+              >
+                ↻
+              </button>
+              <button
+                className="btn-ghost"
+                type="button"
+                onClick={() => {
+                  logout()
+                  navigate('/')
+                }}
+              >
+                خروج
+              </button>
+            </div>
           </div>
         </header>
 
@@ -364,7 +376,7 @@ export function ComplexDesk() {
                             className="btn btn-copper"
                             to={`/app/activate/${e.id}?buildingId=${encodeURIComponent(b.id)}`}
                           >
-                            برای فعال‌سازی کلیک کنید
+                            فعال‌سازی
                           </Link>
                         )}
                       </div>

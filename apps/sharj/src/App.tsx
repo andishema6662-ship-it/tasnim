@@ -14,6 +14,7 @@ import { Expenses } from './pages/Expenses'
 import { FeatureActivate } from './pages/FeatureActivate'
 import { Finance } from './pages/Finance'
 import { Home } from './pages/Home'
+import { UnitDebtReport } from './pages/UnitDebtReport'
 import { Login } from './pages/Login'
 import { Meetings } from './pages/Meetings'
 import { More } from './pages/More'
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="bills" element={<Guarded><Bills /></Guarded>} />
             <Route path="payments" element={<Guarded><Payments /></Guarded>} />
             <Route path="finance" element={<Guarded><Finance /></Guarded>} />
+            <Route path="debt/:unitId" element={<Guarded><UnitDebtReport /></Guarded>} />
             <Route path="expenses" element={<Guarded><Expenses /></Guarded>} />
             <Route path="polls" element={<Guarded><Polls /></Guarded>} />
             <Route path="news" element={<Guarded><News /></Guarded>} />

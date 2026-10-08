@@ -20,16 +20,31 @@ Native wrapper around the live PWA at `https://sharj.diyareminoodari.ir`.
 
 > These are **not** Play App Signing production keys. For store publish: upload the AAB, let Google Play App Signing manage the app signing key, and keep a private upload keystore of your own.
 
-## Sideload install (APK)
+---
 
-1. Copy `diyarsharj.apk` to the phone.
-2. Settings → Security → allow **Install unknown apps** for Files / Chrome / etc.
-3. Open the APK → Install.
-4. App opens دیارشارژ and loads `https://sharj.diyareminoodari.ir`.
+## چرا اندروید نصب APK را مسدود یا «ناامن» نشان می‌دهد؟
+
+اندروید به‌صورت پیش‌فرض فقط نصب از **Google Play** را مجاز می‌داند. فایل APK خارج از فروشگاه (sideload) به‌خاطر امنیت سیستم‌عامل هشدار می‌گیرد — این رفتار عادی است و به‌معنای ویروسی بودن اپ نیست.
+
+### نصب دستی (sideload)
+
+1. فایل `diyarsharj.apk` را به گوشی منتقل کنید (دانلود / کابل / پیام‌رسان).
+2. در تنظیمات گوشی: **امنیت** یا **برنامه‌ها** → **نصب برنامه‌های ناشناس** / **Install unknown apps** را برای مرورگر یا فایل‌منجر روشن کنید.
+3. روی APK بزنید → اگر هشدار «Play Protect» آمد، گزینه **بیشتر / Install anyway** را بزنید (فقط اگر منبع فایل را خودتان می‌شناسید).
+4. بعد از نصب، اپ دیارشارژ را باز کنید؛ محتوا از `https://sharj.diyareminoodari.ir` بارگذاری می‌شود.
 
 ```bash
 adb install -r /cursor/stores/self/media/sharj-app/diyarsharj.apk
 ```
+
+### مسیر رسمی فروشگاه (پیشنهادی برای کاربران نهایی)
+
+1. در Google Play Console یک اپ با پکیج `ir.diyareminoodari.sharj` بسازید.
+2. فایل **AAB** (`diyarsharj.aab`) را آپلود کنید — کنسول APK خام را برای انتشار جدید قبول نمی‌کند.
+3. **Play App Signing** را فعال کنید؛ کلید upload فعلی فقط برای تست است، کلید نهایی امضای فروشگاه را گوگل نگه می‌دارد.
+4. پس از انتشار، کاربران بدون هشدار «ناشناس» نصب می‌کنند.
+
+---
 
 ## Rebuild
 

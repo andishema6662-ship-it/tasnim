@@ -51,6 +51,17 @@ export function normalizeBuildingData(data: BuildingData): BuildingData {
         : defaultSuggestionCategories(),
     suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
     qarzFunds: Array.isArray(data.qarzFunds) ? data.qarzFunds : [],
+    // Heal legacy polls where option.votes > 0 but votedBy was empty (manager/resident count skew)
+    polls: (data.polls ?? []).map((p) => {
+      const sum = (p.options ?? []).reduce((s, o) => s + (o.votes || 0), 0)
+      if ((p.votedBy?.length ?? 0) === 0 && sum > 0) {
+        return {
+          ...p,
+          votedBy: Array.from({ length: sum }, (_, i) => `seed:voter-${i + 1}`),
+        }
+      }
+      return p
+    }),
   }
 }
 
@@ -285,7 +296,19 @@ function diyarMinoodari(): BuildingData {
         ],
       },
     ],
-    payments: [],
+    payments: [
+      {
+        id: 'pay-seed-1',
+        billId: 'b1',
+        unitId: 'u1',
+        amount: 1_200_000,
+        party: 'resident',
+        trackingCode: 'DS-SEED-1001',
+        createdAt: daysAgo(4),
+        method: 'online-demo',
+        bankName: 'بانک ملت — حساب مجتمع (دمو)',
+      },
+    ],
     ledger: [
       {
         id: 'l1',
@@ -306,6 +329,23 @@ function diyarMinoodari(): BuildingData {
         note: 'پرداخت‌های آنلاین',
         createdAt: daysAgo(28),
         visibleToResidents: true,
+        method: 'online-demo',
+        bankName: 'بانک ملت — حساب مجتمع (دمو)',
+        trackingCode: 'DS-SEED-0901',
+      },
+      {
+        id: 'l-pay-seed',
+        kind: 'income',
+        category: 'شارژ',
+        title: 'پرداخت آنلاین شارژ مهر — واحد ۱۰۱',
+        amount: 1_200_000,
+        note: 'کد پیگیری DS-SEED-1001',
+        createdAt: daysAgo(4),
+        visibleToResidents: true,
+        paymentId: 'pay-seed-1',
+        method: 'online-demo',
+        bankName: 'بانک ملت — حساب مجتمع (دمو)',
+        trackingCode: 'DS-SEED-1001',
       },
     ],
     polls: [
@@ -318,7 +358,8 @@ function diyarMinoodari(): BuildingData {
           { id: 'o2', label: 'مخالفم', votes: 1 },
         ],
         closesAt: daysAgo(-10),
-        votedBy: [],
+        // Must match option vote totals so manager/resident see the same count
+        votedBy: ['resident:u1', 'resident:u2', 'resident:u4', 'resident:u3'],
       },
     ],
     news: [

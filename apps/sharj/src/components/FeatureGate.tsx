@@ -48,7 +48,7 @@ export function FeatureDisabled({
         )}
         {canUnlock && featureId && (
           <Link className="btn btn-copper unlock-cta" to={activateTo}>
-            برای فعال‌سازی کلیک کنید
+            فعال‌سازی
           </Link>
         )}
       </div>

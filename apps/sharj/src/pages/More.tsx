@@ -92,7 +92,7 @@ export function More() {
                   className="btn btn-copper"
                   to={`/app/activate/${l.feature}?buildingId=${encodeURIComponent(state.buildingId)}`}
                 >
-                  برای فعال‌سازی کلیک کنید
+                  فعال‌سازی
                 </Link>
               </div>
             ))}

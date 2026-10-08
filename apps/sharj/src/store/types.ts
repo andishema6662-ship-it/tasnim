@@ -109,6 +109,15 @@ export interface Bill {
   installments?: Installment[]
 }
 
+export type PaymentMethod = 'online-demo' | 'card' | 'transfer' | 'cash'
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  'online-demo': 'درگاه آنلاین (دمو)',
+  card: 'کارت به کارت',
+  transfer: 'حواله بانکی',
+  cash: 'نقدی',
+}
+
 export interface Payment {
   id: string
   billId: string
@@ -117,7 +126,9 @@ export interface Payment {
   party: DebtParty
   trackingCode: string
   createdAt: string
-  method: 'online-demo'
+  method: PaymentMethod
+  /** بانک / حساب مقصد */
+  bankName?: string
 }
 
 export interface LedgerEntry {
@@ -129,6 +140,10 @@ export interface LedgerEntry {
   note: string
   createdAt: string
   visibleToResidents: boolean
+  paymentId?: string
+  method?: PaymentMethod
+  bankName?: string
+  trackingCode?: string
 }
 
 export interface PollOption {

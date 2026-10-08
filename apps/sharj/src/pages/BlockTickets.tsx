@@ -153,7 +153,7 @@ export function BlockTickets() {
         <h3>افزونه‌های قفل‌شده</h3>
         <p className="sub">اگر بخشی در منو باز نمی‌شود، از مسیر فعال‌سازی اقدام کنید.</p>
         <Link className="btn btn-copper" to="/app/activate/qarz" style={{ width: '100%' }}>
-          برای فعال‌سازی کلیک کنید — قرض‌الحسنه
+          فعال‌سازی — قرض‌الحسنه
         </Link>
       </div>
 
