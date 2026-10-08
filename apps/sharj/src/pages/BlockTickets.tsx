@@ -79,25 +79,41 @@ export function BlockTickets() {
       <div className="panel">
         <h3>تیکت‌های این بلوک</h3>
         <div className="list">
-          {mine.map((t) => (
-            <div className="list-item" key={t.id}>
-              <div>
-                <div className="title">{t.title}</div>
-                <div className="sub">
-                  {t.category} · {faDate(t.updatedAt)}
-                  <br />
-                  {t.body}
+          {mine.map((t) => {
+            const person = (platform.admin.staff ?? []).find((s) => s.id === t.assignedPersonId)
+            const team = platform.admin.teams.find((s) => s.id === t.assignedTeamId)
+            return (
+              <div className="list-item" key={t.id}>
+                <div>
+                  <div className="title">{t.title}</div>
+                  <div className="sub">
+                    {t.category} · {faDate(t.updatedAt)}
+                    <br />
+                    {t.body}
+                    {person ? (
+                      <>
+                        <br />
+                        ارجاع‌شده به: {person.name} ({person.specialty})
+                      </>
+                    ) : null}
+                    {team ? (
+                      <>
+                        <br />
+                        تیم: {team.name}
+                      </>
+                    ) : null}
+                  </div>
                 </div>
+                <span
+                  className={`badge ${
+                    t.status === 'resolved' ? 'ok' : t.status === 'in_progress' ? 'warn' : 'danger'
+                  }`}
+                >
+                  {t.status === 'open' ? 'باز' : t.status === 'in_progress' ? 'در جریان' : 'حل‌شده'}
+                </span>
               </div>
-              <span
-                className={`badge ${
-                  t.status === 'resolved' ? 'ok' : t.status === 'in_progress' ? 'warn' : 'danger'
-                }`}
-              >
-                {t.status === 'open' ? 'باز' : t.status === 'in_progress' ? 'در جریان' : 'حل‌شده'}
-              </span>
-            </div>
-          ))}
+            )
+          })}
           {mine.length === 0 && <div className="empty">هنوز تیکتی نیست.</div>}
         </div>
       </div>

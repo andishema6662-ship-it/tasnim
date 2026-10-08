@@ -1034,6 +1034,9 @@ export function SiteAdmin() {
                 {platform.admin.tickets.map((t) => {
                   const b = platform.buildings.find((x) => x.id === t.buildingId)
                   const team = platform.admin.teams.find((x) => x.id === t.assignedTeamId)
+                  const person = (platform.admin.staff ?? []).find(
+                    (x) => x.id === t.assignedPersonId,
+                  )
                   return (
                     <div key={t.id} style={{ borderBottom: '1px solid var(--line)', padding: '10px 0' }}>
                       <div className="list-item" style={{ paddingTop: 0 }}>
@@ -1042,7 +1045,10 @@ export function SiteAdmin() {
                           <div className="sub">
                             {b?.name} · {t.category} · {t.createdBy}
                             <br />
-                            {team ? `تیم: ${team.name}` : 'بدون تیم'}
+                            {person
+                              ? `فرد: ${person.name} (${person.specialty})`
+                              : 'بدون فرد'}
+                            {team ? ` · تیم: ${team.name}` : ''}
                           </div>
                         </div>
                         <span

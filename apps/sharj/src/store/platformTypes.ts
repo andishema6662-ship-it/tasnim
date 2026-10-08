@@ -68,6 +68,26 @@ export interface TechnicalTeam {
   specialty: string
 }
 
+/** Individual contractor / technician assignable on tickets */
+export interface TechnicalPerson {
+  id: string
+  complexId: string
+  name: string
+  specialty: string
+  phone?: string
+  active: boolean
+}
+
+export const STAFF_SPECIALTIES = [
+  'تاسیسات',
+  'برقکار',
+  'پیمانکار',
+  'آسانسور',
+  'نظافت',
+  'امنیت',
+  'سایر',
+] as const
+
 export type ComplexTicketStatus = 'open' | 'in_progress' | 'resolved'
 
 export interface ComplexTicket {
@@ -80,6 +100,7 @@ export interface ComplexTicket {
   status: ComplexTicketStatus
   createdBy: string
   assignedTeamId?: string
+  assignedPersonId?: string
   createdAt: string
   updatedAt: string
   resolutionNote?: string
@@ -164,6 +185,7 @@ export interface PlatformAdmin {
   users: PlatformUser[]
   complexes: Complex[]
   teams: TechnicalTeam[]
+  staff: TechnicalPerson[]
   tickets: ComplexTicket[]
   discounts: DiscountCode[]
   tariffs: TariffTier[]

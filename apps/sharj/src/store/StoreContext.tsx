@@ -34,6 +34,7 @@ import type {
   PlatformUser,
   SmsConfig,
   TariffTier,
+  TechnicalPerson,
 } from './platformTypes'
 import type {
   Bill,
@@ -137,11 +138,14 @@ interface StoreApi {
     id: string,
     patch: {
       status?: ComplexTicketStatus
-      assignedTeamId?: string
+      assignedTeamId?: string | null
+      assignedPersonId?: string | null
       resolutionNote?: string
       category?: string
     },
   ) => void
+  upsertStaff: (person: TechnicalPerson) => void
+  removeStaff: (id: string) => void
   logActivity: (label: string, kind?: string, buildingId?: string) => void
   markNotificationsRead: () => void
 }
@@ -170,6 +174,7 @@ function loadState(): PlatformState {
             Array.isArray(parsed.admin?.users) && parsed.admin.users.length > 0
               ? parsed.admin.users
               : seeded.users,
+          staff: Array.isArray(parsed.admin?.staff) ? parsed.admin.staff : seeded.staff,
         }
         return { ...parsed, buildings, byId, admin }
       }
@@ -764,7 +769,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       id: string,
       patch: {
         status?: ComplexTicketStatus
-        assignedTeamId?: string
+        assignedTeamId?: string | null
+        assignedPersonId?: string | null
         resolutionNote?: string
         category?: string
       },
@@ -773,20 +779,65 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ...p,
         admin: {
           ...p.admin,
-          tickets: p.admin.tickets.map((t) =>
-            t.id === id
-              ? {
-                  ...t,
-                  ...patch,
-                  updatedAt: new Date().toISOString(),
-                }
-              : t,
-          ),
+          tickets: p.admin.tickets.map((t) => {
+            if (t.id !== id) return t
+            const next = { ...t, updatedAt: new Date().toISOString() }
+            if (patch.status !== undefined) next.status = patch.status
+            if (patch.category !== undefined) next.category = patch.category
+            if (patch.resolutionNote !== undefined) next.resolutionNote = patch.resolutionNote
+            if (patch.assignedTeamId !== undefined) {
+              next.assignedTeamId = patch.assignedTeamId || undefined
+            }
+            if (patch.assignedPersonId !== undefined) {
+              next.assignedPersonId = patch.assignedPersonId || undefined
+            }
+            return next
+          }),
         },
       }))
     },
     [],
   )
+
+  const upsertStaff = useCallback((person: TechnicalPerson) => {
+    setPlatform((p) => {
+      const list = p.admin.staff ?? []
+      const exists = list.some((s) => s.id === person.id)
+      return {
+        ...p,
+        admin: {
+          ...p.admin,
+          staff: exists
+            ? list.map((s) => (s.id === person.id ? person : s))
+            : [person, ...list],
+          activity: [
+            {
+              id: `act-${Date.now()}`,
+              at: new Date().toISOString(),
+              kind: 'staff',
+              label: exists
+                ? `ویرایش نیروی فنی ${person.name}`
+                : `افزودن نیروی فنی ${person.name}`,
+            },
+            ...p.admin.activity,
+          ].slice(0, 80),
+        },
+      }
+    })
+  }, [])
+
+  const removeStaff = useCallback((id: string) => {
+    setPlatform((p) => ({
+      ...p,
+      admin: {
+        ...p.admin,
+        staff: (p.admin.staff ?? []).filter((s) => s.id !== id),
+        tickets: p.admin.tickets.map((t) =>
+          t.assignedPersonId === id ? { ...t, assignedPersonId: undefined } : t,
+        ),
+      },
+    }))
+  }, [])
 
   const withBuilding = useCallback((fn: (data: BuildingData) => BuildingData) => {
     setPlatform((p) => {
@@ -1578,6 +1629,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setBuildingFeatures,
       createComplexTicket,
       updateComplexTicket,
+      upsertStaff,
+      removeStaff,
       logActivity,
       markNotificationsRead,
     }),
@@ -1626,6 +1679,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setBuildingFeatures,
       createComplexTicket,
       updateComplexTicket,
+      upsertStaff,
+      removeStaff,
       logActivity,
       markNotificationsRead,
     ],
