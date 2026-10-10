@@ -1,0 +1,166 @@
+.soti-player {
+  --soti-ink: #fbf6ee;
+  --soti-muted: #e4d5c4;
+  --soti-line: #5a4a3e;
+  --soti-accent: #e4572e;
+  --soti-accent-ink: #fffaf6;
+  direction: rtl;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 0 0 1.25rem;
+  padding: 12px 14px 14px;
+  border-radius: 16px;
+  background: #241c16;
+  color: var(--soti-ink);
+  font-family: "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.soti-player *,
+.soti-player *::before,
+.soti-player *::after {
+  box-sizing: border-box;
+}
+
+.soti-player [hidden] {
+  display: none !important;
+}
+
+.soti-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.soti-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.soti-status {
+  margin: 0;
+  color: var(--soti-muted);
+  font-size: 0.92rem;
+}
+
+.soti-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.soti-transport,
+.soti-speed,
+.soti-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.soti-label {
+  color: var(--soti-muted);
+  font-size: 0.92rem;
+}
+
+.soti-rates,
+.soti-voices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.soti-player button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--soti-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--soti-ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.soti-player button:focus-visible {
+  outline: 2px solid #ffd7c8;
+  outline-offset: 2px;
+}
+
+.soti-player button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.soti-player [data-action="play"] {
+  background: var(--soti-accent);
+  border-color: var(--soti-accent);
+  color: var(--soti-accent-ink);
+  font-weight: 700;
+}
+
+.soti-player button[aria-pressed="true"],
+.soti-player button[aria-checked="true"] {
+  background: var(--soti-accent);
+  border-color: var(--soti-accent);
+  color: var(--soti-accent-ink);
+}
+
+.soti-progress {
+  height: 6px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #3c322a;
+}
+
+.soti-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--soti-accent);
+}
+
+.soti-progress-text,
+.soti-message {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+}
+
+.soti-progress-text {
+  color: var(--soti-muted);
+}
+
+.soti-message {
+  color: #ffd7c2;
+}
+
+@media (max-width: 640px) {
+  .soti-controls,
+  .soti-speed,
+  .soti-voice,
+  .soti-transport {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .soti-rates,
+  .soti-voices {
+    width: 100%;
+  }
+
+  .soti-player button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soti-progress-fill {
+    transition: none;
+  }
+}
