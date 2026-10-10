@@ -145,6 +145,58 @@ button {
   box-shadow: var(--shadow-float);
 }
 
+/* Image brand mark (replaces letter-tile .logo) */
+.brand-logo--mark,
+.brand-logo__mark-img {
+  width: 44px;
+  height: 44px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.brand-logo__mark-img {
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: var(--shadow-float);
+  background: #ececec;
+}
+
+.brand-logo--full {
+  margin-bottom: 10px;
+}
+
+.brand-logo__full-img {
+  display: block;
+  width: min(100%, 280px);
+  height: auto;
+  margin-inline: auto;
+  border-radius: 16px;
+  object-fit: contain;
+  background: #ececec;
+}
+
+.login-brand .brand-logo--full {
+  width: 100%;
+}
+
+.login-brand--image {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.subscription-brand {
+  margin-bottom: 12px;
+}
+
+.splash-brand-full {
+  margin-inline: auto;
+  margin-bottom: 4px;
+}
+
+.hero-splash .brand-logo__full-img {
+  width: min(100%, 300px);
+}
+
 .brand-mark .name {
   font-family: var(--font-display);
   font-size: 1.35rem;

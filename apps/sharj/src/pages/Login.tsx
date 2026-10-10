@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { BrandLogo } from '../components/BrandLogo'
 import { roleHint, roleLabel } from '../lib/rbac'
 import { DEMO_OTP_CODE } from '../store/platformTypes'
 import { useStore } from '../store/StoreContext'
@@ -57,12 +58,8 @@ export function Login() {
     <div className="app-shell auth login-shell">
       <div className="login-layout login-layout--simple">
         <section className="login-card">
-          <div className="login-brand">
-            <div className="logo">ش</div>
-            <div>
-              <div className="name">شارژبان</div>
-              <span className="tag">مدیریت شارژ ساختمان و شهرک</span>
-            </div>
+          <div className="login-brand login-brand--image">
+            <BrandLogo variant="full" />
           </div>
           <div className="chip-row admin-nav">
             <button

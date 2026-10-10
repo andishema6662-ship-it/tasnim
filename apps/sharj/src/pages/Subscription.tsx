@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { BrandLogo } from '../components/BrandLogo'
 import { faNum, toman } from '../lib/format'
 
 /** Demo pricing table: monthly base per unit tier × period months */
@@ -36,13 +37,7 @@ export function Subscription() {
   return (
     <div className="app-shell auth">
       <div className="page" style={{ paddingTop: 24 }}>
-        <div className="brand-mark" style={{ marginBottom: 12 }}>
-          <div className="logo">ش</div>
-          <div>
-            <div className="name">شارژبان</div>
-            <span className="tag">اشتراک نرم‌افزار</span>
-          </div>
-        </div>
+        <BrandLogo variant="stacked" tag="اشتراک نرم‌افزار" className="subscription-brand" />
         <h2>پلن اشتراک</h2>
         <p className="lead">مبلغ بر اساس تعداد واحد محاسبه می‌شود (نه تعداد ساکنین) و برای کل ساختمان است.</p>
 

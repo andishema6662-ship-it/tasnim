@@ -1,16 +1,11 @@
 import { Link } from 'react-router-dom'
+import { BrandLogo } from '../components/BrandLogo'
 
 export function Splash() {
   return (
     <div className="app-shell auth">
       <section className="hero-splash">
-        <div className="brand-mark" style={{ marginBottom: 8 }}>
-          <div className="logo">ش</div>
-          <div>
-            <div className="name">شارژبان</div>
-            <span className="tag">مدیریت شارژ ساختمان</span>
-          </div>
-        </div>
+        <BrandLogo variant="full" className="splash-brand-full" />
         <div className="visual" role="img" aria-label="نمای مجتمع مسکونی" />
         <h1>شارژ شفاف، ساختمان آرام</h1>
         <p>چهار نقش: ادمین کل، مدیر شهرک، مدیر بلوک، مدیر مالی — به‌همراه ساکنین.</p>

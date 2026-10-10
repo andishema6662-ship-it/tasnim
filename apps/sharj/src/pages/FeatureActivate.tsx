@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { BrandLogo } from '../components/BrandLogo'
 import {
   addonPrice,
   catalogOrDefault,
@@ -203,13 +204,7 @@ export function FeatureActivate() {
     <div className="app-shell auth wide">
       <div className="page" style={{ paddingTop: 18 }}>
         <header className="topbar">
-          <div className="brand-mark">
-            <div className="logo">ش</div>
-            <div>
-              <div className="name">شارژبان</div>
-              <span className="tag">فعال‌سازی امکان</span>
-            </div>
-          </div>
+          <BrandLogo variant="stacked" tag="فعال‌سازی امکان" />
           <button
             type="button"
             className="btn-ghost"

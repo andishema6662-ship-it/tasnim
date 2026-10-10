@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { BrandLogo } from '../components/BrandLogo'
 import { faDateTime, toman } from '../lib/format'
 import {
   clearZarinpalIntent,
@@ -132,13 +133,7 @@ export function PayCallback() {
   return (
     <div className="app-shell auth">
       <div className="page" style={{ paddingTop: 36 }}>
-        <div className="login-brand" style={{ marginBottom: 16 }}>
-          <div className="logo">ش</div>
-          <div>
-            <div className="name">شارژبان</div>
-            <span className="tag">نتیجه پرداخت زرین‌پال</span>
-          </div>
-        </div>
+        <BrandLogo variant="stacked" tag="نتیجه پرداخت زرین‌پال" />
 
         <div className="panel">
           <h2 style={{ marginTop: 0 }}>

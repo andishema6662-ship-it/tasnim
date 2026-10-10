@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { BrandLogo } from '../components/BrandLogo'
 import { GroupedBarChart } from '../components/GroupedBarChart'
 import { RequestsDataTable } from '../components/RequestsDataTable'
 import { BroadcastBanner } from '../components/BroadcastBanner'
@@ -113,13 +114,7 @@ export function ComplexDesk() {
     <div className="app-shell auth wide">
       <div className="page" style={{ paddingTop: 18 }}>
         <header className="topbar">
-          <div className="brand-mark">
-            <div className="logo">ش</div>
-            <div>
-              <div className="name">شارژبان</div>
-              <span className="tag">{complex.name}</span>
-            </div>
-          </div>
+          <BrandLogo variant="stacked" tag={complex.name} />
           <div style={{ textAlign: 'left' }}>
             <div className="meta">{session.displayName}</div>
             <div className="topbar-actions">
