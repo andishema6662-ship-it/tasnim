@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BackButton } from './BackButton'
+import { BrandLogo } from './BrandLogo'
 import { OnboardingBanner } from './OnboardingBanner'
 import { effectiveFeatureSet } from '../lib/features'
 import { roleLabel } from '../lib/rbac'
@@ -158,7 +159,7 @@ export function Shell() {
           {showBack ? (
             <BackButton fallback="/app" label="بازگشت" className="back-ico-btn" />
           ) : (
-            <div className="logo">ش</div>
+            <BrandLogo variant="mark" />
           )}
           <div>
             <div className="name">شارژبان</div>

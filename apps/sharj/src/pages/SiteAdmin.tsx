@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { faDate, faNum, toman } from '../lib/format'
 import type { Complex, SiteAdminSection } from '../store/platformTypes'
 import { useStore } from '../store/StoreContext'
+import { BrandLogo } from '../components/BrandLogo'
 import { BroadcastBanner } from '../components/BroadcastBanner'
 import { BroadcastsPanel } from './BroadcastsPanel'
 import { FeatureCatalogAdmin } from './FeatureCatalogAdmin'
@@ -149,13 +150,7 @@ export function SiteAdmin() {
     <div className="app-shell auth wide site-admin-shell">
       <div className="page site-admin-page" style={{ paddingTop: 18 }}>
         <header className="topbar">
-          <div className="brand-mark">
-            <div className="logo">ش</div>
-            <div>
-              <div className="name">شارژبان</div>
-              <span className="tag">پنل مدیریت سایت</span>
-            </div>
-          </div>
+          <BrandLogo variant="stacked" tag="پنل مدیریت سایت" />
           <div className="site-admin-top-actions">
             <button
               type="button"
