@@ -1086,7 +1086,7 @@
       var state = snapshot || controller.snapshot();
       statusEl.textContent = statusLabel(state);
       playBtn.setAttribute('aria-pressed', state.status === 'playing' ? 'true' : 'false');
-      playBtn.disabled = !engineReady || state.total === 0;
+      playBtn.disabled = state.total === 0;
       pauseBtn.disabled = state.status !== 'playing';
       stopBtn.disabled = state.status !== 'playing' && state.status !== 'paused';
       rateButtons.forEach(function (button) {
@@ -1116,7 +1116,17 @@
     };
 
     playBtn.addEventListener('click', function () {
-      controller.play();
+      if (engineReady) {
+        controller.play();
+        return;
+      }
+      // Some browsers only expose fa-IR voices after a user gesture.
+      pickEngine(config).then(function (engine) {
+        applyEngine(engine);
+        if (engine) {
+          controller.play();
+        }
+      });
     });
     pauseBtn.addEventListener('click', function () {
       controller.pause();
