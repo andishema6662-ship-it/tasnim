@@ -1791,9 +1791,9 @@
   <script>
     var source = document.getElementById('soti-player-source');
     if (source && typeof window.Soti === 'undefined') {
-      eval(source.textContent);
+      window.eval(source.textContent);
     }
   </script>
-  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" onload="if(!window.Soti){var s=document.getElementById('soti-player-source');if(s){eval(s.textContent)}}"></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" onload="if(!window.Soti){var s=document.getElementById('soti-player-source');if(s){window.eval(s.textContent)}}"></svg>
 </body>
 </html>
