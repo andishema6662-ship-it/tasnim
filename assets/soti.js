@@ -1196,8 +1196,12 @@
       }
     }
 
+    function hasStoredClips() {
+      return !!(config.clips && (config.clips.manijeh || config.clips.bijan));
+    }
+
     function schedulePoll() {
-      if (pollTimer || config.clips || state === 'unavailable' || selectedClip()) {
+      if (pollTimer || state === 'unavailable' || state === 'ready' || hasStoredClips()) {
         return;
       }
       pollTimer = window.setInterval(function () {
@@ -1207,19 +1211,23 @@
 
     function applyClips(nextClips, nextState) {
       clips = nextClips || {};
-      state = nextState || 'preparing';
-      if (selectedClip()) {
+      state = nextState === 'ready' || nextState === 'unavailable' ? nextState : 'preparing';
+      if (state === 'unavailable' && !selectedClip()) {
+        stopPolling();
+        showMessage(UNAVAILABLE_MESSAGE);
+      } else if (selectedClip()) {
         if (message.textContent === PREPARING_MESSAGE || message.textContent === UNAVAILABLE_MESSAGE) {
           showMessage('');
         }
-        stopPolling();
+        if (state === 'preparing') {
+          schedulePoll();
+        } else {
+          stopPolling();
+        }
         if (wantPlay) {
           wantPlay = false;
           startClip(selectedClip());
         }
-      } else if (state === 'unavailable') {
-        stopPolling();
-        showMessage(UNAVAILABLE_MESSAGE);
       } else {
         showMessage(PREPARING_MESSAGE);
         schedulePoll();
@@ -1228,11 +1236,11 @@
     }
 
     function readStatus() {
-      if (config.clips) {
+      if (hasStoredClips()) {
         return Promise.resolve({ state: 'ready', clips: config.clips });
       }
       if (!config.statusUrl || typeof fetch !== 'function') {
-        return Promise.resolve({ state: 'unavailable', clips: {} });
+        return Promise.resolve({ state: 'preparing', clips: clips });
       }
       return fetch(config.statusUrl, { cache: 'no-store', credentials: 'same-origin' }).then(function (response) {
         if (!response || !response.ok) {
@@ -1240,12 +1248,13 @@
         }
         return response.json();
       }).then(function (data) {
+        var next = data && data.state;
         return {
-          state: data && data.state ? data.state : 'preparing',
+          state: next === 'ready' || next === 'unavailable' ? next : 'preparing',
           clips: data && data.clips ? data.clips : {}
         };
       }).catch(function () {
-        return { state: state === 'unavailable' ? 'unavailable' : 'preparing', clips: clips };
+        return { state: 'preparing', clips: clips };
       });
     }
 
@@ -1258,7 +1267,10 @@
     function startClip(url) {
       var abs = absoluteUrl(url);
       if (!abs) {
-        showMessage(UNAVAILABLE_MESSAGE);
+        showMessage(state === 'unavailable' ? UNAVAILABLE_MESSAGE : PREPARING_MESSAGE);
+        if (state !== 'unavailable') {
+          schedulePoll();
+        }
         return;
       }
       showMessage('');
@@ -1375,11 +1387,20 @@
     audio.addEventListener('timeupdate', paintChrome);
     audio.addEventListener('loadedmetadata', applyRate);
     audio.addEventListener('error', function () {
-      showMessage(UNAVAILABLE_MESSAGE);
+      if (state === 'unavailable' && !selectedClip()) {
+        showMessage(UNAVAILABLE_MESSAGE);
+      } else if (!selectedClip()) {
+        showMessage(PREPARING_MESSAGE);
+        schedulePoll();
+      }
       paintChrome();
     });
 
     paintChrome();
+    if (!hasStoredClips()) {
+      showMessage(PREPARING_MESSAGE);
+      schedulePoll();
+    }
     refresh();
     return { article: article };
   }

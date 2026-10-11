@@ -105,7 +105,7 @@ class Soti_Engine {
     }
 
     /**
-     * Queue a server render. Visitors do not run this.
+     * Start or continue speech for a published post. One call does one short step.
      *
      * @param int $post_id Post id.
      */
@@ -118,20 +118,10 @@ class Soti_Engine {
             wp_schedule_single_event(time() + 1, 'soti_install_engine');
         }
         $args = array($post_id);
-        if (!wp_next_scheduled('soti_generate_post', $args)) {
+        if (self::runner() !== '' && !wp_next_scheduled('soti_generate_post', $args)) {
             wp_schedule_single_event(time() + 5, 'soti_generate_post', $args);
         }
-        if (get_transient('soti_queued_' . $post_id)) {
-            if (function_exists('spawn_cron')) {
-                spawn_cron();
-            }
-            return;
-        }
-        set_transient('soti_queued_' . $post_id, '1', 90);
-        self::loopback($post_id);
-        if (function_exists('spawn_cron')) {
-            spawn_cron();
-        }
+        self::step($post_id);
     }
 
     /**
@@ -153,25 +143,78 @@ class Soti_Engine {
     }
 
     /**
+     * One short speech step. No sleep: a visitor poll either submits, checks, or saves.
+     *
+     * @param int $post_id Post id.
+     */
+    public static function step($post_id) {
+        $post_id = (int) $post_id;
+        if ($post_id <= 0) {
+            return;
+        }
+        if (self::clips_ready($post_id)) {
+            delete_transient('soti_job_' . $post_id);
+            return;
+        }
+        $lock = 'soti_step_' . $post_id;
+        if (get_transient($lock)) {
+            return;
+        }
+        set_transient($lock, '1', 30);
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'post' || $post->post_status !== 'publish') {
+            delete_transient($lock);
+            return;
+        }
+        $text = self::remote_text(self::article_text($post->post_content));
+        if ($text === '') {
+            delete_transient($lock);
+            return;
+        }
+        $stored = get_transient('soti_job_' . $post_id);
+        $job    = self::job_for($text, $stored);
+        if (self::runner() === '') {
+            $job['local_failed'] = true;
+        }
+        if (empty($job['remote_failed']) && $job['voice'] !== 'done') {
+            $job = self::remote_step($post_id, $text, $job);
+        }
+        if (self::clips_ready($post_id)) {
+            delete_transient('soti_job_' . $post_id);
+        } else {
+            set_transient('soti_job_' . $post_id, $job, DAY_IN_SECONDS);
+        }
+        delete_transient($lock);
+    }
+
+    /**
      * @param int $post_id Post id.
      * @return array<string,mixed>
      */
     public static function public_status($post_id) {
-        $clips = array(
+        $post_id = (int) $post_id;
+        $clips   = array(
             'manijeh' => null,
             'bijan'   => null,
         );
         $ready = 0;
         foreach (array_keys(self::voices()) as $voice) {
-            $path = self::clip_path($post_id, $voice);
-            if ($path !== '' && is_file($path) && filesize($path) > 44) {
-                $clips[ $voice ] = self::clip_url($post_id, $voice);
-                $ready++;
+            if (!self::clip_file_ready($post_id, $voice)) {
+                continue;
             }
+            $url = self::clip_url($post_id, $voice);
+            if ($url === '') {
+                continue;
+            }
+            $clips[ $voice ] = $url;
+            $ready++;
         }
+        $job           = get_transient('soti_job_' . $post_id);
+        $local_failed  = is_array($job) && !empty($job['local_failed']);
+        $remote_failed = is_array($job) && !empty($job['remote_failed']);
         if ($ready === 2) {
             $state = 'ready';
-        } elseif ($ready === 0 && (int) get_transient('soti_fails_' . (int) $post_id) >= 3) {
+        } elseif ($ready === 0 && $local_failed && $remote_failed) {
             $state = 'unavailable';
         } else {
             $state = 'preparing';
@@ -217,6 +260,10 @@ class Soti_Engine {
         if ($post_id <= 0) {
             return false;
         }
+        if (self::runner() === '') {
+            self::mark_local_failed($post_id);
+            return false;
+        }
         if (get_transient('soti_running_' . $post_id)) {
             return false;
         }
@@ -228,18 +275,12 @@ class Soti_Engine {
         $post = get_post($post_id);
         if ($post && $post->post_type === 'post' && $post->post_status === 'publish') {
             $text = self::article_text($post->post_content);
-            if ($text !== '' && self::runner() !== '' && self::install()) {
+            if ($text !== '' && self::install()) {
                 $ok = self::write_voices($post_id, $text);
             }
-            if (!$ok && $text !== '') {
-                $ok = self::write_voices_remote($post_id, $text);
-            }
         }
-        if ($ok) {
-            delete_transient('soti_fails_' . $post_id);
-        } else {
-            $fails = (int) get_transient('soti_fails_' . $post_id);
-            set_transient('soti_fails_' . $post_id, $fails + 1, HOUR_IN_SECONDS);
+        if (!$ok) {
+            self::mark_local_failed($post_id);
         }
         delete_transient('soti_running_' . $post_id);
         delete_transient('soti_queued_' . $post_id);
@@ -546,59 +587,105 @@ class Soti_Engine {
     }
 
     /**
-     * Fetch Piper speech over HTTP when the host cannot run a program.
-     *
-     * @param int    $post_id Post id.
-     * @param string $text    Article text.
-     * @return bool
+     * @param string               $text   Spoken text.
+     * @param array<string,mixed>|false $stored Saved job.
+     * @return array<string,mixed>
      */
-    private static function write_voices_remote($post_id, $text) {
-        if (self::strlen_u($text) > 1600) {
-            $text = self::substr_u($text, 0, 1600);
+    private static function job_for($text, $stored) {
+        $hash = md5($text);
+        if (is_array($stored) && isset($stored['hash']) && $stored['hash'] === $hash) {
+            $stored['remote_errors'] = isset($stored['remote_errors']) ? (int) $stored['remote_errors'] : 0;
+            $stored['index']         = isset($stored['index']) ? (int) $stored['index'] : 0;
+            $stored['uuid']          = isset($stored['uuid']) ? (string) $stored['uuid'] : '';
+            $stored['result_url']    = isset($stored['result_url']) ? (string) $stored['result_url'] : '';
+            $stored['voice']         = isset($stored['voice']) ? (string) $stored['voice'] : 'manijeh';
+            return $stored;
         }
-        $chunks = self::chunks($text);
-        $dir    = self::clip_dir($post_id);
-        if (!$chunks || $dir === '') {
-            return false;
-        }
-        foreach (self::voices() as $voice => $spec) {
-            $pieces = array();
-            $built  = true;
-            foreach ($chunks as $index => $chunk) {
-                $piece = $dir . '/' . $voice . '-remote-' . $index . '.part.wav';
-                $wav   = self::remote_wav($spec['file'], $chunk);
-                if ($wav === '' || file_put_contents($piece, $wav) === false) {
-                    $built = false;
-                    break;
-                }
-                $pieces[] = $piece;
-            }
-            $dest = self::clip_path($post_id, $voice);
-            $part = $dest . '.part.wav';
-            if ($built && self::concat_wavs($pieces, $part) && @rename($part, $dest)) {
-                foreach ($pieces as $piece) {
-                    @unlink($piece);
-                }
-                continue;
-            }
-            @unlink($part);
-            foreach ($pieces as $piece) {
-                @unlink($piece);
-            }
-        }
-        return is_file(self::clip_path($post_id, 'manijeh')) && is_file(self::clip_path($post_id, 'bijan'));
+        return array(
+            'hash'          => $hash,
+            'local_failed'  => false,
+            'remote_failed' => false,
+            'remote_errors' => 0,
+            'voice'         => 'manijeh',
+            'index'         => 0,
+            'uuid'          => '',
+            'result_url'    => '',
+        );
     }
 
     /**
-     * @param string $voice_file Piper voice id, such as fa_IR-mana-medium.
-     * @param string $text       One short chunk.
-     * @return string Wav bytes, or empty.
+     * @param int $post_id Post id.
      */
-    private static function remote_wav($voice_file, $text) {
+    private static function mark_local_failed($post_id) {
+        $post_id = (int) $post_id;
+        $job     = get_transient('soti_job_' . $post_id);
+        if (!is_array($job)) {
+            $job = self::job_for('', false);
+        }
+        $job['local_failed'] = true;
+        set_transient('soti_job_' . $post_id, $job, DAY_IN_SECONDS);
+    }
+
+    /**
+     * @param string $text Article text.
+     * @return string
+     */
+    private static function remote_text($text) {
+        if (self::strlen_u($text) > 1600) {
+            return self::substr_u($text, 0, 1600);
+        }
+        return $text;
+    }
+
+    /**
+     * Submit, poll, or save exactly one remote chunk. Never sleeps.
+     *
+     * @param int                  $post_id Post id.
+     * @param string               $text    Spoken text.
+     * @param array<string,mixed>  $job     Job.
+     * @return array<string,mixed>
+     */
+    private static function remote_step($post_id, $text, $job) {
+        $chunks = self::chunks($text);
+        if (!$chunks || ($job['voice'] !== 'manijeh' && $job['voice'] !== 'bijan')) {
+            return $job;
+        }
+        if (self::clip_file_ready($post_id, $job['voice'])) {
+            return self::next_voice($job);
+        }
+        $index = (int) $job['index'];
+        if ($index >= count($chunks)) {
+            if (self::assemble_voice($post_id, $job['voice'], $index)) {
+                return self::next_voice($job);
+            }
+            $job['remote_failed'] = true;
+            return $job;
+        }
+        if ($job['result_url'] !== '') {
+            return self::store_remote_piece($post_id, $job, $chunks);
+        }
+        if ($job['uuid'] === '') {
+            $spec = self::voices()[ $job['voice'] ];
+            return self::submit_remote($job, $spec['file'], $chunks[ $index ]);
+        }
+        $job = self::poll_remote($job);
+        if ($job['result_url'] !== '' && empty($job['remote_failed'])) {
+            return self::store_remote_piece($post_id, $job, $chunks);
+        }
+        return $job;
+    }
+
+    /**
+     * @param array<string,mixed> $job        Job.
+     * @param string              $voice_file Piper voice id.
+     * @param string              $chunk      One chunk.
+     * @return array<string,mixed>
+     */
+    private static function submit_remote($job, $voice_file, $chunk) {
         $response = wp_remote_post(
             'https://api.tts.ai/v1/tts/',
             array(
-                'timeout' => 30,
+                'timeout' => 12,
                 'headers' => array(
                     'Content-Type' => 'application/json',
                     'Accept'       => 'application/json',
@@ -606,7 +693,7 @@ class Soti_Engine {
                 'body'    => wp_json_encode(
                     array(
                         'model'    => 'piper',
-                        'text'     => $text,
+                        'text'     => $chunk,
                         'voice'    => $voice_file,
                         'language' => 'fa',
                         'format'   => 'wav',
@@ -615,52 +702,153 @@ class Soti_Engine {
             )
         );
         if (is_wp_error($response)) {
-            return '';
+            return self::remote_transport_error($job);
         }
         $code = (int) wp_remote_retrieve_response_code($response);
         $data = json_decode((string) wp_remote_retrieve_body($response), true);
-        if ($code < 200 || $code >= 300 || !is_array($data) || empty($data['uuid']) || !is_string($data['uuid'])) {
-            return '';
+        if ($code === 0 || $code === 408 || $code === 429 || $code >= 500) {
+            return self::remote_transport_error($job);
         }
-        if (!preg_match('/^[a-f0-9]{16,64}$/', $data['uuid'])) {
-            return '';
+        $uuid = is_array($data) && isset($data['uuid']) ? (string) $data['uuid'] : '';
+        if ($code < 200 || $code >= 300 || !preg_match('/^[a-f0-9]{16,64}$/', $uuid)) {
+            $job['remote_failed'] = true;
+            return $job;
         }
-        $audio_url = '';
-        for ($try = 0; $try < 12; $try++) {
-            $poll = wp_remote_get(
-                'https://api.tts.ai/v1/speech/results/?uuid=' . rawurlencode($data['uuid']),
-                array('timeout' => 20)
-            );
-            if (!is_wp_error($poll)) {
-                $job = json_decode((string) wp_remote_retrieve_body($poll), true);
-                if (is_array($job) && isset($job['status'])) {
-                    if ($job['status'] === 'failed') {
-                        return '';
-                    }
-                    if ($job['status'] === 'completed') {
-                        if (!empty($job['result_url']) && is_string($job['result_url'])) {
-                            $audio_url = $job['result_url'];
-                        } elseif (!empty($job['url']) && is_string($job['url'])) {
-                            $audio_url = $job['url'];
-                        }
-                        break;
-                    }
-                }
-            }
-            sleep(1);
+        $job['uuid']          = $uuid;
+        $job['remote_errors'] = 0;
+        return $job;
+    }
+
+    /**
+     * @param array<string,mixed> $job Job.
+     * @return array<string,mixed>
+     */
+    private static function poll_remote($job) {
+        $poll = wp_remote_get(
+            'https://api.tts.ai/v1/speech/results/?uuid=' . rawurlencode($job['uuid']),
+            array('timeout' => 8)
+        );
+        if (is_wp_error($poll)) {
+            return self::remote_transport_error($job);
         }
-        if (!self::safe_tts_url($audio_url)) {
-            return '';
+        $code = (int) wp_remote_retrieve_response_code($poll);
+        if ($code === 0 || $code === 408 || $code === 429 || $code >= 500) {
+            return self::remote_transport_error($job);
         }
-        $file = wp_remote_get($audio_url, array('timeout' => 60));
+        $data = json_decode((string) wp_remote_retrieve_body($poll), true);
+        if ($code < 200 || $code >= 300 || !is_array($data) || empty($data['status']) || !is_string($data['status'])) {
+            $job['remote_failed'] = true;
+            return $job;
+        }
+        if ($data['status'] === 'failed') {
+            $job['remote_failed'] = true;
+            return $job;
+        }
+        if ($data['status'] !== 'completed') {
+            return $job;
+        }
+        $url = '';
+        if (!empty($data['result_url']) && is_string($data['result_url'])) {
+            $url = $data['result_url'];
+        } elseif (!empty($data['url']) && is_string($data['url'])) {
+            $url = $data['url'];
+        }
+        if (!self::safe_tts_url($url)) {
+            $job['remote_failed'] = true;
+            return $job;
+        }
+        $job['result_url']    = $url;
+        $job['remote_errors'] = 0;
+        return $job;
+    }
+
+    /**
+     * @param int                  $post_id Post id.
+     * @param array<string,mixed>  $job     Job.
+     * @param array<int,string>    $chunks  Chunks.
+     * @return array<string,mixed>
+     */
+    private static function store_remote_piece($post_id, $job, $chunks) {
+        $dir = self::clip_dir($post_id);
+        if ($dir === '') {
+            return self::remote_transport_error($job);
+        }
+        $file = wp_remote_get($job['result_url'], array('timeout' => 20));
         if (is_wp_error($file) || (int) wp_remote_retrieve_response_code($file) !== 200) {
-            return '';
+            return self::remote_transport_error($job);
         }
         $body = (string) wp_remote_retrieve_body($file);
         if (strlen($body) < 44 || strlen($body) > 2000000 || substr($body, 0, 4) !== 'RIFF' || substr($body, 8, 4) !== 'WAVE') {
-            return '';
+            $job['remote_failed'] = true;
+            return $job;
         }
-        return $body;
+        $piece = $dir . '/' . $job['voice'] . '-' . (int) $job['index'] . '.part.wav';
+        if (file_put_contents($piece, $body) === false) {
+            return self::remote_transport_error($job);
+        }
+        $job['index']         = (int) $job['index'] + 1;
+        $job['uuid']          = '';
+        $job['result_url']    = '';
+        $job['remote_errors'] = 0;
+        if ($job['index'] < count($chunks)) {
+            return $job;
+        }
+        if (!self::assemble_voice($post_id, $job['voice'], $job['index'])) {
+            $job['remote_failed'] = true;
+            return $job;
+        }
+        return self::next_voice($job);
+    }
+
+    /**
+     * @param array<string,mixed> $job Job.
+     * @return array<string,mixed>
+     */
+    private static function remote_transport_error($job) {
+        $job['remote_errors'] = (int) $job['remote_errors'] + 1;
+        if ($job['remote_errors'] >= 8) {
+            $job['remote_failed'] = true;
+        }
+        return $job;
+    }
+
+    /**
+     * @param array<string,mixed> $job Job.
+     * @return array<string,mixed>
+     */
+    private static function next_voice($job) {
+        $job['uuid']       = '';
+        $job['result_url'] = '';
+        $job['index']      = 0;
+        $job['voice']      = $job['voice'] === 'manijeh' ? 'bijan' : 'done';
+        return $job;
+    }
+
+    /**
+     * @param int    $post_id Post id.
+     * @param string $voice   Voice id.
+     * @param int    $count   Piece count.
+     * @return bool
+     */
+    private static function assemble_voice($post_id, $voice, $count) {
+        $dir = self::clip_dir($post_id);
+        if ($dir === '' || $count < 1) {
+            return false;
+        }
+        $pieces = array();
+        for ($index = 0; $index < $count; $index++) {
+            $pieces[] = $dir . '/' . $voice . '-' . $index . '.part.wav';
+        }
+        $dest = self::clip_path($post_id, $voice);
+        $part = $dest . '.part';
+        if ($dest === '' || !self::concat_wavs($pieces, $part) || !@rename($part, $dest)) {
+            @unlink($part);
+            return false;
+        }
+        foreach ($pieces as $piece) {
+            @unlink($piece);
+        }
+        return self::clip_file_ready($post_id, $voice);
     }
 
     /**
@@ -814,6 +1002,24 @@ class Soti_Engine {
             return '';
         }
         return $dir . '/' . $voice . '.wav';
+    }
+
+    /**
+     * @param int    $post_id Post id.
+     * @param string $voice   Voice id.
+     * @return bool
+     */
+    private static function clip_file_ready($post_id, $voice) {
+        $path = self::clip_path($post_id, $voice);
+        return $path !== '' && is_file($path) && filesize($path) > 44;
+    }
+
+    /**
+     * @param int $post_id Post id.
+     * @return bool
+     */
+    private static function clips_ready($post_id) {
+        return self::clip_file_ready($post_id, 'manijeh') && self::clip_file_ready($post_id, 'bijan');
     }
 
     /**

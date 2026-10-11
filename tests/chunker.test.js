@@ -329,5 +329,14 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(php.includes("'/shenidar/'"), true);
   assert.equal(php.includes('https://api.tts.ai/v1/tts/'), true);
   assert.equal(php.includes('wp_remote_post'), true);
+  assert.equal(php.includes('function step'), true);
+  assert.equal(php.includes("'local_failed'"), true);
+  assert.equal(php.includes("'remote_failed'"), true);
+  assert.equal(php.includes('sleep('), false);
+  assert.equal(php.includes('soti_fails_'), false);
   assert.equal(php.includes("if (self::runner() === '') {\n            return array(\n                'state' => 'unavailable'"), false);
+  const plugin = fs.readFileSync(path.join(__dirname, '../includes/class-soti-plugin.php'), 'utf8');
+  assert.equal(plugin.includes('Soti_Engine::step'), true);
+  assert.equal(plugin.includes("'state' => 'unavailable'"), false);
+  assert.equal(src.includes("return Promise.resolve({ state: 'unavailable', clips: {} });"), false);
 });
