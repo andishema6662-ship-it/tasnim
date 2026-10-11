@@ -1,7 +1,7 @@
 /**
  * Shenidar (شنیدار) speaks only the open article’s own body.
- * Play posts that text to https://api.tts.ai/v1/tts/ and plays the returned wav.
- * منیژه is fa_IR-mana-medium. بیژن is fa_IR-ganji-medium.
+ * Play asks this site to synthesize that post and then plays the returned wav.
+ * منیژه is Piper fa_IR-mana-medium. بیژن is Piper fa_IR-gyro-medium.
  * Speeds use playbackRate: 0.75, 1, 1.25. No bundled recording and no sample text.
  */
 (function (root, factory) {
@@ -51,8 +51,7 @@
   var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
   var UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
   var MISSING_MESSAGE = 'متن این خبر پیدا نشد.';
-  var TTS_ENDPOINT = 'https://api.tts.ai/v1/tts/';
-  var TTS_RESULT = 'https://api.tts.ai/v1/speech/results/?uuid=';
+  var BLOCKED_MESSAGE = 'این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.';
 
   var sharedAudioContext = null;
   var espeakAssetsPromise = null;
@@ -861,7 +860,7 @@
 
   var PIPER_MODELS = {
     manijeh: 'fa_IR-mana-medium',
-    bijan: 'fa_IR-ganji-medium'
+    bijan: 'fa_IR-gyro-medium'
   };
 
   function speechKey(text) {
@@ -957,107 +956,78 @@
     }
     return {
       selector: selector,
-      postId: boot.postId != null ? boot.postId : ''
+      postId: boot.postId != null ? boot.postId : '',
+      speakUrl: boot.speakUrl ? String(boot.speakUrl) : ''
     };
+  }
+
+  function articlePostId(article, config) {
+    var fromArticle = article && article.getAttribute ? article.getAttribute('data-soti-post') : '';
+    if (fromArticle) {
+      return String(fromArticle);
+    }
+    if (config && config.postId != null && String(config.postId) !== '') {
+      return String(config.postId);
+    }
+    return '';
   }
 
   function isSafeSpeechUrl(value) {
     try {
-      var url = new URL(value);
-      if (url.protocol !== 'https:') {
+      var base = (typeof window !== 'undefined' && window.location) ? window.location.href : 'https://example.test/';
+      var url = new URL(value, base);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') {
         return false;
       }
-      var host = url.hostname.toLowerCase();
-      return host === 'tts.ai' || host.slice(-7) === '.tts.ai';
+      return url.pathname.indexOf('/shenidar/') !== -1 && /\.wav$/i.test(url.pathname);
     } catch (error) {
       return false;
     }
   }
 
-  function wait(ms) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, ms);
-    });
+  function speechFailure(message) {
+    var error = new Error('speech');
+    error.hostMessage = message || '';
+    return error;
   }
 
-  function pollSpeech(uuid, isCurrent, tries) {
-    if (!isCurrent()) {
-      return Promise.reject(new Error('stale'));
+  function fetchSpeechUrl(speakUrl, postId, voiceId, isCurrent) {
+    if (typeof fetch !== 'function' || !speakUrl || !postId) {
+      return Promise.reject(speechFailure(UNAVAILABLE_MESSAGE));
     }
-    if (tries > 120) {
-      return Promise.reject(new Error('http'));
-    }
-    return fetch(TTS_RESULT + encodeURIComponent(uuid), {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
-      headers: { Accept: 'application/json' }
-    }).then(function (response) {
-      if (!isCurrent()) {
-        throw new Error('stale');
-      }
-      if (!response.ok) {
-        throw new Error('http');
-      }
-      return response.json();
-    }).then(function (body) {
-      if (!isCurrent()) {
-        throw new Error('stale');
-      }
-      var status = String((body && body.status) || '').toLowerCase();
-      if (status === 'failed' || status === 'error') {
-        throw new Error('failed');
-      }
-      if (status === 'completed' || status === 'complete' || status === 'done' || status === 'success') {
-        var url = (body && (body.result_url || body.url)) || '';
-        if (!isSafeSpeechUrl(url)) {
-          throw new Error('url');
-        }
-        return url;
-      }
-      return wait(2000).then(function () {
-        return pollSpeech(uuid, isCurrent, tries + 1);
-      });
-    });
-  }
-
-  function fetchSpeechUrl(text, voiceId, isCurrent) {
-    if (typeof fetch !== 'function') {
-      return Promise.reject(new Error('http'));
-    }
-    var voice = voiceId === 'bijan' ? PIPER_MODELS.bijan : PIPER_MODELS.manijeh;
-    return fetch(TTS_ENDPOINT, {
+    var voice = voiceId === 'bijan' ? 'bijan' : 'manijeh';
+    return fetch(speakUrl, {
       method: 'POST',
-      mode: 'cors',
-      credentials: 'omit',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json'
       },
       body: JSON.stringify({
-        model: 'piper',
-        text: text,
-        voice: voice,
-        language: 'fa',
-        format: 'wav'
+        postId: postId,
+        voice: voice
       })
     }).then(function (response) {
       if (!isCurrent()) {
         throw new Error('stale');
       }
       if (!response.ok) {
-        throw new Error('http');
+        throw speechFailure(UNAVAILABLE_MESSAGE);
       }
       return response.json();
     }).then(function (body) {
       if (!isCurrent()) {
         throw new Error('stale');
       }
-      var uuid = body && body.uuid;
-      if (typeof uuid !== 'string' || !/^[a-f0-9]{16,64}$/i.test(uuid)) {
-        throw new Error('uuid');
+      var url = body && body.url ? String(body.url) : '';
+      if (body && body.ok && isSafeSpeechUrl(url)) {
+        return url;
       }
-      return pollSpeech(uuid, isCurrent, 0);
+      var message = body && body.message ? String(body.message) : UNAVAILABLE_MESSAGE;
+      if (message !== BLOCKED_MESSAGE && message !== MISSING_MESSAGE) {
+        message = UNAVAILABLE_MESSAGE;
+      }
+      throw speechFailure(message);
     });
   }
 
@@ -1370,7 +1340,7 @@
       }
       audio.removeAttribute('src');
       paintChrome();
-      fetchSpeechUrl(text, voiceId, function () {
+      fetchSpeechUrl(config && config.speakUrl, articlePostId(article, config), voiceId, function () {
         return token === generation;
       }).then(function (url) {
         if (token !== generation) {
@@ -1386,7 +1356,7 @@
           return;
         }
         preparing = false;
-        showMessage(UNAVAILABLE_MESSAGE);
+        showMessage((error && error.hostMessage) || UNAVAILABLE_MESSAGE);
         paintChrome();
       });
     }

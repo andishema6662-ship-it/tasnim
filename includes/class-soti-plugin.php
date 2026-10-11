@@ -27,6 +27,36 @@ class Soti_Plugin {
     public static function init() {
         add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue'));
         add_filter('the_content', array(__CLASS__, 'filter_content'), 12);
+        add_action('rest_api_init', array(__CLASS__, 'register_routes'));
+    }
+
+    /**
+     * The page asks for the open post. The server reads that post and returns its wav.
+     */
+    public static function register_routes() {
+        register_rest_route(
+            'shenidar/v1',
+            '/speak',
+            array(
+                'methods'             => 'POST',
+                'callback'            => array(__CLASS__, 'rest_speak'),
+                'permission_callback' => '__return_true',
+            )
+        );
+    }
+
+    /**
+     * @param WP_REST_Request $request Request.
+     * @return WP_REST_Response
+     */
+    public static function rest_speak($request) {
+        $post_id = (int) $request->get_param('postId');
+        if ($post_id <= 0) {
+            $post_id = (int) $request->get_param('post_id');
+        }
+        $voice  = (string) $request->get_param('voice');
+        $result = Soti_Engine::speak($post_id, $voice);
+        return rest_ensure_response($result);
     }
 
     /**
@@ -67,6 +97,7 @@ class Soti_Plugin {
         $boot     = array(
             'selector' => $selector,
             'postId'   => (int) get_queried_object_id(),
+            'speakUrl' => rest_url('shenidar/v1/speak'),
         );
 
         wp_add_inline_script(

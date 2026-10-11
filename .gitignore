@@ -1,0 +1,5 @@
+/assets/vendor/voices/
+/assets/vendor/ort/
+/host-upload/
+*.onnx
+piper_linux_*.tar.gz

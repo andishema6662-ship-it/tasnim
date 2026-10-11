@@ -1,6 +1,6 @@
 <?php
 /**
- * Proves a published post reaches a real wav URL when proc_open is disabled.
+ * Proves a blocked host says so in Persian and does not write a clip.
  *
  * Run: php -d disable_functions=proc_open,exec tests/prove-remote-status.php
  *
@@ -233,40 +233,16 @@ if ($runner !== '') {
     exit(1);
 }
 
-$saw_unavailable = false;
-$final           = array();
-for ($try = 1; $try <= 80; $try++) {
-    $post = get_post(42);
-    if ($post && $post->post_type === 'post' && $post->post_status === 'publish') {
-        Soti_Engine::step(42);
-    }
-    $final = Soti_Engine::public_status(42);
-    $job   = get_transient('soti_job_42');
-    $voice = is_array($job) && isset($job['voice']) ? $job['voice'] : '-';
-    $phase = is_array($job) && $job['result_url'] !== '' ? 'fetch' : (is_array($job) && $job['uuid'] !== '' ? 'poll' : 'submit');
-    echo "step {$try} state={$final['state']} voice={$voice} phase={$phase} manijeh=" . ($final['clips']['manijeh'] ? 'yes' : 'no') . " bijan=" . ($final['clips']['bijan'] ? 'yes' : 'no') . "\n";
-    if ($final['state'] === 'unavailable') {
-        $saw_unavailable = true;
-        break;
-    }
-    if ($final['state'] === 'ready' && !empty($final['clips']['manijeh']) && !empty($final['clips']['bijan'])) {
-        break;
-    }
-    sleep(2);
-}
+$result = Soti_Engine::speak(42, 'bijan');
+$wavs   = glob($uploads . '/shenidar/*/*.wav');
+$ok     = is_array($result)
+    && empty($result['ok'])
+    && empty($result['url'])
+    && isset($result['message'])
+    && $result['message'] === 'این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.'
+    && $wavs === array();
 
-$manijeh = $uploads . '/shenidar/42/manijeh.wav';
-$bijan   = $uploads . '/shenidar/42/bijan.wav';
-$ok      = !$saw_unavailable
-    && isset($final['state']) && $final['state'] === 'ready'
-    && !empty($final['clips']['manijeh'])
-    && !empty($final['clips']['bijan'])
-    && is_file($manijeh) && is_file($bijan)
-    && file_get_contents($manijeh, false, null, 0, 4) === 'RIFF'
-    && file_get_contents($bijan, false, null, 0, 4) === 'RIFF';
-
-echo 'manijeh_url=' . (isset($final['clips']['manijeh']) ? $final['clips']['manijeh'] : '') . "\n";
-echo 'bijan_url=' . (isset($final['clips']['bijan']) ? $final['clips']['bijan'] : '') . "\n";
-echo 'unavailable_seen=' . ($saw_unavailable ? 'yes' : 'no') . "\n";
+echo 'message=' . (isset($result['message']) ? $result['message'] : '') . "\n";
+echo 'url=' . (isset($result['url']) ? $result['url'] : '') . "\n";
 echo $ok ? "PASS\n" : "FAIL\n";
 exit($ok ? 0 : 1);
