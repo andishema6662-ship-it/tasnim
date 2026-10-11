@@ -111,10 +111,10 @@ class Soti_Engine {
      */
     public static function schedule($post_id) {
         $post_id = (int) $post_id;
-        if ($post_id <= 0 || self::runner() === '') {
+        if ($post_id <= 0) {
             return;
         }
-        if (!self::is_ready() && !wp_next_scheduled('soti_install_engine')) {
+        if (self::runner() !== '' && !self::is_ready() && !wp_next_scheduled('soti_install_engine')) {
             wp_schedule_single_event(time() + 1, 'soti_install_engine');
         }
         $args = array($post_id);
@@ -161,12 +161,6 @@ class Soti_Engine {
             'manijeh' => null,
             'bijan'   => null,
         );
-        if (self::runner() === '') {
-            return array(
-                'state' => 'unavailable',
-                'clips' => $clips,
-            );
-        }
         $ready = 0;
         foreach (array_keys(self::voices()) as $voice) {
             $path = self::clip_path($post_id, $voice);
@@ -175,8 +169,15 @@ class Soti_Engine {
                 $ready++;
             }
         }
+        if ($ready === 2) {
+            $state = 'ready';
+        } elseif ($ready === 0 && (int) get_transient('soti_fails_' . (int) $post_id) >= 3) {
+            $state = 'unavailable';
+        } else {
+            $state = 'preparing';
+        }
         return array(
-            'state' => $ready === 2 ? 'ready' : 'preparing',
+            'state' => $state,
             'clips' => $clips,
         );
     }
@@ -213,7 +214,7 @@ class Soti_Engine {
      */
     public static function generate($post_id) {
         $post_id = (int) $post_id;
-        if ($post_id <= 0 || self::runner() === '') {
+        if ($post_id <= 0) {
             return false;
         }
         if (get_transient('soti_running_' . $post_id)) {
@@ -223,13 +224,22 @@ class Soti_Engine {
         if (function_exists('set_time_limit')) {
             set_time_limit(0);
         }
-        $ok = false;
-        if (self::install()) {
-            $post = get_post($post_id);
-            if ($post && $post->post_type === 'post' && $post->post_status === 'publish') {
-                $text = self::article_text($post->post_content);
-                $ok   = $text !== '' && self::write_voices($post_id, $text);
+        $ok   = false;
+        $post = get_post($post_id);
+        if ($post && $post->post_type === 'post' && $post->post_status === 'publish') {
+            $text = self::article_text($post->post_content);
+            if ($text !== '' && self::runner() !== '' && self::install()) {
+                $ok = self::write_voices($post_id, $text);
             }
+            if (!$ok && $text !== '') {
+                $ok = self::write_voices_remote($post_id, $text);
+            }
+        }
+        if ($ok) {
+            delete_transient('soti_fails_' . $post_id);
+        } else {
+            $fails = (int) get_transient('soti_fails_' . $post_id);
+            set_transient('soti_fails_' . $post_id, $fails + 1, HOUR_IN_SECONDS);
         }
         delete_transient('soti_running_' . $post_id);
         delete_transient('soti_queued_' . $post_id);
@@ -533,6 +543,140 @@ class Soti_Engine {
         exec($command_line, $output, $code);
         @unlink($input);
         return (int) $code;
+    }
+
+    /**
+     * Fetch Piper speech over HTTP when the host cannot run a program.
+     *
+     * @param int    $post_id Post id.
+     * @param string $text    Article text.
+     * @return bool
+     */
+    private static function write_voices_remote($post_id, $text) {
+        if (self::strlen_u($text) > 1600) {
+            $text = self::substr_u($text, 0, 1600);
+        }
+        $chunks = self::chunks($text);
+        $dir    = self::clip_dir($post_id);
+        if (!$chunks || $dir === '') {
+            return false;
+        }
+        foreach (self::voices() as $voice => $spec) {
+            $pieces = array();
+            $built  = true;
+            foreach ($chunks as $index => $chunk) {
+                $piece = $dir . '/' . $voice . '-remote-' . $index . '.part.wav';
+                $wav   = self::remote_wav($spec['file'], $chunk);
+                if ($wav === '' || file_put_contents($piece, $wav) === false) {
+                    $built = false;
+                    break;
+                }
+                $pieces[] = $piece;
+            }
+            $dest = self::clip_path($post_id, $voice);
+            $part = $dest . '.part.wav';
+            if ($built && self::concat_wavs($pieces, $part) && @rename($part, $dest)) {
+                foreach ($pieces as $piece) {
+                    @unlink($piece);
+                }
+                continue;
+            }
+            @unlink($part);
+            foreach ($pieces as $piece) {
+                @unlink($piece);
+            }
+        }
+        return is_file(self::clip_path($post_id, 'manijeh')) && is_file(self::clip_path($post_id, 'bijan'));
+    }
+
+    /**
+     * @param string $voice_file Piper voice id, such as fa_IR-mana-medium.
+     * @param string $text       One short chunk.
+     * @return string Wav bytes, or empty.
+     */
+    private static function remote_wav($voice_file, $text) {
+        $response = wp_remote_post(
+            'https://api.tts.ai/v1/tts/',
+            array(
+                'timeout' => 30,
+                'headers' => array(
+                    'Content-Type' => 'application/json',
+                    'Accept'       => 'application/json',
+                ),
+                'body'    => wp_json_encode(
+                    array(
+                        'model'    => 'piper',
+                        'text'     => $text,
+                        'voice'    => $voice_file,
+                        'language' => 'fa',
+                        'format'   => 'wav',
+                    )
+                ),
+            )
+        );
+        if (is_wp_error($response)) {
+            return '';
+        }
+        $code = (int) wp_remote_retrieve_response_code($response);
+        $data = json_decode((string) wp_remote_retrieve_body($response), true);
+        if ($code < 200 || $code >= 300 || !is_array($data) || empty($data['uuid']) || !is_string($data['uuid'])) {
+            return '';
+        }
+        if (!preg_match('/^[a-f0-9]{16,64}$/', $data['uuid'])) {
+            return '';
+        }
+        $audio_url = '';
+        for ($try = 0; $try < 12; $try++) {
+            $poll = wp_remote_get(
+                'https://api.tts.ai/v1/speech/results/?uuid=' . rawurlencode($data['uuid']),
+                array('timeout' => 20)
+            );
+            if (!is_wp_error($poll)) {
+                $job = json_decode((string) wp_remote_retrieve_body($poll), true);
+                if (is_array($job) && isset($job['status'])) {
+                    if ($job['status'] === 'failed') {
+                        return '';
+                    }
+                    if ($job['status'] === 'completed') {
+                        if (!empty($job['result_url']) && is_string($job['result_url'])) {
+                            $audio_url = $job['result_url'];
+                        } elseif (!empty($job['url']) && is_string($job['url'])) {
+                            $audio_url = $job['url'];
+                        }
+                        break;
+                    }
+                }
+            }
+            sleep(1);
+        }
+        if (!self::safe_tts_url($audio_url)) {
+            return '';
+        }
+        $file = wp_remote_get($audio_url, array('timeout' => 60));
+        if (is_wp_error($file) || (int) wp_remote_retrieve_response_code($file) !== 200) {
+            return '';
+        }
+        $body = (string) wp_remote_retrieve_body($file);
+        if (strlen($body) < 44 || strlen($body) > 2000000 || substr($body, 0, 4) !== 'RIFF' || substr($body, 8, 4) !== 'WAVE') {
+            return '';
+        }
+        return $body;
+    }
+
+    /**
+     * @param string $url Download URL.
+     * @return bool
+     */
+    private static function safe_tts_url($url) {
+        if (!is_string($url) || $url === '') {
+            return false;
+        }
+        $parts = wp_parse_url($url);
+        if (!is_array($parts) || empty($parts['scheme']) || strtolower((string) $parts['scheme']) !== 'https') {
+            return false;
+        }
+        $host = isset($parts['host']) ? strtolower((string) $parts['host']) : '';
+        return $host === 'tts.ai' || substr($host, -7) === '.tts.ai';
     }
 
     /**

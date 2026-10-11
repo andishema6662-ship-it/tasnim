@@ -57,7 +57,7 @@ class Soti_Plugin {
             return;
         }
         echo '<div class="notice notice-warning"><p>'
-            . esc_html('این میزبان اجرای برنامه را بسته است. شنیدار نمی‌تواند صدا بسازد.')
+            . esc_html('این میزبان اجرای برنامه را بسته است. شنیدار صدا را با درخواست HTTP روی سرور ذخیره می‌کند.')
             . '</p></div>';
     }
 
@@ -96,9 +96,10 @@ class Soti_Plugin {
     private static function queue_post($post_id) {
         if (Soti_Engine::runner() === '') {
             update_option('soti_programs_blocked', '1', false);
-            return;
+        } else {
+            delete_option('soti_programs_blocked');
         }
-        delete_option('soti_programs_blocked');
+        delete_transient('soti_fails_' . (int) $post_id);
         Soti_Engine::schedule($post_id);
     }
 

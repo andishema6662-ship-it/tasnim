@@ -327,4 +327,7 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(php.includes('proc_open'), true);
   assert.equal(php.includes('shenidar-engine'), true);
   assert.equal(php.includes("'/shenidar/'"), true);
+  assert.equal(php.includes('https://api.tts.ai/v1/tts/'), true);
+  assert.equal(php.includes('wp_remote_post'), true);
+  assert.equal(php.includes("if (self::runner() === '') {\n            return array(\n                'state' => 'unavailable'"), false);
 });
