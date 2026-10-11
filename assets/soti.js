@@ -33,12 +33,12 @@
   var DEFAULT_CHUNK_LENGTH = 120;
 
   var RATES = [
-    { value: 0.75, label: '۰٫۷۵' },
-    { value: 1, label: '۱' },
-    { value: 1.25, label: '۱٫۲۵' },
-    { value: 1.5, label: '۱٫۵' },
-    { value: 1.75, label: '۱٫۷۵' },
-    { value: 2, label: '۲ برابر' }
+    { value: 0.75, label: '۰٫۷۵×' },
+    { value: 1, label: '۱×' },
+    { value: 1.25, label: '۱٫۲۵×' },
+    { value: 1.5, label: '۱٫۵×' },
+    { value: 1.75, label: '۱٫۷۵×' },
+    { value: 2, label: '۲×' }
   ];
 
   var AZURE_VOICES = {
@@ -1557,18 +1557,45 @@
     document.head.appendChild(link);
   }
 
+  function iconSvg(markup) {
+    var holder = document.createElement('span');
+    holder.className = 'soti-icon';
+    holder.setAttribute('aria-hidden', 'true');
+    holder.innerHTML = '<svg viewBox="0 0 24 24" focusable="false">' + markup + '</svg>';
+    return holder;
+  }
+
   function buildPlayer() {
     var titleId = 'soti-title-' + (++playerSeq);
-    var play = el('button', { type: 'button', 'data-action': 'play', 'aria-pressed': 'false' }, ['پخش']);
-    var pause = el('button', { type: 'button', 'data-action': 'pause', disabled: 'disabled' }, ['مکث']);
-    var stop = el('button', { type: 'button', 'data-action': 'stop', disabled: 'disabled' }, ['توقف']);
+    var play = el('button', {
+      type: 'button',
+      'data-action': 'play',
+      'aria-pressed': 'false',
+      'aria-label': 'پخش',
+      title: 'پخش'
+    }, [iconSvg('<path fill="currentColor" d="M9 6.5v11l9.5-5.5z"/>')]);
+    var pause = el('button', {
+      type: 'button',
+      'data-action': 'pause',
+      disabled: 'disabled',
+      'aria-label': 'مکث',
+      title: 'مکث'
+    }, [iconSvg('<path fill="currentColor" d="M7 6h3.4v12H7zm6.6 0H17v12h-3.4z"/>')]);
+    var stop = el('button', {
+      type: 'button',
+      'data-action': 'stop',
+      disabled: 'disabled',
+      'aria-label': 'توقف',
+      title: 'توقف'
+    }, [iconSvg('<path fill="currentColor" d="M7 7h10v10H7z"/>')]);
     var rates = el('div', { className: 'soti-rates', role: 'group', 'aria-label': 'سرعت', dir: 'ltr' });
     RATES.forEach(function (rate) {
       rates.appendChild(el('button', {
         type: 'button',
         'data-rate': String(rate.value),
         'aria-pressed': rate.value === 1 ? 'true' : 'false',
-        'aria-label': 'سرعت ' + rate.label
+        'aria-label': 'سرعت ' + rate.label,
+        title: 'سرعت ' + rate.label
       }, [rate.label]));
     });
     var voices = el('div', { className: 'soti-voices', role: 'radiogroup', 'aria-label': 'انتخاب صدا' });
@@ -1578,17 +1605,17 @@
       'data-voice': 'manijeh',
       'aria-checked': 'true',
       'aria-label': 'منیژه، صدای زن',
-      title: 'صدای زن فارسی'
-    }, ['منیژه']));
+      title: 'منیژه، صدای زن'
+    }, [iconSvg('<circle cx="12" cy="8.2" r="2.5" fill="currentColor"/><path fill="currentColor" d="M7.6 7.4c.6-2.5 2.3-3.8 4.4-3.8s3.8 1.3 4.4 3.8c.15.6-.55.95-1 .55-1-.85-2.1-1.2-3.4-1.2s-2.4.35-3.4 1.2c-.45.4-1.15.05-1-.55zM8.2 13.4c-1.7 1.6-2.3 3.5-2.3 5.3 0 .7.55 1.2 1.25 1.2h9.7c.7 0 1.25-.5 1.25-1.2 0-1.8-.6-3.7-2.3-5.3-.65-.6-1.55-.15-1.55.6 0 .2.08.4.2.55.95 1 1.45 2.2 1.45 3.45H8.1c0-1.25.5-2.45 1.45-3.45.12-.15.2-.35.2-.55 0-.75-.9-1.2-1.55-.6z"/>')]));
     voices.appendChild(el('button', {
       type: 'button',
       role: 'radio',
       'data-voice': 'bijan',
       'aria-checked': 'false',
       'aria-label': 'بیژن، صدای مرد',
-      tabindex: '-1',
-      title: 'صدای مرد فارسی'
-    }, ['بیژن']));
+      title: 'بیژن، صدای مرد',
+      tabindex: '-1'
+    }, [iconSvg('<circle cx="12" cy="8" r="2.6" fill="currentColor"/><path fill="currentColor" d="M5.8 19.2c.7-3.2 3-5.1 6.2-5.1s5.5 1.9 6.2 5.1c.2.75-.4 1.5-1.15 1.5H6.95c-.75 0-1.35-.75-1.15-1.5z"/>')]));
 
     var fill = el('span', { className: 'soti-progress-fill' });
     var progress = el('div', {
@@ -1607,23 +1634,17 @@
       'data-soti-player': '1',
       'aria-labelledby': titleId
     }, [
-      el('div', { className: 'soti-top' }, [
-        el('p', { className: 'soti-title', id: titleId }, ['شنیدن خبر']),
-        el('p', { className: 'soti-status', 'aria-live': 'polite' }, ['آماده'])
-      ]),
-      el('div', { className: 'soti-controls' }, [
-        el('div', { className: 'soti-transport', role: 'group', 'aria-label': 'کنترل پخش' }, [play, pause, stop]),
-        el('div', { className: 'soti-speed' }, [
-          el('span', { className: 'soti-label' }, ['سرعت']),
-          rates
+      el('p', { className: 'soti-title soti-sr', id: titleId }, ['شنیدن خبر']),
+      el('p', { className: 'soti-status soti-sr', 'aria-live': 'polite' }, ['آماده']),
+      el('div', { className: 'soti-bar' }, [
+        el('div', { className: 'soti-controls' }, [
+          el('div', { className: 'soti-transport', role: 'group', 'aria-label': 'کنترل پخش' }, [play, pause, stop]),
+          el('div', { className: 'soti-speed' }, [rates]),
+          el('div', { className: 'soti-voice' }, [voices])
         ]),
-        el('div', { className: 'soti-voice' }, [
-          el('span', { className: 'soti-label' }, ['صدا']),
-          voices
-        ])
+        progress
       ]),
-      progress,
-      el('p', { className: 'soti-progress-text' }, ['بخش ۱ از ۱']),
+      el('p', { className: 'soti-progress-text soti-sr' }, ['بخش ۱ از ۱']),
       el('p', { className: 'soti-message', hidden: 'hidden' })
     ]);
 

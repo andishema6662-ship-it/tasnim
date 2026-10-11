@@ -97,7 +97,7 @@ test('rate labels include two-times speed in Persian', function () {
   assert.deepEqual(Soti.RATES.map(function (rate) {
     return rate.value;
   }), [0.75, 1, 1.25, 1.5, 1.75, 2]);
-  assert.equal(Soti.RATES[5].label, '۲ برابر');
+  assert.equal(Soti.RATES[5].label, '۲×');
   assert.equal(Soti.toPersianDigits(12), '۱۲');
 });
 
