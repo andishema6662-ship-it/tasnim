@@ -1,16 +1,10 @@
 /**
- * Shenidar (شنیدار) reads a Persian news article aloud.
+ * Shenidar (شنیدار) plays a Persian article the server already rendered.
  *
- * Default engine: Piper neural audio for the article on the page.
- * منیژه is fa_IR-mana-medium (female). بیژن is fa_IR-ganji-medium (male).
- * Models load from a public URL. Finished clips are stored on the site.
- * Speed buttons set Web Audio playbackRate. eSpeak is not the voice.
+ * منیژه is fa_IR-mana-medium. بیژن is fa_IR-ganji-medium.
+ * The visitor plays the stored wav. The browser does not download Piper.
+ * Speed buttons set playbackRate to 0.75, 1, or 1.25.
  * Neshan's proprietary Manijeh and Bijan recordings are not used.
- *
- * Fallbacks, used only if the built-in engine cannot start:
- * - Optional site eSpeak backend (speed = 175 × rate, clamped 80–450)
- * - Azure AI Speech proxy: fa-IR-DilaraNeural / fa-IR-FaridNeural, rate in JSON
- * - Web Speech API fa-IR, when the browser actually has a Persian voice
  */
 (function (root, factory) {
   'use strict';
@@ -57,25 +51,7 @@
 
   var ENGINE_FAILURE_MESSAGE = 'صدای فارسی در این مرورگر پیدا نشد.';
   var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
-  var ESPEAK_JS_URL = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2/dist/espeak-ng.js';
-  var ESPEAK_WASM_URL = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2/dist/espeak-ng.wasm';
-  var ORT_JS_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js';
-  var ORT_WASM_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-  var PIPER_PUBLIC = {
-    manijeh: {
-      model: 'https://huggingface.co/MahtaFetrat/Mana-Persian-Piper/resolve/main/fa_IR-mana-medium.onnx',
-      config: 'https://huggingface.co/MahtaFetrat/Mana-Persian-Piper/resolve/main/fa_IR-mana-medium.onnx.json'
-    },
-    bijan: {
-      model: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/ganji/medium/fa_IR-ganji-medium.onnx',
-      config: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/ganji/medium/fa_IR-ganji-medium.onnx.json'
-    }
-  };
-
-  var capturedScriptSrc = '';
-  if (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) {
-    capturedScriptSrc = document.currentScript.src;
-  }
+  var UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
 
   var sharedAudioContext = null;
   var espeakAssetsPromise = null;
@@ -877,547 +853,10 @@
     return controller;
   }
 
-  function playerScriptSrc() {
-    if (capturedScriptSrc) {
-      return capturedScriptSrc;
-    }
-    if (typeof document === 'undefined') {
-      return '';
-    }
-    var script = findBootScript();
-    if (script && script.src) {
-      capturedScriptSrc = script.src;
-    }
-    return capturedScriptSrc;
-  }
-
-  function vendorUrl(file) {
-    var src = playerScriptSrc();
-    if (!src) {
-      return '';
-    }
-    try {
-      return new URL('vendor/' + file, src).href;
-    } catch (error) {
-      return '';
-    }
-  }
-
-  function canUseBuiltinEspeak() {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-    var AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (typeof AudioCtx !== 'function' || typeof fetch !== 'function') {
-      return false;
-    }
-    return Boolean(vendorUrl('espeak-ng.js') && vendorUrl('espeak-ng.wasm'));
-  }
-
-  function primeBuiltinAudio() {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    var AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (typeof AudioCtx !== 'function') {
-      return null;
-    }
-    if (!sharedAudioContext) {
-      try {
-        sharedAudioContext = new AudioCtx();
-      } catch (error) {
-        return null;
-      }
-    }
-    if (sharedAudioContext.state === 'suspended' && typeof sharedAudioContext.resume === 'function') {
-      var resumed = sharedAudioContext.resume();
-      if (resumed && typeof resumed.catch === 'function') {
-        resumed.catch(function () {});
-      }
-    }
-    return sharedAudioContext;
-  }
-
-  function loadEspeakAssets() {
-    if (!espeakAssetsPromise) {
-      var jsUrl = ESPEAK_JS_URL;
-      var wasmUrl = ESPEAK_WASM_URL;
-      espeakAssetsPromise = Promise.all([
-        import(jsUrl),
-        fetch(wasmUrl).then(function (response) {
-          if (!response || !response.ok) {
-            throw new Error('wasm');
-          }
-          return response.arrayBuffer();
-        })
-      ]).then(function (parts) {
-        var factory = parts[0].default || parts[0];
-        if (typeof factory !== 'function' || !parts[1]) {
-          throw new Error('factory');
-        }
-        espeakAssetsReady = true;
-        return {
-          factory: factory,
-          wasmBinary: parts[1]
-        };
-      }).catch(function (error) {
-        espeakAssetsPromise = null;
-        espeakAssetsReady = false;
-        throw error;
-      });
-    }
-    return espeakAssetsPromise;
-  }
-
-  function synthesizeEspeakWav(assets, text, voiceId) {
-    var id = voiceId === 'bijan' ? 'bijan' : 'manijeh';
-    return assets.factory({
-      wasmBinary: assets.wasmBinary,
-      arguments: [
-        '-v', ESPEAK_VOICES[id],
-        '-p', String(ESPEAK_PITCH[id]),
-        '-s', '175',
-        '-w', '/tmp/soti.wav',
-        String(text || '')
-      ]
-    }).then(function (mod) {
-      var data = mod.FS.readFile('/tmp/soti.wav');
-      if (!data || data.byteLength < 44) {
-        throw new Error('wav');
-      }
-      return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-    });
-  }
-
-  function decodeAudioBuffer(ctx, arrayBuffer) {
-    var copy = arrayBuffer.slice(0);
-    var result = null;
-    try {
-      result = ctx.decodeAudioData(copy);
-    } catch (error) {
-      result = null;
-    }
-    if (result && typeof result.then === 'function') {
-      return result;
-    }
-    return new Promise(function (resolve, reject) {
-      ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
-    });
-  }
-
-  function createBuiltinEspeakEngine() {
-    var token = 0;
-    var active = null;
-
-    function finish(record, result) {
-      if (!record || !record.resolve) {
-        return;
-      }
-      var resolve = record.resolve;
-      record.resolve = null;
-      if (active === record) {
-        active = null;
-      }
-      resolve(result);
-    }
-
-    function settleActive(reason) {
-      var record = active;
-      active = null;
-      if (!record) {
-        return;
-      }
-      record.token = -1;
-      record.generation = null;
-      record.stopKind = 'cancel';
-      if (record.source) {
-        try {
-          record.source.stop();
-        } catch (error) {
-          /* already stopped */
-        }
-        record.source = null;
-      }
-      finish(record, { reason: reason });
-    }
-
-    function playSlice(record) {
-      var ctx = primeBuiltinAudio();
-      if (!ctx || !record.buffer) {
-        finish(record, { reason: 'error', error: 'audio' });
-        return;
-      }
-      var remain = record.buffer.duration - record.offset;
-      if (!(remain > 0.02)) {
-        finish(record, { reason: 'end' });
-        return;
-      }
-      var source = ctx.createBufferSource();
-      var generation = {};
-      record.generation = generation;
-      record.source = source;
-      record.stopKind = '';
-      source.buffer = record.buffer;
-      source.playbackRate.value = record.rate;
-      source.connect(ctx.destination);
-      record.startedAt = ctx.currentTime;
-      source.onended = function () {
-        if (record.generation !== generation) {
-          return;
-        }
-        if (record.stopKind === 'pause') {
-          record.source = null;
-          return;
-        }
-        if (record.stopKind === 'cancel' || record.token !== token) {
-          return;
-        }
-        finish(record, { reason: 'end' });
-      };
-      if (!record.paused && typeof record.onSpeaking === 'function') {
-        record.onSpeaking();
-      }
-      try {
-        source.start(0, record.offset);
-      } catch (error) {
-        record.generation = null;
-        finish(record, { reason: 'error', error: 'audio' });
-      }
-    }
-
-    return {
-      id: 'espeak-ng',
-      voices: ESPEAK_VOICES,
-      prime: primeBuiltinAudio,
-      isAvailable: function () {
-        return Promise.resolve(canUseBuiltinEspeak());
-      },
-      speak: function (text, opts) {
-        var my = ++token;
-        settleActive('canceled');
-        var voiceId = opts && opts.voiceId === 'bijan' ? 'bijan' : 'manijeh';
-        var rate = playbackRateFor(opts && opts.rate);
-        var record = {
-          token: my,
-          resolve: null,
-          source: null,
-          buffer: null,
-          offset: 0,
-          rate: rate,
-          startedAt: 0,
-          paused: false,
-          stopKind: '',
-          generation: null,
-          onSpeaking: opts && opts.onSpeaking
-        };
-        active = record;
-
-        return new Promise(function (resolve) {
-          record.resolve = resolve;
-          if (my !== token) {
-            finish(record, { reason: 'canceled' });
-            return;
-          }
-          var ctx = primeBuiltinAudio();
-          if (!ctx) {
-            finish(record, { reason: 'error', error: 'audio' });
-            return;
-          }
-          if (!espeakAssetsReady && opts && typeof opts.onPrepare === 'function') {
-            opts.onPrepare();
-          }
-          loadEspeakAssets().then(function (assets) {
-            if (record.token !== my || !record.resolve) {
-              return;
-            }
-            return synthesizeEspeakWav(assets, text, voiceId);
-          }).then(function (wav) {
-            if (!wav || record.token !== my || !record.resolve) {
-              return;
-            }
-            return decodeAudioBuffer(ctx, wav);
-          }).then(function (buffer) {
-            if (!buffer || record.token !== my || !record.resolve) {
-              return;
-            }
-            record.buffer = buffer;
-            if (record.paused) {
-              return;
-            }
-            playSlice(record);
-          }).catch(function () {
-            if (record.token !== my || !record.resolve) {
-              return;
-            }
-            finish(record, { reason: 'error', error: 'synth' });
-          });
-        });
-      },
-      pause: function () {
-        if (!active || active.paused) {
-          return;
-        }
-        active.paused = true;
-        if (!active.source || !active.buffer || !sharedAudioContext) {
-          return;
-        }
-        var elapsed = (sharedAudioContext.currentTime - active.startedAt) * active.rate;
-        active.offset = Math.min(active.buffer.duration, active.offset + Math.max(0, elapsed));
-        active.stopKind = 'pause';
-        active.generation = null;
-        try {
-          active.source.stop();
-        } catch (error) {
-          /* already stopped */
-        }
-        active.source = null;
-      },
-      resume: function () {
-        if (!active || !active.paused) {
-          return;
-        }
-        active.paused = false;
-        active.stopKind = '';
-        if (active.buffer) {
-          playSlice(active);
-        }
-      },
-      cancel: function () {
-        token += 1;
-        settleActive('canceled');
-      }
-    };
-  }
-
   var PIPER_MODELS = {
     manijeh: 'fa_IR-mana-medium',
     bijan: 'fa_IR-ganji-medium'
   };
-
-  var ortPromise = null;
-  var piperSessions = {};
-  var piperConfigs = {};
-
-  function resolvePageUrl(value) {
-    if (!value || typeof window === 'undefined') {
-      return '';
-    }
-    try {
-      return new URL(value, window.location.href).href;
-    } catch (error) {
-      return '';
-    }
-  }
-
-  function safePathPart(value) {
-    return String(value || '').replace(/[^0-9A-Za-z_-]/g, '');
-  }
-
-  function savedFileUrl(config, voiceId, key) {
-    var settings = config || {};
-    var base = resolvePageUrl(settings.audioBase);
-    var postId = safePathPart(settings.postId);
-    if (!base || !postId || (voiceId !== 'manijeh' && voiceId !== 'bijan')) {
-      return '';
-    }
-    return base.replace(/\/$/, '') + '/' + postId + '/' + voiceId + '/' + key + '.wav';
-  }
-
-  function loadOrt() {
-    if (typeof window === 'undefined') {
-      return Promise.reject(new Error('ort'));
-    }
-    if (window.ort) {
-      window.ort.env.wasm.numThreads = 1;
-      window.ort.env.wasm.wasmPaths = ORT_WASM_URL;
-      return Promise.resolve(window.ort);
-    }
-    if (!ortPromise) {
-      ortPromise = new Promise(function (resolve, reject) {
-        var script = document.createElement('script');
-        script.src = ORT_JS_URL;
-        script.onload = function () {
-          if (!window.ort) {
-            reject(new Error('ort'));
-            return;
-          }
-          window.ort.env.wasm.numThreads = 1;
-          window.ort.env.wasm.wasmPaths = ORT_WASM_URL;
-          resolve(window.ort);
-        };
-        script.onerror = function () {
-          ortPromise = null;
-          reject(new Error('ort'));
-        };
-        document.head.appendChild(script);
-      });
-    }
-    return ortPromise;
-  }
-
-  function ipaFor(text) {
-    return loadEspeakAssets().then(function (assets) {
-      var lines = [];
-      return assets.factory({
-        wasmBinary: assets.wasmBinary,
-        print: function (line) {
-          lines.push(String(line));
-        },
-        arguments: ['--ipa', '-q', '-v', 'fa', String(text || '')]
-      }).then(function () {
-        var ipa = lines.join(' ').replace(/\s+/g, ' ').trim();
-        if (!ipa) {
-          throw new Error('ipa');
-        }
-        if (/[.!?؟]$/.test(text) && !/[.!?؟]$/.test(ipa)) {
-          ipa += '.';
-        }
-        return ipa;
-      });
-    });
-  }
-
-  function phonemeIds(ipa, idMap) {
-    var chars = Array.from(String(ipa || '').normalize('NFD'));
-    var ids = [idMap['^'][0], idMap['_'][0]];
-    chars.forEach(function (ch) {
-      var row = idMap[ch];
-      if (!row) {
-        return;
-      }
-      ids.push(row[0], idMap['_'][0]);
-    });
-    ids.push(idMap['$'][0]);
-    return ids;
-  }
-
-  function loadPiperVoice(voiceId) {
-    var id = voiceId === 'bijan' ? 'bijan' : 'manijeh';
-    var spec = PIPER_PUBLIC[id];
-    if (!piperSessions[id]) {
-      piperConfigs[id] = fetch(spec.config).then(function (response) {
-        if (!response || !response.ok) {
-          throw new Error('config');
-        }
-        return response.json();
-      });
-      piperSessions[id] = loadOrt().then(function (ort) {
-        return ort.InferenceSession.create(spec.model, {
-          executionProviders: ['wasm']
-        });
-      });
-    }
-    return Promise.all([piperSessions[id], piperConfigs[id]]);
-  }
-
-  function floatToWav(samples, sampleRate) {
-    var rate = sampleRate || 22050;
-    var buffer = new ArrayBuffer(44 + samples.length * 2);
-    var view = new DataView(buffer);
-    function writeString(offset, value) {
-      var index;
-      for (index = 0; index < value.length; index += 1) {
-        view.setUint8(offset + index, value.charCodeAt(index));
-      }
-    }
-    writeString(0, 'RIFF');
-    view.setUint32(4, 36 + samples.length * 2, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, rate, true);
-    view.setUint32(28, rate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeString(36, 'data');
-    view.setUint32(40, samples.length * 2, true);
-    var offset = 44;
-    var index;
-    for (index = 0; index < samples.length; index += 1) {
-      var sample = Math.max(-1, Math.min(1, samples[index]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-      offset += 2;
-    }
-    return buffer;
-  }
-
-  function synthesizePiperWav(voiceId, text) {
-    return Promise.all([ipaFor(text), loadPiperVoice(voiceId)]).then(function (parts) {
-      var ipa = parts[0];
-      var session = parts[1][0];
-      var config = parts[1][1] || {};
-      var inference = config.inference || {};
-      var ids = phonemeIds(ipa, config.phoneme_id_map);
-      var ort = window.ort;
-      var scales = [
-        Number(inference.noise_scale) || 0.667,
-        Number(inference.length_scale) || 1,
-        Number(inference.noise_w) || 0.8
-      ];
-      var feeds = {
-        input: new ort.Tensor('int64', BigInt64Array.from(ids.map(function (n) {
-          return BigInt(n);
-        })), [1, ids.length]),
-        input_lengths: new ort.Tensor('int64', BigInt64Array.from([BigInt(ids.length)]), [1]),
-        scales: new ort.Tensor('float32', Float32Array.from(scales), [3])
-      };
-      return session.run(feeds).then(function (result) {
-        var output = result[session.outputNames[0]].data;
-        var rate = config.audio && config.audio.sample_rate ? config.audio.sample_rate : 22050;
-        return floatToWav(output, rate);
-      });
-    });
-  }
-
-  function storePiperWav(config, voiceId, key, wav) {
-    var settings = config || {};
-    var endpoint = resolvePageUrl(settings.saveEndpoint);
-    if (!endpoint || typeof FormData === 'undefined') {
-      return;
-    }
-    var body = new FormData();
-    body.append('post_id', String(settings.postId || ''));
-    body.append('voice', voiceId);
-    body.append('key', key);
-    body.append('audio', new Blob([wav], { type: 'audio/wav' }), key + '.wav');
-    var headers = {};
-    if (settings.nonce) {
-      headers['X-WP-Nonce'] = settings.nonce;
-    }
-    fetch(endpoint, {
-      method: 'POST',
-      body: body,
-      headers: headers,
-      credentials: 'same-origin'
-    }).catch(function () {});
-  }
-
-  function fetchSavedWav(url) {
-    if (!url) {
-      return Promise.resolve(null);
-    }
-    return fetch(url, { cache: 'no-store' }).then(function (response) {
-      if (!response || !response.ok) {
-        return null;
-      }
-      return response.arrayBuffer();
-    }).then(function (wav) {
-      if (!wav || wav.byteLength < 44) {
-        return null;
-      }
-      var mark = new Uint8Array(wav, 0, 4);
-      if (mark[0] !== 82 || mark[1] !== 73 || mark[2] !== 70 || mark[3] !== 70) {
-        return null;
-      }
-      return wav;
-    }).catch(function () {
-      return null;
-    });
-  }
-
-  var speechManifestPromise = null;
 
   function speechKey(text) {
     var h = 2166136261;
@@ -1430,260 +869,12 @@
     return (h >>> 0).toString(16) + '-' + value.length;
   }
 
-  function canPlayPrerendered() {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-    var AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (typeof AudioCtx !== 'function' || typeof fetch !== 'function') {
-      return false;
-    }
-    return Boolean(vendorUrl('speech/manifest.json'));
+  function canUseBuiltinEspeak() {
+    return false;
   }
 
-  function loadSpeechManifest() {
-    if (!speechManifestPromise) {
-      var url = vendorUrl('speech/manifest.json');
-      speechManifestPromise = fetch(url).then(function (response) {
-        if (!response || !response.ok) {
-          throw new Error('manifest');
-        }
-        return response.json();
-      }).catch(function (error) {
-        speechManifestPromise = null;
-        throw error;
-      });
-    }
-    return speechManifestPromise;
-  }
-
-  function createPrerenderedEngine(config) {
-    var token = 0;
-    var active = null;
-
-    function finish(record, result) {
-      if (!record || !record.resolve) {
-        return;
-      }
-      var resolve = record.resolve;
-      record.resolve = null;
-      if (active === record) {
-        active = null;
-      }
-      resolve(result);
-    }
-
-    function settleActive(reason) {
-      var record = active;
-      active = null;
-      if (!record) {
-        return;
-      }
-      record.token = -1;
-      record.generation = null;
-      record.stopKind = 'cancel';
-      if (record.source) {
-        try {
-          record.source.stop();
-        } catch (error) {
-          /* already stopped */
-        }
-        record.source = null;
-      }
-      finish(record, { reason: reason });
-    }
-
-    function playSlice(record) {
-      var ctx = primeBuiltinAudio();
-      if (!ctx || !record.buffer) {
-        finish(record, { reason: 'error', error: 'audio' });
-        return;
-      }
-      var remain = record.buffer.duration - record.offset;
-      if (!(remain > 0.02)) {
-        finish(record, { reason: 'end' });
-        return;
-      }
-      var source = ctx.createBufferSource();
-      var generation = {};
-      record.generation = generation;
-      record.source = source;
-      record.stopKind = '';
-      source.buffer = record.buffer;
-      source.playbackRate.value = record.rate;
-      source.connect(ctx.destination);
-      record.startedAt = ctx.currentTime;
-      source.onended = function () {
-        if (record.generation !== generation) {
-          return;
-        }
-        if (record.stopKind === 'pause') {
-          record.source = null;
-          return;
-        }
-        if (record.stopKind === 'cancel' || record.token !== token) {
-          return;
-        }
-        finish(record, { reason: 'end' });
-      };
-      if (!record.paused && typeof record.onSpeaking === 'function') {
-        record.onSpeaking();
-      }
-      try {
-        source.start(0, record.offset);
-      } catch (error) {
-        record.generation = null;
-        finish(record, { reason: 'error', error: 'audio' });
-      }
-    }
-
-    return {
-      id: 'piper',
-      models: PIPER_MODELS,
-      prime: primeBuiltinAudio,
-      isAvailable: function () {
-        return Promise.resolve(canPlayPrerendered());
-      },
-      speak: function (text, opts) {
-        var my = ++token;
-        settleActive('canceled');
-        var voiceId = opts && opts.voiceId === 'bijan' ? 'bijan' : 'manijeh';
-        var rate = playbackRateFor(opts && opts.rate);
-        var record = {
-          token: my,
-          resolve: null,
-          source: null,
-          buffer: null,
-          offset: 0,
-          rate: rate,
-          startedAt: 0,
-          paused: false,
-          stopKind: '',
-          generation: null,
-          onSpeaking: opts && opts.onSpeaking
-        };
-        active = record;
-
-        return new Promise(function (resolve) {
-          record.resolve = resolve;
-          if (my !== token) {
-            finish(record, { reason: 'canceled' });
-            return;
-          }
-          var ctx = primeBuiltinAudio();
-          if (!ctx) {
-            finish(record, { reason: 'error', error: 'audio' });
-            return;
-          }
-          var key = speechKey(text);
-          fetchSavedWav(savedFileUrl(config, voiceId, key)).then(function (saved) {
-            if (record.token !== my || !record.resolve) {
-              return null;
-            }
-            if (saved) {
-              return saved;
-            }
-            if (opts && typeof opts.onPrepare === 'function') {
-              opts.onPrepare();
-            }
-            return synthesizePiperWav(voiceId, text).then(function (wav) {
-              if (wav && record.token === my) {
-                storePiperWav(config, voiceId, key, wav);
-              }
-              return wav;
-            });
-          }).then(function (wav) {
-            if (!wav || record.token !== my || !record.resolve) {
-              return null;
-            }
-            return decodeAudioBuffer(ctx, wav);
-          }).then(function (buffer) {
-            if (!buffer || record.token !== my || !record.resolve) {
-              return;
-            }
-            record.buffer = buffer;
-            if (record.paused) {
-              return;
-            }
-            playSlice(record);
-          }).catch(function () {
-            if (record.token !== my || !record.resolve) {
-              return;
-            }
-            finish(record, { reason: 'error', error: 'synth' });
-          });
-        });
-      },
-      pause: function () {
-        if (!active || active.paused) {
-          return;
-        }
-        active.paused = true;
-        if (!active.source || !active.buffer || !sharedAudioContext) {
-          return;
-        }
-        var elapsed = (sharedAudioContext.currentTime - active.startedAt) * active.rate;
-        active.offset = Math.min(active.buffer.duration, active.offset + Math.max(0, elapsed));
-        active.stopKind = 'pause';
-        active.generation = null;
-        try {
-          active.source.stop();
-        } catch (error) {
-          /* already stopped */
-        }
-        active.source = null;
-      },
-      resume: function () {
-        if (!active || !active.paused) {
-          return;
-        }
-        active.paused = false;
-        active.stopKind = '';
-        if (active.buffer) {
-          playSlice(active);
-        }
-      },
-      cancel: function () {
-        token += 1;
-        settleActive('canceled');
-      }
-    };
-  }
-
-  function pickEngine(config) {
-    var settings = config || {};
-    var chain = Promise.resolve(null);
-
-    if (canPlayPrerendered()) {
-      var prerendered = createPrerenderedEngine(settings);
-      chain = prerendered.isAvailable().then(function (ready) {
-        return ready ? prerendered : null;
-      });
-    }
-
-    return chain.then(function (engine) {
-      if (engine) {
-        return engine;
-      }
-      if (!settings.azureEndpoint) {
-        return null;
-      }
-      var azure = createAzureSpeechEngine({ endpoint: settings.azureEndpoint });
-      return azure.isAvailable().then(function (ready) {
-        return ready ? azure : null;
-      });
-    }).then(function (engine) {
-      if (engine) {
-        return engine;
-      }
-      if (typeof window === 'undefined') {
-        return null;
-      }
-      var web = createWebSpeechEngine();
-      return web.isAvailable().then(function (ready) {
-        return ready ? web : null;
-      });
-    });
+  function pickEngine() {
+    return Promise.resolve(null);
   }
 
   function missingSpeechMessage() {
@@ -1760,12 +951,12 @@
     }
     return {
       selector: selector,
-      azureEndpoint: typeof boot.azureEndpoint === 'string' ? boot.azureEndpoint : '',
-      espeakBackend: boot.espeakBackend || null,
       postId: boot.postId != null ? boot.postId : '',
-      audioBase: typeof boot.audioBase === 'string' ? boot.audioBase : '',
-      saveEndpoint: typeof boot.saveEndpoint === 'string' ? boot.saveEndpoint : '',
-      nonce: typeof boot.nonce === 'string' ? boot.nonce : ''
+      statusUrl: typeof boot.statusUrl === 'string' ? boot.statusUrl : '',
+      clips: boot.clips && typeof boot.clips === 'object' ? {
+        manijeh: typeof boot.clips.manijeh === 'string' ? boot.clips.manijeh : '',
+        bijan: typeof boot.clips.bijan === 'string' ? boot.clips.bijan : ''
+      } : null
     };
   }
 
@@ -1907,13 +1098,18 @@
     }
   }
 
+  function absoluteUrl(value) {
+    if (!value || typeof window === 'undefined') {
+      return '';
+    }
+    try {
+      return new URL(value, window.location.href).href;
+    } catch (error) {
+      return '';
+    }
+  }
+
   function wirePlayer(player, article, config) {
-    var engineReady = false;
-    var controller = createController({
-      loadChunks: function () {
-        return chunkText(extractArticleText(article));
-      }
-    });
     var playBtn = player.querySelector('[data-action="play"]');
     var pauseBtn = player.querySelector('[data-action="pause"]');
     var stopBtn = player.querySelector('[data-action="stop"]');
@@ -1926,94 +1122,216 @@
     var voiceButtons = player.querySelectorAll('[data-voice]');
     var rateGroup = player.querySelector('.soti-rates');
     var voiceGroup = player.querySelector('.soti-voices');
+    var audio = document.createElement('audio');
+    var voiceId = 'manijeh';
+    var rate = 1;
+    var clips = {};
+    var state = config.clips ? 'ready' : 'preparing';
+    var pollTimer = 0;
+    var wantPlay = false;
+
+    audio.preload = 'none';
+    audio.setAttribute('playsinline', '');
+    audio.hidden = true;
+    player.appendChild(audio);
 
     function showMessage(text) {
-      message.hidden = false;
-      message.textContent = text;
+      message.hidden = !text;
+      message.textContent = text || '';
     }
 
-    function paint(snapshot) {
-      var state = snapshot || controller.snapshot();
-      statusEl.textContent = statusLabel(state);
-      playBtn.setAttribute('aria-pressed', state.status === 'playing' ? 'true' : 'false');
-      playBtn.disabled = state.total === 0;
-      pauseBtn.disabled = state.status !== 'playing';
-      stopBtn.disabled = state.status !== 'playing' && state.status !== 'paused';
+    function selectedClip() {
+      return clips[voiceId] || '';
+    }
+
+    function paintChrome() {
+      var duration = audio.duration;
+      var percent = duration && isFinite(duration) ? Math.max(0, Math.min(100, Math.round((audio.currentTime / duration) * 100))) : 0;
+      var playing = !audio.paused && !audio.ended && !!audio.getAttribute('src');
+      progress.setAttribute('aria-valuenow', String(percent));
+      fill.style.width = percent + '%';
+      playBtn.setAttribute('aria-pressed', playing ? 'true' : 'false');
+      pauseBtn.disabled = !playing;
+      stopBtn.disabled = !playing && audio.currentTime === 0;
       rateButtons.forEach(function (button) {
-        button.setAttribute('aria-pressed', Number(button.getAttribute('data-rate')) === state.rate ? 'true' : 'false');
+        button.setAttribute('aria-pressed', Number(button.getAttribute('data-rate')) === rate ? 'true' : 'false');
       });
       voiceButtons.forEach(function (button) {
-        var selected = button.getAttribute('data-voice') === state.voiceId;
+        var selected = button.getAttribute('data-voice') === voiceId;
         button.setAttribute('aria-checked', selected ? 'true' : 'false');
         button.tabIndex = selected ? 0 : -1;
       });
-      var percent = Math.max(0, Math.min(100, Math.round(state.progress * 100)));
-      progress.setAttribute('aria-valuenow', String(percent));
-      progress.setAttribute('aria-valuetext', progressLabel(state));
-      fill.style.width = percent + '%';
-      progressText.textContent = progressLabel(state);
+      if (audio.ended) {
+        statusEl.textContent = 'پایان';
+        progressText.textContent = 'پایان';
+      } else if (playing) {
+        statusEl.textContent = 'در حال پخش';
+        progressText.textContent = 'در حال پخش';
+      } else if (audio.currentTime > 0) {
+        statusEl.textContent = 'مکث';
+        progressText.textContent = 'مکث';
+      } else if (!selectedClip() && state === 'unavailable') {
+        statusEl.textContent = UNAVAILABLE_MESSAGE;
+        progressText.textContent = UNAVAILABLE_MESSAGE;
+      } else if (!selectedClip()) {
+        statusEl.textContent = PREPARING_MESSAGE;
+        progressText.textContent = PREPARING_MESSAGE;
+      } else {
+        statusEl.textContent = 'آماده';
+        progressText.textContent = 'آماده';
+      }
     }
 
-    controller.onChange = paint;
-    controller.onEmpty = function () {
-      showMessage('متنی برای خواندن پیدا نشد.');
-      paint();
-    };
-    controller.onError = function () {
-      engineReady = false;
-      showMessage(ENGINE_FAILURE_MESSAGE);
-      paint();
-    };
-    controller.onPrepare = function () {
-      if (controller.snapshot().status === 'playing') {
-        statusEl.textContent = PREPARING_MESSAGE;
-        showMessage(PREPARING_MESSAGE);
-      }
-    };
-    controller.onSpeaking = function () {
-      if (message.textContent === PREPARING_MESSAGE) {
-        message.hidden = true;
-        message.textContent = '';
-      }
-      if (controller.snapshot().status === 'playing') {
-        statusEl.textContent = 'در حال پخش';
-      }
-    };
+    function applyRate() {
+      rate = playbackRateFor(rate);
+      audio.playbackRate = rate;
+      audio.defaultPlaybackRate = rate;
+      paintChrome();
+    }
 
-    playBtn.addEventListener('click', function () {
-      // Resume inside the click, before any wasm await, or autoplay stays blocked.
-      primeBuiltinAudio();
-      if (controller.engine && typeof controller.engine.prime === 'function') {
-        controller.engine.prime();
+    function stopPolling() {
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+        pollTimer = 0;
       }
-      if (engineReady) {
-        controller.play();
+    }
+
+    function schedulePoll() {
+      if (pollTimer || config.clips || state === 'unavailable' || selectedClip()) {
         return;
       }
-      pickEngine(config).then(function (engine) {
-        applyEngine(engine);
-        if (engine) {
-          controller.play();
+      pollTimer = window.setInterval(function () {
+        refresh();
+      }, 4000);
+    }
+
+    function applyClips(nextClips, nextState) {
+      clips = nextClips || {};
+      state = nextState || 'preparing';
+      if (selectedClip()) {
+        if (message.textContent === PREPARING_MESSAGE || message.textContent === UNAVAILABLE_MESSAGE) {
+          showMessage('');
         }
+        stopPolling();
+        if (wantPlay) {
+          wantPlay = false;
+          startClip(selectedClip());
+        }
+      } else if (state === 'unavailable') {
+        stopPolling();
+        showMessage(UNAVAILABLE_MESSAGE);
+      } else {
+        showMessage(PREPARING_MESSAGE);
+        schedulePoll();
+      }
+      paintChrome();
+    }
+
+    function readStatus() {
+      if (config.clips) {
+        return Promise.resolve({ state: 'ready', clips: config.clips });
+      }
+      if (!config.statusUrl || typeof fetch !== 'function') {
+        return Promise.resolve({ state: 'unavailable', clips: {} });
+      }
+      return fetch(config.statusUrl, { cache: 'no-store', credentials: 'same-origin' }).then(function (response) {
+        if (!response || !response.ok) {
+          throw new Error('status');
+        }
+        return response.json();
+      }).then(function (data) {
+        return {
+          state: data && data.state ? data.state : 'preparing',
+          clips: data && data.clips ? data.clips : {}
+        };
+      }).catch(function () {
+        return { state: state === 'unavailable' ? 'unavailable' : 'preparing', clips: clips };
       });
+    }
+
+    function refresh() {
+      return readStatus().then(function (data) {
+        applyClips(data.clips, data.state);
+      });
+    }
+
+    function startClip(url) {
+      var abs = absoluteUrl(url);
+      if (!abs) {
+        showMessage(UNAVAILABLE_MESSAGE);
+        return;
+      }
+      showMessage('');
+      if (audio.getAttribute('src') !== abs) {
+        audio.pause();
+        audio.setAttribute('src', abs);
+        try {
+          audio.currentTime = 0;
+        } catch (error) {
+          /* metadata not loaded yet */
+        }
+      }
+      applyRate();
+      var played = audio.play();
+      if (played && typeof played.catch === 'function') {
+        played.catch(function () {
+          paintChrome();
+        });
+      }
+    }
+
+    playBtn.addEventListener('click', function () {
+      var url = selectedClip();
+      if (!url) {
+        wantPlay = true;
+        showMessage(state === 'unavailable' ? UNAVAILABLE_MESSAGE : PREPARING_MESSAGE);
+        refresh();
+        return;
+      }
+      var abs = absoluteUrl(url);
+      if (audio.getAttribute('src') === abs && audio.paused && !audio.ended && audio.currentTime > 0) {
+        applyRate();
+        audio.play();
+        return;
+      }
+      startClip(url);
     });
     pauseBtn.addEventListener('click', function () {
-      controller.pause();
+      audio.pause();
     });
     stopBtn.addEventListener('click', function () {
-      controller.stop();
+      wantPlay = false;
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch (error) {
+        /* ignore */
+      }
+      paintChrome();
     });
     rateButtons.forEach(function (button) {
       button.addEventListener('click', function () {
-        controller.setRate(Number(button.getAttribute('data-rate')));
+        rate = playbackRateFor(Number(button.getAttribute('data-rate')));
+        applyRate();
       });
     });
     voiceButtons.forEach(function (button) {
       button.addEventListener('click', function () {
-        controller.setVoice(button.getAttribute('data-voice'));
+        var wasPlaying = !audio.paused && !audio.ended;
+        voiceId = button.getAttribute('data-voice') === 'bijan' ? 'bijan' : 'manijeh';
+        audio.pause();
+        paintChrome();
+        var url = selectedClip();
+        if (url && wasPlaying) {
+          startClip(url);
+          return;
+        }
+        if (!url) {
+          wantPlay = wasPlaying;
+          refresh();
+        }
       });
     });
-
     rateGroup.addEventListener('keydown', function (event) {
       var direction = 0;
       if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
@@ -2024,59 +1342,46 @@
         return;
       }
       event.preventDefault();
-      var values = RATES.map(function (rate) {
-        return rate.value;
+      var values = RATES.map(function (item) {
+        return item.value;
       });
-      var index = values.indexOf(controller.snapshot().rate);
+      var index = values.indexOf(rate);
       if (index < 0) {
         index = 1;
       }
       index = Math.max(0, Math.min(values.length - 1, index + direction));
-      controller.setRate(values[index]);
+      rate = values[index];
+      applyRate();
       var next = rateGroup.querySelector('[data-rate="' + values[index] + '"]');
       if (next) {
         next.focus();
       }
     });
-
     voiceGroup.addEventListener('keydown', function (event) {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
         return;
       }
       event.preventDefault();
-      var nextVoice = controller.snapshot().voiceId === 'manijeh' ? 'bijan' : 'manijeh';
-      controller.setVoice(nextVoice);
-      var next = voiceGroup.querySelector('[data-voice="' + nextVoice + '"]');
+      voiceId = voiceId === 'manijeh' ? 'bijan' : 'manijeh';
+      var next = voiceGroup.querySelector('[data-voice="' + voiceId + '"]');
       if (next) {
         next.focus();
+        next.click();
       }
     });
+    audio.addEventListener('play', paintChrome);
+    audio.addEventListener('pause', paintChrome);
+    audio.addEventListener('ended', paintChrome);
+    audio.addEventListener('timeupdate', paintChrome);
+    audio.addEventListener('loadedmetadata', applyRate);
+    audio.addEventListener('error', function () {
+      showMessage(UNAVAILABLE_MESSAGE);
+      paintChrome();
+    });
 
-    function applyEngine(engine) {
-      if (controller.snapshot().status !== 'idle') {
-        return;
-      }
-      engineReady = Boolean(engine);
-      controller.setEngine(engine);
-      if (!engineReady) {
-        showMessage(missingSpeechMessage());
-      } else if (!controller.snapshot().total) {
-        showMessage('متنی برای خواندن پیدا نشد.');
-      } else {
-        message.hidden = true;
-      }
-      paint();
-    }
-
-    paint();
-    pickEngine(config).then(applyEngine);
-    if (window.speechSynthesis) {
-      window.speechSynthesis.addEventListener('voiceschanged', function () {
-        pickEngine(config).then(applyEngine);
-      });
-    }
-
-    return controller;
+    paintChrome();
+    refresh();
+    return { article: article };
   }
 
   var booted = false;
@@ -2127,8 +1432,6 @@
     speechKey: speechKey,
     playbackRateFor: playbackRateFor,
     canUseBuiltinEspeak: canUseBuiltinEspeak,
-    createBuiltinEspeakEngine: createBuiltinEspeakEngine,
-    primeBuiltinAudio: primeBuiltinAudio,
     toPersianDigits: toPersianDigits,
     createController: createController,
     createWebSpeechEngine: createWebSpeechEngine,

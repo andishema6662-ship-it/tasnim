@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Enqueues the player on single posts and wraps the article body.
+ * Enqueues the player on single posts and asks the server to render audio.
  */
 class Soti_Plugin {
 
@@ -22,12 +22,84 @@ class Soti_Plugin {
     private static $rendered = false;
 
     /**
-     * Hooks the public article player.
+     * Hooks the public article player and the server renderer.
      */
     public static function init() {
         add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue'));
         add_filter('the_content', array(__CLASS__, 'filter_content'), 12);
         add_action('rest_api_init', array(__CLASS__, 'register_routes'));
+        add_action('admin_notices', array(__CLASS__, 'admin_notice'));
+        add_action('transition_post_status', array(__CLASS__, 'on_status'), 10, 3);
+        add_action('save_post_post', array(__CLASS__, 'on_save'), 20, 3);
+        add_action('soti_install_engine', array('Soti_Engine', 'install'));
+        add_action('soti_generate_post', array('Soti_Engine', 'generate'), 10, 1);
+    }
+
+    /**
+     * Schedules the server download after the plugin is turned on.
+     */
+    public static function activate() {
+        if (Soti_Engine::runner() === '') {
+            update_option('soti_programs_blocked', '1', false);
+            return;
+        }
+        delete_option('soti_programs_blocked');
+        if (!Soti_Engine::is_ready() && !wp_next_scheduled('soti_install_engine')) {
+            wp_schedule_single_event(time() + 5, 'soti_install_engine');
+        }
+    }
+
+    /**
+     * One notice when the host refuses to run programs.
+     */
+    public static function admin_notice() {
+        if (!current_user_can('edit_posts') || Soti_Engine::runner() !== '') {
+            return;
+        }
+        echo '<div class="notice notice-warning"><p>'
+            . esc_html('این میزبان اجرای برنامه را بسته است. شنیدار نمی‌تواند صدا بسازد.')
+            . '</p></div>';
+    }
+
+    /**
+     * @param string  $new  New status.
+     * @param string  $old  Old status.
+     * @param WP_Post $post Post.
+     */
+    public static function on_status($new, $old, $post) {
+        unset($old);
+        if (!$post instanceof WP_Post || $post->post_type !== 'post' || $new !== 'publish') {
+            return;
+        }
+        self::queue_post((int) $post->ID);
+    }
+
+    /**
+     * @param int     $post_id Post id.
+     * @param WP_Post $post    Post.
+     * @param bool    $update  Whether this is an update.
+     */
+    public static function on_save($post_id, $post, $update) {
+        unset($update);
+        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+            return;
+        }
+        if (!$post instanceof WP_Post || $post->post_status !== 'publish') {
+            return;
+        }
+        self::queue_post((int) $post_id);
+    }
+
+    /**
+     * @param int $post_id Post id.
+     */
+    private static function queue_post($post_id) {
+        if (Soti_Engine::runner() === '') {
+            update_option('soti_programs_blocked', '1', false);
+            return;
+        }
+        delete_option('soti_programs_blocked');
+        Soti_Engine::schedule($post_id);
     }
 
     /**
@@ -65,25 +137,12 @@ class Soti_Plugin {
         }
 
         $selector = isset($config['selector']) ? (string) $config['selector'] : '.soti-article';
-        $uploads  = wp_upload_dir();
+        $post_id  = (int) get_queried_object_id();
         $boot     = array(
-            'selector' => $selector,
-            'postId'   => (int) get_queried_object_id(),
+            'selector'  => $selector,
+            'postId'    => $post_id,
+            'statusUrl' => add_query_arg('post_id', $post_id, rest_url('shenidar/v1/status')),
         );
-
-        if (empty($uploads['error']) && !empty($uploads['baseurl'])) {
-            $boot['audioBase']     = $uploads['baseurl'] . '/shenidar';
-            $boot['saveEndpoint']  = rest_url('shenidar/v1/audio');
-            $boot['nonce']         = wp_create_nonce('wp_rest');
-        }
-
-        // A site-owned proxy may be set here. Subscription keys are never printed.
-        if (isset($config['azure_endpoint']) && is_string($config['azure_endpoint'])) {
-            $endpoint = esc_url_raw($config['azure_endpoint']);
-            if ($endpoint !== '') {
-                $boot['azureEndpoint'] = $endpoint;
-            }
-        }
 
         wp_add_inline_script(
             'soti',
@@ -93,92 +152,86 @@ class Soti_Plugin {
     }
 
     /**
-     * Saves synthesized article audio under wp-content/uploads/shenidar/.
+     * Status for the player, and a loopback that renders on the server.
      */
     public static function register_routes() {
         register_rest_route(
             'shenidar/v1',
-            '/audio',
+            '/status',
+            array(
+                'methods'             => 'GET',
+                'callback'            => array(__CLASS__, 'status'),
+                'permission_callback' => '__return_true',
+                'args'                => array(
+                    'post_id' => array(
+                        'type'              => 'integer',
+                        'required'          => true,
+                        'sanitize_callback' => 'absint',
+                    ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            'shenidar/v1',
+            '/generate',
             array(
                 'methods'             => 'POST',
-                'callback'            => array(__CLASS__, 'save_audio'),
-                'permission_callback' => array(__CLASS__, 'can_save_audio'),
+                'callback'            => array(__CLASS__, 'generate_request'),
+                'permission_callback' => array(__CLASS__, 'can_generate'),
             )
         );
     }
 
     /**
-     * Visitors who loaded the post may store the clip they just synthesized.
-     *
      * @param WP_REST_Request $request Request.
      * @return bool
      */
-    public static function can_save_audio($request) {
-        $nonce = $request->get_header('X-WP-Nonce');
-        return is_string($nonce) && wp_verify_nonce($nonce, 'wp_rest') !== false;
+    public static function can_generate($request) {
+        $post_id = (int) $request->get_param('post_id');
+        $token   = (string) $request->get_param('token');
+        if ($post_id <= 0 || $token === '') {
+            return false;
+        }
+        return hash_equals(Soti_Engine::token($post_id), $token);
     }
 
     /**
-     * Writes one WAV for a post, voice, and chunk.
-     *
      * @param WP_REST_Request $request Request.
-     * @return WP_REST_Response|WP_Error
+     * @return WP_REST_Response
      */
-    public static function save_audio($request) {
+    public static function status($request) {
         $post_id = (int) $request->get_param('post_id');
-        $voice   = (string) $request->get_param('voice');
-        $key     = (string) $request->get_param('key');
         $post    = get_post($post_id);
-
         if (!$post || $post->post_type !== 'post' || $post->post_status !== 'publish') {
-            return new WP_Error('shenidar_post', 'post', array('status' => 404));
+            $body = array(
+                'state' => 'unavailable',
+                'clips' => array(
+                    'manijeh' => null,
+                    'bijan'   => null,
+                ),
+            );
+        } else {
+            $body = Soti_Engine::public_status($post_id);
+            if ($body['state'] === 'preparing') {
+                Soti_Engine::schedule($post_id);
+            }
         }
+        $response = rest_ensure_response($body);
+        $response->header('Cache-Control', 'no-store');
+        return $response;
+    }
 
-        if ($voice !== 'manijeh' && $voice !== 'bijan') {
-            return new WP_Error('shenidar_voice', 'voice', array('status' => 400));
-        }
-
-        if (!preg_match('/^[a-f0-9]{1,16}-[0-9]{1,6}$/', $key)) {
-            return new WP_Error('shenidar_key', 'key', array('status' => 400));
-        }
-
-        $files = $request->get_file_params();
-        $file  = isset($files['audio']) && is_array($files['audio']) ? $files['audio'] : null;
-        if (!$file && isset($_FILES['audio']) && is_array($_FILES['audio'])) {
-            $file = $_FILES['audio'];
-        }
-
-        $tmp  = $file && isset($file['tmp_name']) ? (string) $file['tmp_name'] : '';
-        $size = $file && isset($file['size']) ? (int) $file['size'] : 0;
-        if ($tmp === '' || !is_uploaded_file($tmp) || $size < 44 || $size > 2000000) {
-            return new WP_Error('shenidar_audio', 'audio', array('status' => 400));
-        }
-
-        $header = file_get_contents($tmp, false, null, 0, 4);
-        if ($header !== 'RIFF') {
-            return new WP_Error('shenidar_wav', 'wav', array('status' => 400));
-        }
-
-        $uploads = wp_upload_dir();
-        if (!empty($uploads['error'])) {
-            return new WP_Error('shenidar_uploads', 'uploads', array('status' => 500));
-        }
-
-        $dir = $uploads['basedir'] . '/shenidar/' . $post_id . '/' . $voice;
-        if (!wp_mkdir_p($dir)) {
-            return new WP_Error('shenidar_dir', 'dir', array('status' => 500));
-        }
-
-        $dest = $dir . '/' . $key . '.wav';
-        if (!move_uploaded_file($tmp, $dest)) {
-            return new WP_Error('shenidar_write', 'write', array('status' => 500));
-        }
-
-        return rest_ensure_response(
-            array(
-                'url' => $uploads['baseurl'] . '/shenidar/' . $post_id . '/' . $voice . '/' . $key . '.wav',
-            )
-        );
+    /**
+     * @param WP_REST_Request $request Request.
+     * @return WP_REST_Response
+     */
+    public static function generate_request($request) {
+        $post_id = (int) $request->get_param('post_id');
+        Soti_Engine::generate($post_id);
+        $response = rest_ensure_response(Soti_Engine::public_status($post_id));
+        $response->header('Cache-Control', 'no-store');
+        return $response;
     }
 
     /**

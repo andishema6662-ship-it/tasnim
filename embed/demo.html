@@ -201,19 +201,18 @@
   </main>
 
   <footer class="site-footer">
-    <p>خواندن با موتور باز داخل صفحه انجام می‌شود و به صدای نصب‌شدهٔ فارسی در سیستم نیاز ندارد.</p>
+    <p>صدای این خبر از قبل روی سرور ساخته شده و مرورگر فقط همان فایل را پخش می‌کند.</p>
   </footer>
 
   <script>
     window.SOTI_BOOT = {
       selector: '.news-body',
       postId: 'demo',
-      audioBase: 'uploads/shenidar',
-      saveEndpoint: 'shenidar/v1/audio'
+      clips: {
+        manijeh: 'audio/manijeh.wav',
+        bijan: 'audio/bijan.wav'
+      }
     };
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.register('sw.js');
-    }
   </script>
   <script src="../assets/soti.js" data-selector=".news-body"></script>
 </body>

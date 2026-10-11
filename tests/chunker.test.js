@@ -306,18 +306,25 @@ test('bundled espeak maps pitch and playback rate without a cloud voice', functi
   assert.equal(Soti.canUseBuiltinEspeak(), false);
 });
 
-test('source does not call Azure or bundle a Neshan model', function () {
+test('visitor script plays stored files and does not fetch a model', function () {
   const src = fs.readFileSync(path.join(__dirname, '../assets/soti.js'), 'utf8');
+  const php = fs.readFileSync(path.join(__dirname, '../includes/class-soti-engine.php'), 'utf8');
   assert.equal(src.includes('speech.microsoft.com'), false);
   assert.equal(src.includes('translate.google'), false);
   assert.equal(src.includes('neshan'), false);
   assert.equal(/api[_-]?key\s*[:=]\s*['"][A-Za-z0-9]/.test(src), false);
-  assert.equal(src.includes('espeak-ng.js'), true);
-  assert.equal(src.includes('espeak-ng.wasm'), true);
-  assert.equal(src.includes('fa_IR-mana-medium.onnx'), true);
-  assert.equal(src.includes('fa_IR-ganji-medium.onnx'), true);
+  assert.equal(src.includes('huggingface.co'), false);
+  assert.equal(src.includes('.onnx'), false);
+  assert.equal(src.includes('espeak-ng.js'), false);
+  assert.equal(src.includes('ort.min.js'), false);
   assert.equal(src.includes('در حال آماده‌کردن صدا…'), true);
-  assert.equal(src.includes("vendorUrl('speech/'"), false);
+  assert.equal(src.includes('صدا در این سایت در دسترس نیست.'), true);
+  assert.equal(src.includes('statusUrl'), true);
   assert.equal(src.includes('playbackRate'), true);
-  assert.equal(src.includes("'-s', '175'"), true);
+  assert.equal(php.includes('download_url'), true);
+  assert.equal(php.includes('fa_IR-mana-medium'), true);
+  assert.equal(php.includes('fa_IR-ganji-medium'), true);
+  assert.equal(php.includes('proc_open'), true);
+  assert.equal(php.includes('shenidar-engine'), true);
+  assert.equal(php.includes("'/shenidar/'"), true);
 });
