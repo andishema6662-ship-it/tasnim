@@ -95,6 +95,11 @@ class Soti_Plugin {
             return $content;
         }
 
+        $queried = (int) get_queried_object_id();
+        if ((int) get_the_ID() !== $queried) {
+            return $content;
+        }
+
         if (self::$rendered || !is_string($content)) {
             return $content;
         }
@@ -106,7 +111,7 @@ class Soti_Plugin {
         self::$rendered = true;
 
         return '<div class="soti-mount" data-soti-mount="1"></div>'
-            . '<div class="soti-article" data-soti-article="1">'
+            . '<div class="soti-article" data-soti-article="1" data-soti-post="' . esc_attr((string) $queried) . '">'
             . $content
             . '</div>';
     }

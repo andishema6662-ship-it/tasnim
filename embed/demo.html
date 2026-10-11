@@ -182,34 +182,45 @@
 
   <main class="paper">
     <article>
-      <p class="kicker">فرهنگ</p>
-      <h1>سالن مطالعهٔ کتابخانهٔ مرکزی یزد تا یازده شب باز می‌ماند</h1>
-      <p class="byline">گزارش آزمایشی برای پخش‌کننده شنیدار · ۲۰ مهر ۱۴۰۵</p>
-      <div class="news-body">
-        <p>کتابخانهٔ مرکزی یزد از شنبه سالن مطالعهٔ شبانه را تا ساعت یازده باز نگه می‌دارد.</p>
-        <p>اعضای بالای دوازده سال با کارت عضویت می‌توانند وارد سالن شوند.</p>
-        <aside class="related">خبرهای مرتبط: پنج موزه دیگر که جمعه‌ها برنامه کودک دارند.</aside>
-        <div class="ad">تبلیغات آزمایشی: خرید بلیت قطار اصفهان به شیراز.</div>
-        <script>window.__sotiLeak = 'اسکریپت مخفی نباید خوانده شود';</script>
+      <p class="kicker">آموزش</p>
+      <h1>کلاس‌های عصر مدرسهٔ نمونهٔ کرمان به حیاط پشتی می‌رود</h1>
+      <div data-soti-article="1">
+        <p>مدرسهٔ نمونهٔ کرمان کلاس‌های عصر را از هفتهٔ آینده در حیاط پشتی برگزار می‌کند.</p>
+        <p>دانش‌آموزان پایهٔ ششم ساعت دو بعدازظهر در حیاط جمع می‌شوند.</p>
+        <aside class="related">خبرهای مرتبط: اردوی روز پنجشنبه لغو شد.</aside>
+        <div class="ad">تبلیغات آزمایشی این ستون خوانده نمی‌شود.</div>
+      </div>
+    </article>
+
+    <aside class="sidebar widget" role="complementary">
+      <h2>پرخواننده‌ها</h2>
+      <p>شهرداری رشت اعلام کرد پل عابر پیادهٔ میدان شهرداری از فردا شب برای رنگ‌آمیزی بسته می‌شود.</p>
+    </aside>
+
+    <article>
+      <p class="kicker">بندر</p>
+      <h1>اسکلهٔ مسافری بندر بوشهر یک شب بسته است</h1>
+      <div data-soti-article="1">
+        <p>بندر بوشهر اسکلهٔ مسافری را برای تعمیر چراغ‌های شب یک شب می‌بندد.</p>
+        <p>مسافران پنجشنبه از اسکلهٔ دوم سوار شناور می‌شوند.</p>
       </div>
     </article>
 
     <section class="comments" id="comments">
       <h2>دیدگاه‌ها</h2>
-      <p>نظر خواننده: این خبر خیلی مفید بود و نباید بلند خوانده شود.</p>
+      <p>نظر خواننده: این دیدگاه نباید بلند خوانده شود.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <p>با زدن پخش، متن همین خبر خوانده می‌شود.</p>
+    <p>هر دکمهٔ پخش فقط متن همان خبر را می‌خواند.</p>
   </footer>
 
   <script>
     window.SOTI_BOOT = {
-      selector: '.news-body',
-      postId: 'demo'
+      selector: '[data-soti-article]'
     };
   </script>
-  <script src="../assets/soti.js" data-selector=".news-body"></script>
+  <script src="../assets/soti.js" data-selector="[data-soti-article]"></script>
 </body>
 </html>

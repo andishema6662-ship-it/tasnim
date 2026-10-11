@@ -1,8 +1,8 @@
 /**
- * Shenidar (شنیدار) reads the open article and speaks that text.
- * Play posts the article to https://api.tts.ai/v1/tts/ and plays the returned wav.
- * منیژه is fa_IR-mana-medium. Speeds use playbackRate: 0.75, 1, 1.25.
- * No bundled recording. Neshan's proprietary recordings are not used.
+ * Shenidar (شنیدار) speaks only the open article’s own body.
+ * Play posts that text to https://api.tts.ai/v1/tts/ and plays the returned wav.
+ * منیژه is fa_IR-mana-medium. بیژن is fa_IR-ganji-medium.
+ * Speeds use playbackRate: 0.75, 1, 1.25. No bundled recording and no sample text.
  */
 (function (root, factory) {
   'use strict';
@@ -50,6 +50,7 @@
   var ENGINE_FAILURE_MESSAGE = 'صدای فارسی در این مرورگر پیدا نشد.';
   var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
   var UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
+  var MISSING_MESSAGE = 'متن این خبر پیدا نشد.';
   var TTS_ENDPOINT = 'https://api.tts.ai/v1/tts/';
   var TTS_RESULT = 'https://api.tts.ai/v1/speech/results/?uuid=';
 
@@ -66,9 +67,7 @@
     '.article-body',
     '.article__body',
     '.article__content',
-    '[itemprop="articleBody"]',
-    'article',
-    'main'
+    '[itemprop="articleBody"]'
   ];
 
   var SKIP_SELECTOR = [
@@ -120,6 +119,13 @@
     '.wp-block-comment-template',
     '.wp-block-post-comments-form',
     '.wp-block-latest-posts',
+    '.sidebar',
+    '#sidebar',
+    '#secondary',
+    '.widget',
+    '.widget-area',
+    '.site-sidebar',
+    '.popular-posts',
     '[role="navigation"]',
     '[role="complementary"]',
     '[role="contentinfo"]',
@@ -1055,22 +1061,41 @@
     });
   }
 
-  function findArticle(selector) {
-    if (selector) {
-      try {
-        return document.querySelector(selector);
-      } catch (error) {
-        return null;
-      }
+  function collect(selector) {
+    try {
+      return Array.prototype.slice.call(document.querySelectorAll(selector));
+    } catch (error) {
+      return [];
     }
+  }
+
+  function isOutsideStory(node) {
+    if (!node || typeof node.closest !== 'function') {
+      return false;
+    }
+    return !!node.closest('aside, nav, footer, .sidebar, #sidebar, #secondary, .widget, .widget-area, .site-sidebar, [role="complementary"]');
+  }
+
+  function findArticles(selector, postId) {
+    var nodes = selector ? collect(selector) : [];
     var index;
-    for (index = 0; index < DEFAULT_SELECTORS.length; index += 1) {
-      var node = document.querySelector(DEFAULT_SELECTORS[index]);
-      if (node) {
-        return node;
+    if (!nodes.length && !selector) {
+      for (index = 0; index < DEFAULT_SELECTORS.length; index += 1) {
+        nodes = collect(DEFAULT_SELECTORS[index]);
+        if (nodes.length) {
+          break;
+        }
       }
     }
-    return null;
+    nodes = nodes.filter(function (node) {
+      return !isOutsideStory(node);
+    });
+    if (postId !== '' && postId != null) {
+      nodes = nodes.filter(function (node) {
+        return String(node.getAttribute('data-soti-post') || '') === String(postId);
+      });
+    }
+    return nodes;
   }
 
   function ensureCss(script) {
@@ -1138,6 +1163,14 @@
       'aria-label': 'منیژه، صدای زن',
       title: 'منیژه، صدای زن'
     }, [iconSvg('<circle cx="12" cy="9" r="2.15" fill="currentColor" stroke="none"/><path d="M8.4 8.3c.45-2.35 1.9-3.5 3.6-3.5s3.15 1.15 3.6 3.5"/><path d="M7.4 18.8c.55-2.7 2.3-4.2 4.6-4.2s4.05 1.5 4.6 4.2"/>')]));
+    voices.appendChild(el('button', {
+      type: 'button',
+      role: 'radio',
+      'data-voice': 'bijan',
+      'aria-checked': 'false',
+      'aria-label': 'بیژن، صدای مرد',
+      title: 'بیژن، صدای مرد'
+    }, [iconSvg('<circle cx="12" cy="8.7" r="2.15" fill="currentColor" stroke="none"/><path d="M7.2 18.9c.6-3 2.45-4.55 4.8-4.55s4.2 1.55 4.8 4.55"/>')]));
     var fill = el('span', { className: 'soti-progress-fill' });
     var progress = el('div', {
       className: 'soti-progress',
@@ -1173,9 +1206,9 @@
   }
 
   function mountPlayer(player, article) {
-    var mount = document.querySelector('[data-soti-mount]');
-    if (mount) {
-      mount.replaceWith(player);
+    var previous = article.previousElementSibling;
+    if (previous && previous.hasAttribute('data-soti-mount')) {
+      previous.replaceWith(player);
       return;
     }
     if (article.parentNode) {
@@ -1284,10 +1317,17 @@
     }
 
     function speak() {
-      var text = extractArticleText(article);
+      var text = article ? extractArticleText(article) : '';
       player.setAttribute('data-soti-spoken', text);
       if (!text) {
-        showMessage('');
+        haltJob();
+        try {
+          audio.pause();
+        } catch (error) {
+          /* ignore */
+        }
+        audio.removeAttribute('src');
+        showMessage(MISSING_MESSAGE);
         paintChrome();
         return;
       }
@@ -1383,8 +1423,16 @@
     });
     voiceButtons.forEach(function (button) {
       button.addEventListener('click', function () {
-        voiceId = 'manijeh';
-        paintChrome();
+        var nextVoice = button.getAttribute('data-voice') === 'bijan' ? 'bijan' : 'manijeh';
+        var wasPlaying = !audio.paused && !audio.ended;
+        var wasPreparing = preparing;
+        voiceId = nextVoice;
+        if (wasPlaying || wasPreparing) {
+          audio.removeAttribute('src');
+          speak();
+        } else {
+          paintChrome();
+        }
       });
     });
     rateGroup.addEventListener('keydown', function (event) {
@@ -1417,8 +1465,14 @@
         return;
       }
       event.preventDefault();
-      voiceId = 'manijeh';
-      var next = voiceGroup.querySelector('[data-voice="' + voiceId + '"]');
+      var ids = ['manijeh', 'bijan'];
+      var index = ids.indexOf(voiceId);
+      if (index < 0) {
+        index = 0;
+      }
+      var step = (event.key === 'ArrowLeft' || event.key === 'ArrowDown') ? 1 : -1;
+      index = (index + step + ids.length) % ids.length;
+      var next = voiceGroup.querySelector('[data-voice="' + ids[index] + '"]');
       if (next) {
         next.focus();
         next.click();
@@ -1430,6 +1484,11 @@
     audio.addEventListener('timeupdate', paintChrome);
     audio.addEventListener('loadedmetadata', applyRate);
 
+    var spokenNow = article ? extractArticleText(article) : '';
+    player.setAttribute('data-soti-spoken', spokenNow);
+    if (!spokenNow) {
+      showMessage(MISSING_MESSAGE);
+    }
     paintChrome();
     return { article: article };
   }
@@ -1437,24 +1496,34 @@
   var booted = false;
 
   function boot() {
-    if (booted || document.querySelector('[data-soti-player]')) {
-      booted = true;
+    if (booted) {
       return;
     }
     var script = findBootScript();
     var config = readConfig(script);
-    var article = findArticle(config.selector);
-    if (!article) {
+    var articles = findArticles(config.selector, config.postId);
+    if (!articles.length) {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot, { once: true });
+        return;
+      }
+      booted = true;
+      var mount = document.querySelector('[data-soti-mount]');
+      if (mount) {
+        ensureCss(script);
+        var emptyPlayer = buildPlayer();
+        mount.replaceWith(emptyPlayer);
+        wirePlayer(emptyPlayer, null, config);
       }
       return;
     }
     booted = true;
     ensureCss(script);
-    var player = buildPlayer();
-    mountPlayer(player, article);
-    wirePlayer(player, article, config);
+    articles.forEach(function (article) {
+      var player = buildPlayer();
+      mountPlayer(player, article);
+      wirePlayer(player, article, config);
+    });
   }
 
   function start() {

@@ -323,6 +323,10 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(src.includes('https://api.tts.ai/v1/tts/'), true);
   assert.equal(src.includes('https://api.tts.ai/v1/speech/results/?uuid='), true);
   assert.equal(src.includes('fa_IR-mana-medium'), true);
+  assert.equal(src.includes('fa_IR-ganji-medium'), true);
+  assert.equal(src.includes('متن این خبر پیدا نشد.'), true);
+  assert.equal(src.includes('شهرداری رشت'), false);
+  assert.equal(src.includes('shenidar.mp3'), false);
   assert.equal(src.includes('fetch(config.statusUrl'), false);
   assert.equal(src.includes('wp-json'), false);
   assert.equal(src.includes('playbackRate'), true);
@@ -344,6 +348,11 @@ test('visitor script plays stored files and does not fetch a model', function ()
   const main = fs.readFileSync(path.join(__dirname, '../soti.php'), 'utf8');
   assert.equal(plugin.includes('shenidar.mp3'), false);
   assert.equal(plugin.includes('audioUrl'), false);
+  assert.equal(plugin.includes('data-soti-post'), true);
+  assert.equal(plugin.includes('get_queried_object_id'), true);
+  assert.equal(plugin.includes('شهرداری رشت'), false);
+  assert.equal(Soti.DEFAULT_SELECTORS.indexOf('article'), -1);
+  assert.equal(Soti.DEFAULT_SELECTORS.indexOf('main'), -1);
   assert.equal(main.includes('class-soti-engine.php'), false);
   assert.equal(plugin.includes('statusUrl'), false);
   assert.equal(plugin.includes('Soti_Engine::step'), false);
