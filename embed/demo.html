@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>نمونه شنیدار — شنیدن یک خبر فارسی</title>
+  <link rel="stylesheet" href="../assets/soti.css" id="soti-css">
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      background: #efe6d6;
+      color: #1c1612;
+      font-family: "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+    }
+
+    .masthead,
+    .paper,
+    .site-footer {
+      box-sizing: border-box;
+    }
+
+    .masthead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 20px;
+      background: #1c1612;
+      color: #fbf6ee;
+    }
+
+    .brand {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav a {
+      color: #fbf6ee;
+      text-decoration: none;
+    }
+
+    .nav a:focus-visible {
+      outline: 2px solid #ffd7c8;
+      outline-offset: 3px;
+    }
+
+    .paper {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+    }
+
+    .kicker {
+      margin: 0 0 8px;
+      color: #9a3412;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.85rem;
+      line-height: 1.45;
+    }
+
+    .byline {
+      margin: 0 0 18px;
+      color: #5c5148;
+    }
+
+    .news-body p {
+      margin: 0 0 1rem;
+      font-size: 1.12rem;
+      line-height: 1.95;
+    }
+
+    .ad,
+    .related,
+    .comments {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border: 1px dashed #b7aa9a;
+      background: #fffaf3;
+    }
+
+    .comments {
+      margin-top: 28px;
+    }
+
+    .site-footer {
+      padding: 18px;
+      color: #5c5148;
+      text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 1.45rem;
+      }
+
+      .masthead {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <p class="brand">نمونهٔ خبر</p>
+    <nav aria-label="ناوبری نمونه">
+      <ul class="nav">
+        <li><a href="#policy">سیاست</a></li>
+        <li><a href="#sport">ورزش</a></li>
+        <li><a href="#culture">فرهنگ</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="paper">
+    <article>
+      <p class="kicker">شهر</p>
+      <h1>پل عابر میدان شهرداری رشت برای رنگ‌آمیزی بسته می‌شود</h1>
+      <p class="byline">گزارش آزمایشی برای پخش‌کننده شنیدار · ۱۹ مهر ۱۴۰۵</p>
+      <div class="news-body">
+        <p>شهرداری رشت اعلام کرد پل عابر پیادهٔ میدان شهرداری از فردا شب برای رنگ‌آمیزی بسته می‌شود.</p>
+        <p>عابران می‌توانند تا پایان کار از گذر کنار بازار ماهی استفاده کنند.</p>
+        <aside class="related">خبرهای مرتبط: پنج موزه دیگر که جمعه‌ها برنامه کودک دارند.</aside>
+        <div class="ad">تبلیغات آزمایشی: خرید بلیت قطار اصفهان به شیراز.</div>
+        <script>window.__sotiLeak = 'اسکریپت مخفی نباید خوانده شود';</script>
+      </div>
+    </article>
+
+    <section class="comments" id="comments">
+      <h2>دیدگاه‌ها</h2>
+      <p>نظر خواننده: این خبر خیلی مفید بود و نباید بلند خوانده شود.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>خواندن با موتور باز داخل صفحه انجام می‌شود و به صدای نصب‌شدهٔ فارسی در سیستم نیاز ندارد.</p>
+  </footer>
+
+  <script>
+    window.SOTI_BOOT = {
+      selector: '.news-body',
+      postId: 'demo',
+      audioBase: 'uploads/shenidar',
+      saveEndpoint: 'shenidar/v1/audio'
+    };
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+  <script src="../assets/soti.js" data-selector=".news-body"></script>
+</body>
+</html>
