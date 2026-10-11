@@ -280,6 +280,17 @@ test('voice change while playing replays the chunk with the new voice id', async
   assert.equal(speaks(engine)[1].text, 'متن');
 });
 
+test('demo chunks map to pre-rendered Piper files', function () {
+  const chunk = 'مدیریت باغ‌موزه هنر اصفهان اعلام کرد از این جمعه، کارگاه قصه‌گویی برای خانواده‌ها بدون بلیت ورودی برگزار می‌شود.';
+  assert.equal(Soti.speechKey(chunk), 'ce14638-112');
+  assert.equal(Soti.PIPER_MODELS.manijeh, 'fa_IR-mana-medium');
+  assert.equal(Soti.PIPER_MODELS.bijan, 'fa_IR-amir-medium');
+  const wav = fs.readFileSync(path.join(__dirname, '../assets/vendor/speech/manijeh/ce14638-112.wav'));
+  assert.equal(wav.subarray(0, 4).toString('ascii'), 'RIFF');
+  assert.equal(wav.readUInt32LE(24), 22050);
+  assert.ok(wav.length > 1000);
+});
+
 test('bundled espeak maps pitch and playback rate without a cloud voice', function () {
   assert.equal(Soti.ESPEAK_PITCH.manijeh > Soti.ESPEAK_PITCH.bijan, true);
   assert.equal(Soti.playbackRateFor(2), 2);

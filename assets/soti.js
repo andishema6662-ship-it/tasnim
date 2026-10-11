@@ -1,9 +1,9 @@
 /**
  * Soti (صوتی) reads a Persian news article aloud.
  *
- * Default engine: in-page eSpeak NG (GPL-3.0-or-later), no key and no installed voice.
- * منیژه is fa+f2 at a higher pitch. بیژن is fa+m3 at a lower pitch.
- * WAV output plays through Web Audio. The speed buttons set playbackRate.
+ * Default engine: pre-rendered Piper audio. منیژه is fa_IR-mana-medium (female).
+ * بیژن is fa_IR-amir-medium (male). Speed buttons set Web Audio playbackRate.
+ * eSpeak is not used for playback.
  * Neshan's proprietary Manijeh and Bijan recordings are not used.
  *
  * Fallbacks, used only if the built-in engine cannot start:
@@ -1166,26 +1166,261 @@
     };
   }
 
+  var PIPER_MODELS = {
+    manijeh: 'fa_IR-mana-medium',
+    bijan: 'fa_IR-amir-medium'
+  };
+
+  var speechManifestPromise = null;
+
+  function speechKey(text) {
+    var h = 2166136261;
+    var value = String(text || '');
+    var i;
+    for (i = 0; i < value.length; i += 1) {
+      h ^= value.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(16) + '-' + value.length;
+  }
+
+  function canPlayPrerendered() {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (typeof AudioCtx !== 'function' || typeof fetch !== 'function') {
+      return false;
+    }
+    return Boolean(vendorUrl('speech/manifest.json'));
+  }
+
+  function loadSpeechManifest() {
+    if (!speechManifestPromise) {
+      var url = vendorUrl('speech/manifest.json');
+      speechManifestPromise = fetch(url).then(function (response) {
+        if (!response || !response.ok) {
+          throw new Error('manifest');
+        }
+        return response.json();
+      }).catch(function (error) {
+        speechManifestPromise = null;
+        throw error;
+      });
+    }
+    return speechManifestPromise;
+  }
+
+  function createPrerenderedEngine() {
+    var token = 0;
+    var active = null;
+
+    function finish(record, result) {
+      if (!record || !record.resolve) {
+        return;
+      }
+      var resolve = record.resolve;
+      record.resolve = null;
+      if (active === record) {
+        active = null;
+      }
+      resolve(result);
+    }
+
+    function settleActive(reason) {
+      var record = active;
+      active = null;
+      if (!record) {
+        return;
+      }
+      record.token = -1;
+      record.generation = null;
+      record.stopKind = 'cancel';
+      if (record.source) {
+        try {
+          record.source.stop();
+        } catch (error) {
+          /* already stopped */
+        }
+        record.source = null;
+      }
+      finish(record, { reason: reason });
+    }
+
+    function playSlice(record) {
+      var ctx = primeBuiltinAudio();
+      if (!ctx || !record.buffer) {
+        finish(record, { reason: 'error', error: 'audio' });
+        return;
+      }
+      var remain = record.buffer.duration - record.offset;
+      if (!(remain > 0.02)) {
+        finish(record, { reason: 'end' });
+        return;
+      }
+      var source = ctx.createBufferSource();
+      var generation = {};
+      record.generation = generation;
+      record.source = source;
+      record.stopKind = '';
+      source.buffer = record.buffer;
+      source.playbackRate.value = record.rate;
+      source.connect(ctx.destination);
+      record.startedAt = ctx.currentTime;
+      source.onended = function () {
+        if (record.generation !== generation) {
+          return;
+        }
+        if (record.stopKind === 'pause') {
+          record.source = null;
+          return;
+        }
+        if (record.stopKind === 'cancel' || record.token !== token) {
+          return;
+        }
+        finish(record, { reason: 'end' });
+      };
+      if (!record.paused && typeof record.onSpeaking === 'function') {
+        record.onSpeaking();
+      }
+      try {
+        source.start(0, record.offset);
+      } catch (error) {
+        record.generation = null;
+        finish(record, { reason: 'error', error: 'audio' });
+      }
+    }
+
+    return {
+      id: 'piper',
+      models: PIPER_MODELS,
+      prime: primeBuiltinAudio,
+      isAvailable: function () {
+        if (!canPlayPrerendered()) {
+          return Promise.resolve(false);
+        }
+        return loadSpeechManifest().then(function (manifest) {
+          return Boolean(manifest && manifest.manijeh && manifest.bijan);
+        }).catch(function () {
+          return false;
+        });
+      },
+      speak: function (text, opts) {
+        var my = ++token;
+        settleActive('canceled');
+        var voiceId = opts && opts.voiceId === 'bijan' ? 'bijan' : 'manijeh';
+        var rate = playbackRateFor(opts && opts.rate);
+        var record = {
+          token: my,
+          resolve: null,
+          source: null,
+          buffer: null,
+          offset: 0,
+          rate: rate,
+          startedAt: 0,
+          paused: false,
+          stopKind: '',
+          generation: null,
+          onSpeaking: opts && opts.onSpeaking
+        };
+        active = record;
+
+        return new Promise(function (resolve) {
+          record.resolve = resolve;
+          if (my !== token) {
+            finish(record, { reason: 'canceled' });
+            return;
+          }
+          var ctx = primeBuiltinAudio();
+          if (!ctx) {
+            finish(record, { reason: 'error', error: 'audio' });
+            return;
+          }
+          loadSpeechManifest().then(function (manifest) {
+            if (record.token !== my || !record.resolve) {
+              return null;
+            }
+            var voice = manifest[voiceId] || {};
+            var file = voice[speechKey(text)];
+            if (!file) {
+              throw new Error('missing');
+            }
+            return fetch(vendorUrl('speech/' + file)).then(function (response) {
+              if (!response || !response.ok) {
+                throw new Error('wav');
+              }
+              return response.arrayBuffer();
+            });
+          }).then(function (wav) {
+            if (!wav || record.token !== my || !record.resolve) {
+              return null;
+            }
+            return decodeAudioBuffer(ctx, wav);
+          }).then(function (buffer) {
+            if (!buffer || record.token !== my || !record.resolve) {
+              return;
+            }
+            record.buffer = buffer;
+            if (record.paused) {
+              return;
+            }
+            playSlice(record);
+          }).catch(function () {
+            if (record.token !== my || !record.resolve) {
+              return;
+            }
+            finish(record, { reason: 'error', error: 'synth' });
+          });
+        });
+      },
+      pause: function () {
+        if (!active || active.paused) {
+          return;
+        }
+        active.paused = true;
+        if (!active.source || !active.buffer || !sharedAudioContext) {
+          return;
+        }
+        var elapsed = (sharedAudioContext.currentTime - active.startedAt) * active.rate;
+        active.offset = Math.min(active.buffer.duration, active.offset + Math.max(0, elapsed));
+        active.stopKind = 'pause';
+        active.generation = null;
+        try {
+          active.source.stop();
+        } catch (error) {
+          /* already stopped */
+        }
+        active.source = null;
+      },
+      resume: function () {
+        if (!active || !active.paused) {
+          return;
+        }
+        active.paused = false;
+        active.stopKind = '';
+        if (active.buffer) {
+          playSlice(active);
+        }
+      },
+      cancel: function () {
+        token += 1;
+        settleActive('canceled');
+      }
+    };
+  }
+
   function pickEngine(config) {
     var settings = config || {};
-    var espeakBackend = settings.espeakBackend || (typeof window !== 'undefined' ? window.SOTI_ESPEAK_BACKEND : null);
     var chain = Promise.resolve(null);
 
-    if (espeakBackend) {
-      chain = createEspeakNgEngine(espeakBackend).isAvailable().then(function (ready) {
-        return ready ? createEspeakNgEngine(espeakBackend) : null;
+    if (canPlayPrerendered()) {
+      var prerendered = createPrerenderedEngine();
+      chain = prerendered.isAvailable().then(function (ready) {
+        return ready ? prerendered : null;
       });
     }
 
     return chain.then(function (engine) {
-      if (engine) {
-        return engine;
-      }
-      if (canUseBuiltinEspeak()) {
-        return createBuiltinEspeakEngine();
-      }
-      return null;
-    }).then(function (engine) {
       if (engine) {
         return engine;
       }
@@ -1617,6 +1852,8 @@
     resolveFaVoice: resolveFaVoice,
     isFaVoice: isFaVoice,
     espeakSpeed: espeakSpeed,
+    PIPER_MODELS: PIPER_MODELS,
+    speechKey: speechKey,
     playbackRateFor: playbackRateFor,
     canUseBuiltinEspeak: canUseBuiltinEspeak,
     createBuiltinEspeakEngine: createBuiltinEspeakEngine,
