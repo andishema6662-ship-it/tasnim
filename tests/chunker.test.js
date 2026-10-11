@@ -280,9 +280,23 @@ test('voice change while playing replays the chunk with the new voice id', async
   assert.equal(speaks(engine)[1].text, 'متن');
 });
 
+test('bundled espeak maps pitch and playback rate without a cloud voice', function () {
+  assert.equal(Soti.ESPEAK_PITCH.manijeh > Soti.ESPEAK_PITCH.bijan, true);
+  assert.equal(Soti.playbackRateFor(2), 2);
+  assert.equal(Soti.playbackRateFor(0.75), 0.75);
+  assert.equal(Soti.playbackRateFor(1.75), 1.75);
+  assert.equal(Soti.ENGINE_FAILURE_MESSAGE, 'صدای فارسی در این مرورگر پیدا نشد.');
+  assert.equal(Soti.canUseBuiltinEspeak(), false);
+});
+
 test('source does not call Azure or bundle a Neshan model', function () {
   const src = fs.readFileSync(path.join(__dirname, '../assets/soti.js'), 'utf8');
   assert.equal(src.includes('speech.microsoft.com'), false);
+  assert.equal(src.includes('translate.google'), false);
   assert.equal(src.includes('neshan'), false);
   assert.equal(/api[_-]?key\s*[:=]\s*['"][A-Za-z0-9]/.test(src), false);
+  assert.equal(src.includes('espeak-ng.js'), true);
+  assert.equal(src.includes('espeak-ng.wasm'), true);
+  assert.equal(src.includes('playbackRate'), true);
+  assert.equal(src.includes("'-s', '175'"), true);
 });
