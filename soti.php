@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: صوتی
+ * Plugin Name: شنیدار (Shenidar)
  * Plugin URI: https://github.com/andishema6662-ship-it/tasnim
  * Description: خواندن بلند متن خبر فارسی روی نوشته‌های تکی. دکمه‌های منیژه و بیژن صدای زن و مرد را انتخاب می‌کنند.
  * Version: 1.1.0

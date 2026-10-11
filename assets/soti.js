@@ -1,5 +1,5 @@
 /**
- * Soti (صوتی) reads a Persian news article aloud.
+ * Shenidar (شنیدار) reads a Persian news article aloud.
  *
  * Default engine: pre-rendered Piper audio. منیژه is fa_IR-mana-medium (female).
  * بیژن is fa_IR-amir-medium (male). Speed buttons set Web Audio playbackRate.
