@@ -222,7 +222,7 @@
     };
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/andishema6662-ship-it/tasnim@c80683f9519192df594512e7a1c79e9693226dee/assets/soti.css" data-soti-css="1">
-  <script data-selector="[data-soti-article]">
+  <script type="text/plain" id="soti-player-source" data-selector="[data-soti-article]">
 /**
  * Shenidar (شنیدار) speaks only the open article’s own body.
  * Play posts that text to https://api.tts.ai/v1/tts/ and plays the returned wav.
@@ -1787,6 +1787,12 @@
   };
 });
 
+  </script>
+  <script>
+    var source = document.getElementById('soti-player-source');
+    if (source && typeof window.Soti === 'undefined') {
+      eval(source.textContent);
+    }
   </script>
 </body>
 </html>
