@@ -92,12 +92,14 @@ test('chunkText splits a long sentence on spaces and keeps every word', function
   assert.equal(chunks.join(' '), words.join(' '));
 });
 
-test('rate labels include two-times speed in Persian', function () {
-  assert.equal(Soti.RATES.length, 6);
+test('rate labels stay between 0.75 and 1.25', function () {
+  assert.equal(Soti.RATES.length, 3);
   assert.deepEqual(Soti.RATES.map(function (rate) {
     return rate.value;
-  }), [0.75, 1, 1.25, 1.5, 1.75, 2]);
-  assert.equal(Soti.RATES[5].label, '۲×');
+  }), [0.75, 1, 1.25]);
+  assert.equal(Soti.RATES[0].label, '۰٫۷۵×');
+  assert.equal(Soti.RATES[1].label, '۱×');
+  assert.equal(Soti.RATES[2].label, '۱٫۲۵×');
   assert.equal(Soti.toPersianDigits(12), '۱۲');
 });
 
@@ -130,7 +132,7 @@ test('espeak adapter maps voices and speed without a bundled engine', async func
   assert.equal(Soti.ESPEAK_VOICES.bijan, 'fa+m3');
   assert.equal(Soti.espeakSpeed(1), 175);
   assert.equal(Soti.espeakSpeed(0.75), 131);
-  assert.equal(Soti.espeakSpeed(2), 350);
+  assert.equal(Soti.espeakSpeed(2), 219);
   const missing = Soti.createEspeakNgEngine(null);
   assert.equal(await missing.isAvailable(), false);
   const heard = [];
@@ -144,7 +146,8 @@ test('espeak adapter maps voices and speed without a bundled engine', async func
   await engine.speak('سلام', { voiceId: 'manijeh', rate: 2 });
   await engine.speak('درود', { voiceId: 'bijan', rate: 1 });
   assert.equal(heard[0].opts.voice, 'fa+f2');
-  assert.equal(heard[0].opts.speed, 350);
+  assert.equal(heard[0].opts.rate, 1.25);
+  assert.equal(heard[0].opts.speed, 219);
   assert.equal(heard[1].opts.voice, 'fa+m3');
   assert.equal(heard[1].opts.speed, 175);
 });
@@ -176,7 +179,7 @@ test('azure adapter maps Dilara and Farid and does not fetch without an endpoint
   const result = await wired.speak('سلام', { voiceId: 'manijeh', rate: 1.5 });
   assert.equal(result.reason, 'error');
   assert.equal(body.voice, 'fa-IR-DilaraNeural');
-  assert.equal(body.rate, 1.5);
+  assert.equal(body.rate, 1.25);
   assert.equal(body.lang, 'fa-IR');
 });
 
@@ -216,7 +219,7 @@ test('changing speed while playing restarts the current chunk', async function (
   assert.equal(spoken[0].text, 'الف');
   assert.equal(spoken[0].opts.rate, 1);
   assert.equal(spoken[1].text, 'الف');
-  assert.equal(spoken[1].opts.rate, 2);
+  assert.equal(spoken[1].opts.rate, 1.25);
   assert.equal(controller.snapshot().index, 0);
   assert.equal(engine.calls.some(function (call) {
     return call.op === 'cancel';
@@ -246,7 +249,7 @@ test('changing speed while paused waits for the next chunk', async function () {
   engine.end();
   await flush();
   assert.equal(speaks(engine)[1].text, 'دوم');
-  assert.equal(speaks(engine)[1].opts.rate, 1.75);
+  assert.equal(speaks(engine)[1].opts.rate, 1.25);
 });
 
 test('stop cancels playback and resets progress', async function () {
@@ -293,9 +296,12 @@ test('demo chunks map to pre-rendered Piper files', function () {
 
 test('bundled espeak maps pitch and playback rate without a cloud voice', function () {
   assert.equal(Soti.ESPEAK_PITCH.manijeh > Soti.ESPEAK_PITCH.bijan, true);
-  assert.equal(Soti.playbackRateFor(2), 2);
+  assert.equal(Soti.playbackRateFor(2), 1.25);
+  assert.equal(Soti.playbackRateFor(1.5), 1.25);
   assert.equal(Soti.playbackRateFor(0.75), 0.75);
-  assert.equal(Soti.playbackRateFor(1.75), 1.75);
+  assert.equal(Soti.playbackRateFor(1), 1);
+  const saved = Soti.createController({ chunks: ['متن'], rate: 2 });
+  assert.equal(saved.snapshot().rate, 1.25);
   assert.equal(Soti.ENGINE_FAILURE_MESSAGE, 'صدای فارسی در این مرورگر پیدا نشد.');
   assert.equal(Soti.canUseBuiltinEspeak(), false);
 });

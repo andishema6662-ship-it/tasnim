@@ -35,10 +35,7 @@
   var RATES = [
     { value: 0.75, label: '۰٫۷۵×' },
     { value: 1, label: '۱×' },
-    { value: 1.25, label: '۱٫۲۵×' },
-    { value: 1.5, label: '۱٫۵×' },
-    { value: 1.75, label: '۱٫۷۵×' },
-    { value: 2, label: '۲×' }
+    { value: 1.25, label: '۱٫۲۵×' }
   ];
 
   var AZURE_VOICES = {
@@ -338,8 +335,22 @@
     return { voice: fa[0], pitch: 1, distinct: true };
   }
 
+  function clampRate(rate) {
+    var value = Number(rate);
+    if (!Number.isFinite(value) || value <= 0) {
+      return 1;
+    }
+    if (value > 1.25) {
+      return 1.25;
+    }
+    if (value < 0.75) {
+      return 0.75;
+    }
+    return value;
+  }
+
   function espeakSpeed(rate) {
-    var speed = Math.round(175 * (Number(rate) || 1));
+    var speed = Math.round(175 * clampRate(rate));
     if (speed < 80) {
       return 80;
     }
@@ -350,11 +361,7 @@
   }
 
   function playbackRateFor(rate) {
-    var value = Number(rate);
-    if (!Number.isFinite(value) || value <= 0) {
-      return 1;
-    }
-    return value;
+    return clampRate(rate);
   }
 
   function isHttpUrl(value) {
@@ -383,7 +390,7 @@
         return Promise.resolve(backend.speak(text, {
           voice: ESPEAK_VOICES[voiceId],
           speed: espeakSpeed(opts && opts.rate),
-          rate: Number(opts && opts.rate) || 1
+          rate: clampRate(opts && opts.rate)
         })).then(function (result) {
           if (my !== token) {
             return { reason: 'canceled' };
@@ -448,7 +455,7 @@
         stopActive();
         var my = ++seq;
         var voiceId = opts && opts.voiceId === 'bijan' ? 'bijan' : 'manijeh';
-        var rate = Number(opts && opts.rate) || 1;
+        var rate = clampRate(opts && opts.rate);
         if (!isHttpUrl(endpoint) || typeof fetchImpl !== 'function') {
           return Promise.resolve({ reason: 'error', error: 'not-configured' });
         }
@@ -605,7 +612,7 @@
             }
             var utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'fa-IR';
-            utterance.rate = Number(opts && opts.rate) || 1;
+            utterance.rate = clampRate(opts && opts.rate);
             utterance.pitch = resolved.pitch;
             utterance.voice = resolved.voice;
             utterance.onend = function () {
@@ -663,7 +670,7 @@
       chunks: [],
       index: 0,
       status: 'idle',
-      rate: Number(settings.rate) || 1,
+      rate: clampRate(settings.rate),
       voiceId: settings.voiceId === 'bijan' ? 'bijan' : 'manijeh',
       finished: false,
       replay: false,
@@ -709,8 +716,8 @@
     }
 
     controller.setRate = function (rate) {
-      var value = Number(rate);
-      if (!Number.isFinite(value) || value <= 0 || value === controller.rate) {
+      var value = clampRate(rate);
+      if (value === controller.rate) {
         return;
       }
       controller.rate = value;
