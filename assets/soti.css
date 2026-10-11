@@ -1,14 +1,13 @@
 .soti-player {
-  --soti-ink: #fbf6ee;
-  --soti-muted: #e4d5c4;
-  --soti-line: #5a4a3e;
-  --soti-accent: #e4572e;
-  --soti-accent-ink: #fffaf6;
+  --soti-ink: #f7f4ee;
+  --soti-line: rgba(255, 250, 242, 0.16);
+  --soti-accent: #2f7c78;
+  --soti-accent-ink: #f7fffd;
   direction: rtl;
   box-sizing: border-box;
   position: relative;
   max-width: 100%;
-  margin: 0 0 0.75rem;
+  margin: 0.35rem 0 1.15rem;
   color: var(--soti-ink);
   font-family: "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
   font-size: 12px;
@@ -40,11 +39,14 @@
 .soti-bar {
   display: flex;
   align-items: center;
+  width: max-content;
   height: 40px;
   max-width: 100%;
   padding: 0 6px 2px;
+  border: 1px solid #243140;
   border-radius: 999px;
-  background: #241c16;
+  background: linear-gradient(180deg, #2a3a4e 0%, #1c2838 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 8px 18px rgba(28, 36, 48, 0.08);
   position: relative;
 }
 
@@ -52,8 +54,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  width: 100%;
+  width: auto;
   min-width: 0;
+  max-width: 100%;
   height: 36px;
   overflow: hidden;
 }
@@ -73,6 +76,8 @@
   flex: 1 1 auto;
   min-width: 0;
   align-items: center;
+  padding-inline: 4px;
+  border-inline: 1px solid rgba(255, 250, 242, 0.12);
 }
 
 .soti-rates {
@@ -101,10 +106,10 @@
   padding: 0;
   border: 1px solid var(--soti-line);
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 252, 247, 0.04);
   color: var(--soti-ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 650;
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
@@ -132,33 +137,33 @@
 }
 
 .soti-player button:focus-visible {
-  outline: 2px solid #ffd7c8;
+  outline: 2px solid #d7efe9;
   outline-offset: 1px;
 }
 
 .soti-player button:disabled {
   cursor: not-allowed;
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .soti-player [data-action="play"],
 .soti-player button[aria-pressed="true"],
 .soti-player button[aria-checked="true"] {
   background: var(--soti-accent);
-  border-color: var(--soti-accent);
+  border-color: #3d948f;
   color: var(--soti-accent-ink);
 }
 
 .soti-progress {
   position: absolute;
-  right: 14px;
-  left: 14px;
+  right: 16px;
+  left: 16px;
   bottom: 3px;
   height: 2px;
   margin: 0;
   overflow: hidden;
   border-radius: 99px;
-  background: #3c322a;
+  background: rgba(255, 250, 242, 0.14);
   pointer-events: none;
 }
 
@@ -166,14 +171,14 @@
   display: block;
   width: 0;
   height: 100%;
-  background: var(--soti-accent);
+  background: #8fd0c8;
 }
 
 .soti-message {
-  margin: 6px 8px 0;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  color: #8a3b22;
+  margin: 8px 10px 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #3d5c59;
 }
 
 @media (max-width: 640px) {

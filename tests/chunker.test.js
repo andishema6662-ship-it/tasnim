@@ -287,7 +287,7 @@ test('demo chunks map to pre-rendered Piper files', function () {
   const chunk = 'مدیریت باغ‌موزه هنر اصفهان اعلام کرد از این جمعه، کارگاه قصه‌گویی برای خانواده‌ها بدون بلیت ورودی برگزار می‌شود.';
   assert.equal(Soti.speechKey(chunk), 'ce14638-112');
   assert.equal(Soti.PIPER_MODELS.manijeh, 'fa_IR-mana-medium');
-  assert.equal(Soti.PIPER_MODELS.bijan, 'fa_IR-amir-medium');
+  assert.equal(Soti.PIPER_MODELS.bijan, 'fa_IR-ganji-medium');
   const wav = fs.readFileSync(path.join(__dirname, '../assets/vendor/speech/manijeh/ce14638-112.wav'));
   assert.equal(wav.subarray(0, 4).toString('ascii'), 'RIFF');
   assert.equal(wav.readUInt32LE(24), 22050);
@@ -315,7 +315,7 @@ test('source does not call Azure or bundle a Neshan model', function () {
   assert.equal(src.includes('espeak-ng.js'), true);
   assert.equal(src.includes('espeak-ng.wasm'), true);
   assert.equal(src.includes('fa_IR-mana-medium.onnx'), true);
-  assert.equal(src.includes('fa_IR-amir-medium.onnx'), true);
+  assert.equal(src.includes('fa_IR-ganji-medium.onnx'), true);
   assert.equal(src.includes('در حال آماده‌کردن صدا…'), true);
   assert.equal(src.includes("vendorUrl('speech/'"), false);
   assert.equal(src.includes('playbackRate'), true);

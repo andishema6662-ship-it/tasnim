@@ -2,7 +2,7 @@
  * Shenidar (شنیدار) reads a Persian news article aloud.
  *
  * Default engine: Piper neural audio for the article on the page.
- * منیژه is fa_IR-mana-medium (female). بیژن is fa_IR-amir-medium (male).
+ * منیژه is fa_IR-mana-medium (female). بیژن is fa_IR-ganji-medium (male).
  * Models load from a public URL. Finished clips are stored on the site.
  * Speed buttons set Web Audio playbackRate. eSpeak is not the voice.
  * Neshan's proprietary Manijeh and Bijan recordings are not used.
@@ -67,8 +67,8 @@
       config: 'https://huggingface.co/MahtaFetrat/Mana-Persian-Piper/resolve/main/fa_IR-mana-medium.onnx.json'
     },
     bijan: {
-      model: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx',
-      config: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx.json'
+      model: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/ganji/medium/fa_IR-ganji-medium.onnx',
+      config: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/ganji/medium/fa_IR-ganji-medium.onnx.json'
     }
   };
 
@@ -1191,7 +1191,7 @@
 
   var PIPER_MODELS = {
     manijeh: 'fa_IR-mana-medium',
-    bijan: 'fa_IR-amir-medium'
+    bijan: 'fa_IR-ganji-medium'
   };
 
   var ortPromise = null;
@@ -1806,7 +1806,7 @@
     var holder = document.createElement('span');
     holder.className = 'soti-icon';
     holder.setAttribute('aria-hidden', 'true');
-    holder.innerHTML = '<svg viewBox="0 0 24 24" focusable="false">' + markup + '</svg>';
+    holder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">' + markup + '</svg>';
     return holder;
   }
 
@@ -1818,21 +1818,21 @@
       'aria-pressed': 'false',
       'aria-label': 'پخش',
       title: 'پخش'
-    }, [iconSvg('<path fill="currentColor" d="M9 6.5v11l9.5-5.5z"/>')]);
+    }, [iconSvg('<path fill="currentColor" stroke="none" d="M9 6.2v11.6l9.2-5.8z"/>')]);
     var pause = el('button', {
       type: 'button',
       'data-action': 'pause',
       disabled: 'disabled',
       'aria-label': 'مکث',
       title: 'مکث'
-    }, [iconSvg('<path fill="currentColor" d="M7 6h3.4v12H7zm6.6 0H17v12h-3.4z"/>')]);
+    }, [iconSvg('<path d="M9 7v10M15 7v10"/>')]);
     var stop = el('button', {
       type: 'button',
       'data-action': 'stop',
       disabled: 'disabled',
       'aria-label': 'توقف',
       title: 'توقف'
-    }, [iconSvg('<path fill="currentColor" d="M7 7h10v10H7z"/>')]);
+    }, [iconSvg('<rect x="7.6" y="7.6" width="8.8" height="8.8" rx="1.4"/>')]);
     var rates = el('div', { className: 'soti-rates', role: 'group', 'aria-label': 'سرعت', dir: 'ltr' });
     RATES.forEach(function (rate) {
       rates.appendChild(el('button', {
@@ -1851,7 +1851,7 @@
       'aria-checked': 'true',
       'aria-label': 'منیژه، صدای زن',
       title: 'منیژه، صدای زن'
-    }, [iconSvg('<circle cx="12" cy="8.2" r="2.5" fill="currentColor"/><path fill="currentColor" d="M7.6 7.4c.6-2.5 2.3-3.8 4.4-3.8s3.8 1.3 4.4 3.8c.15.6-.55.95-1 .55-1-.85-2.1-1.2-3.4-1.2s-2.4.35-3.4 1.2c-.45.4-1.15.05-1-.55zM8.2 13.4c-1.7 1.6-2.3 3.5-2.3 5.3 0 .7.55 1.2 1.25 1.2h9.7c.7 0 1.25-.5 1.25-1.2 0-1.8-.6-3.7-2.3-5.3-.65-.6-1.55-.15-1.55.6 0 .2.08.4.2.55.95 1 1.45 2.2 1.45 3.45H8.1c0-1.25.5-2.45 1.45-3.45.12-.15.2-.35.2-.55 0-.75-.9-1.2-1.55-.6z"/>')]));
+    }, [iconSvg('<circle cx="12" cy="9" r="2.15" fill="currentColor" stroke="none"/><path d="M8.4 8.3c.45-2.35 1.9-3.5 3.6-3.5s3.15 1.15 3.6 3.5"/><path d="M7.4 18.8c.55-2.7 2.3-4.2 4.6-4.2s4.05 1.5 4.6 4.2"/>')]));
     voices.appendChild(el('button', {
       type: 'button',
       role: 'radio',
@@ -1860,7 +1860,7 @@
       'aria-label': 'بیژن، صدای مرد',
       title: 'بیژن، صدای مرد',
       tabindex: '-1'
-    }, [iconSvg('<circle cx="12" cy="8" r="2.6" fill="currentColor"/><path fill="currentColor" d="M5.8 19.2c.7-3.2 3-5.1 6.2-5.1s5.5 1.9 6.2 5.1c.2.75-.4 1.5-1.15 1.5H6.95c-.75 0-1.35-.75-1.15-1.5z"/>')]));
+    }, [iconSvg('<circle cx="12" cy="7.4" r="2.45" fill="currentColor" stroke="none"/><path d="M12 10v1.5"/><path d="M6.4 18.8c.85-3.1 2.9-4.6 5.6-4.6s4.75 1.5 5.6 4.6"/>')]));
 
     var fill = el('span', { className: 'soti-progress-fill' });
     var progress = el('div', {
