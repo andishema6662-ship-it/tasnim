@@ -1,9 +1,10 @@
 /**
  * Shenidar (شنیدار) reads a Persian news article aloud.
  *
- * Default engine: pre-rendered Piper audio. منیژه is fa_IR-mana-medium (female).
- * بیژن is fa_IR-amir-medium (male). Speed buttons set Web Audio playbackRate.
- * eSpeak is not used for playback.
+ * Default engine: Piper neural audio for the article on the page.
+ * منیژه is fa_IR-mana-medium (female). بیژن is fa_IR-amir-medium (male).
+ * Models load from a public URL. Finished clips are stored on the site.
+ * Speed buttons set Web Audio playbackRate. eSpeak is not the voice.
  * Neshan's proprietary Manijeh and Bijan recordings are not used.
  *
  * Fallbacks, used only if the built-in engine cannot start:
@@ -55,6 +56,21 @@
   };
 
   var ENGINE_FAILURE_MESSAGE = 'صدای فارسی در این مرورگر پیدا نشد.';
+  var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
+  var ESPEAK_JS_URL = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2/dist/espeak-ng.js';
+  var ESPEAK_WASM_URL = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2/dist/espeak-ng.wasm';
+  var ORT_JS_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js';
+  var ORT_WASM_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+  var PIPER_PUBLIC = {
+    manijeh: {
+      model: 'https://huggingface.co/MahtaFetrat/Mana-Persian-Piper/resolve/main/fa_IR-mana-medium.onnx',
+      config: 'https://huggingface.co/MahtaFetrat/Mana-Persian-Piper/resolve/main/fa_IR-mana-medium.onnx.json'
+    },
+    bijan: {
+      model: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx',
+      config: 'https://huggingface.co/rhasspy/piper-voices/resolve/main/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx.json'
+    }
+  };
 
   var capturedScriptSrc = '';
   if (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) {
@@ -924,8 +940,8 @@
 
   function loadEspeakAssets() {
     if (!espeakAssetsPromise) {
-      var jsUrl = vendorUrl('espeak-ng.js');
-      var wasmUrl = vendorUrl('espeak-ng.wasm');
+      var jsUrl = ESPEAK_JS_URL;
+      var wasmUrl = ESPEAK_WASM_URL;
       espeakAssetsPromise = Promise.all([
         import(jsUrl),
         fetch(wasmUrl).then(function (response) {
@@ -1178,6 +1194,229 @@
     bijan: 'fa_IR-amir-medium'
   };
 
+  var ortPromise = null;
+  var piperSessions = {};
+  var piperConfigs = {};
+
+  function resolvePageUrl(value) {
+    if (!value || typeof window === 'undefined') {
+      return '';
+    }
+    try {
+      return new URL(value, window.location.href).href;
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function safePathPart(value) {
+    return String(value || '').replace(/[^0-9A-Za-z_-]/g, '');
+  }
+
+  function savedFileUrl(config, voiceId, key) {
+    var settings = config || {};
+    var base = resolvePageUrl(settings.audioBase);
+    var postId = safePathPart(settings.postId);
+    if (!base || !postId || (voiceId !== 'manijeh' && voiceId !== 'bijan')) {
+      return '';
+    }
+    return base.replace(/\/$/, '') + '/' + postId + '/' + voiceId + '/' + key + '.wav';
+  }
+
+  function loadOrt() {
+    if (typeof window === 'undefined') {
+      return Promise.reject(new Error('ort'));
+    }
+    if (window.ort) {
+      window.ort.env.wasm.numThreads = 1;
+      window.ort.env.wasm.wasmPaths = ORT_WASM_URL;
+      return Promise.resolve(window.ort);
+    }
+    if (!ortPromise) {
+      ortPromise = new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.src = ORT_JS_URL;
+        script.onload = function () {
+          if (!window.ort) {
+            reject(new Error('ort'));
+            return;
+          }
+          window.ort.env.wasm.numThreads = 1;
+          window.ort.env.wasm.wasmPaths = ORT_WASM_URL;
+          resolve(window.ort);
+        };
+        script.onerror = function () {
+          ortPromise = null;
+          reject(new Error('ort'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+    return ortPromise;
+  }
+
+  function ipaFor(text) {
+    return loadEspeakAssets().then(function (assets) {
+      var lines = [];
+      return assets.factory({
+        wasmBinary: assets.wasmBinary,
+        print: function (line) {
+          lines.push(String(line));
+        },
+        arguments: ['--ipa', '-q', '-v', 'fa', String(text || '')]
+      }).then(function () {
+        var ipa = lines.join(' ').replace(/\s+/g, ' ').trim();
+        if (!ipa) {
+          throw new Error('ipa');
+        }
+        if (/[.!?؟]$/.test(text) && !/[.!?؟]$/.test(ipa)) {
+          ipa += '.';
+        }
+        return ipa;
+      });
+    });
+  }
+
+  function phonemeIds(ipa, idMap) {
+    var chars = Array.from(String(ipa || '').normalize('NFD'));
+    var ids = [idMap['^'][0], idMap['_'][0]];
+    chars.forEach(function (ch) {
+      var row = idMap[ch];
+      if (!row) {
+        return;
+      }
+      ids.push(row[0], idMap['_'][0]);
+    });
+    ids.push(idMap['$'][0]);
+    return ids;
+  }
+
+  function loadPiperVoice(voiceId) {
+    var id = voiceId === 'bijan' ? 'bijan' : 'manijeh';
+    var spec = PIPER_PUBLIC[id];
+    if (!piperSessions[id]) {
+      piperConfigs[id] = fetch(spec.config).then(function (response) {
+        if (!response || !response.ok) {
+          throw new Error('config');
+        }
+        return response.json();
+      });
+      piperSessions[id] = loadOrt().then(function (ort) {
+        return ort.InferenceSession.create(spec.model, {
+          executionProviders: ['wasm']
+        });
+      });
+    }
+    return Promise.all([piperSessions[id], piperConfigs[id]]);
+  }
+
+  function floatToWav(samples, sampleRate) {
+    var rate = sampleRate || 22050;
+    var buffer = new ArrayBuffer(44 + samples.length * 2);
+    var view = new DataView(buffer);
+    function writeString(offset, value) {
+      var index;
+      for (index = 0; index < value.length; index += 1) {
+        view.setUint8(offset + index, value.charCodeAt(index));
+      }
+    }
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, rate, true);
+    view.setUint32(28, rate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+    var offset = 44;
+    var index;
+    for (index = 0; index < samples.length; index += 1) {
+      var sample = Math.max(-1, Math.min(1, samples[index]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      offset += 2;
+    }
+    return buffer;
+  }
+
+  function synthesizePiperWav(voiceId, text) {
+    return Promise.all([ipaFor(text), loadPiperVoice(voiceId)]).then(function (parts) {
+      var ipa = parts[0];
+      var session = parts[1][0];
+      var config = parts[1][1] || {};
+      var inference = config.inference || {};
+      var ids = phonemeIds(ipa, config.phoneme_id_map);
+      var ort = window.ort;
+      var scales = [
+        Number(inference.noise_scale) || 0.667,
+        Number(inference.length_scale) || 1,
+        Number(inference.noise_w) || 0.8
+      ];
+      var feeds = {
+        input: new ort.Tensor('int64', BigInt64Array.from(ids.map(function (n) {
+          return BigInt(n);
+        })), [1, ids.length]),
+        input_lengths: new ort.Tensor('int64', BigInt64Array.from([BigInt(ids.length)]), [1]),
+        scales: new ort.Tensor('float32', Float32Array.from(scales), [3])
+      };
+      return session.run(feeds).then(function (result) {
+        var output = result[session.outputNames[0]].data;
+        var rate = config.audio && config.audio.sample_rate ? config.audio.sample_rate : 22050;
+        return floatToWav(output, rate);
+      });
+    });
+  }
+
+  function storePiperWav(config, voiceId, key, wav) {
+    var settings = config || {};
+    var endpoint = resolvePageUrl(settings.saveEndpoint);
+    if (!endpoint || typeof FormData === 'undefined') {
+      return;
+    }
+    var body = new FormData();
+    body.append('post_id', String(settings.postId || ''));
+    body.append('voice', voiceId);
+    body.append('key', key);
+    body.append('audio', new Blob([wav], { type: 'audio/wav' }), key + '.wav');
+    var headers = {};
+    if (settings.nonce) {
+      headers['X-WP-Nonce'] = settings.nonce;
+    }
+    fetch(endpoint, {
+      method: 'POST',
+      body: body,
+      headers: headers,
+      credentials: 'same-origin'
+    }).catch(function () {});
+  }
+
+  function fetchSavedWav(url) {
+    if (!url) {
+      return Promise.resolve(null);
+    }
+    return fetch(url, { cache: 'no-store' }).then(function (response) {
+      if (!response || !response.ok) {
+        return null;
+      }
+      return response.arrayBuffer();
+    }).then(function (wav) {
+      if (!wav || wav.byteLength < 44) {
+        return null;
+      }
+      var mark = new Uint8Array(wav, 0, 4);
+      if (mark[0] !== 82 || mark[1] !== 73 || mark[2] !== 70 || mark[3] !== 70) {
+        return null;
+      }
+      return wav;
+    }).catch(function () {
+      return null;
+    });
+  }
+
   var speechManifestPromise = null;
 
   function speechKey(text) {
@@ -1218,7 +1457,7 @@
     return speechManifestPromise;
   }
 
-  function createPrerenderedEngine() {
+  function createPrerenderedEngine(config) {
     var token = 0;
     var active = null;
 
@@ -1303,14 +1542,7 @@
       models: PIPER_MODELS,
       prime: primeBuiltinAudio,
       isAvailable: function () {
-        if (!canPlayPrerendered()) {
-          return Promise.resolve(false);
-        }
-        return loadSpeechManifest().then(function (manifest) {
-          return Boolean(manifest && manifest.manijeh && manifest.bijan);
-        }).catch(function () {
-          return false;
-        });
+        return Promise.resolve(canPlayPrerendered());
       },
       speak: function (text, opts) {
         var my = ++token;
@@ -1343,20 +1575,22 @@
             finish(record, { reason: 'error', error: 'audio' });
             return;
           }
-          loadSpeechManifest().then(function (manifest) {
+          var key = speechKey(text);
+          fetchSavedWav(savedFileUrl(config, voiceId, key)).then(function (saved) {
             if (record.token !== my || !record.resolve) {
               return null;
             }
-            var voice = manifest[voiceId] || {};
-            var file = voice[speechKey(text)];
-            if (!file) {
-              throw new Error('missing');
+            if (saved) {
+              return saved;
             }
-            return fetch(vendorUrl('speech/' + file)).then(function (response) {
-              if (!response || !response.ok) {
-                throw new Error('wav');
+            if (opts && typeof opts.onPrepare === 'function') {
+              opts.onPrepare();
+            }
+            return synthesizePiperWav(voiceId, text).then(function (wav) {
+              if (wav && record.token === my) {
+                storePiperWav(config, voiceId, key, wav);
               }
-              return response.arrayBuffer();
+              return wav;
             });
           }).then(function (wav) {
             if (!wav || record.token !== my || !record.resolve) {
@@ -1421,7 +1655,7 @@
     var chain = Promise.resolve(null);
 
     if (canPlayPrerendered()) {
-      var prerendered = createPrerenderedEngine();
+      var prerendered = createPrerenderedEngine(settings);
       chain = prerendered.isAvailable().then(function (ready) {
         return ready ? prerendered : null;
       });
@@ -1527,7 +1761,11 @@
     return {
       selector: selector,
       azureEndpoint: typeof boot.azureEndpoint === 'string' ? boot.azureEndpoint : '',
-      espeakBackend: boot.espeakBackend || null
+      espeakBackend: boot.espeakBackend || null,
+      postId: boot.postId != null ? boot.postId : '',
+      audioBase: typeof boot.audioBase === 'string' ? boot.audioBase : '',
+      saveEndpoint: typeof boot.saveEndpoint === 'string' ? boot.saveEndpoint : '',
+      nonce: typeof boot.nonce === 'string' ? boot.nonce : ''
     };
   }
 
@@ -1728,10 +1966,15 @@
     };
     controller.onPrepare = function () {
       if (controller.snapshot().status === 'playing') {
-        statusEl.textContent = 'در حال آماده‌سازی صدا';
+        statusEl.textContent = PREPARING_MESSAGE;
+        showMessage(PREPARING_MESSAGE);
       }
     };
     controller.onSpeaking = function () {
+      if (message.textContent === PREPARING_MESSAGE) {
+        message.hidden = true;
+        message.textContent = '';
+      }
       if (controller.snapshot().status === 'playing') {
         statusEl.textContent = 'در حال پخش';
       }

@@ -314,6 +314,10 @@ test('source does not call Azure or bundle a Neshan model', function () {
   assert.equal(/api[_-]?key\s*[:=]\s*['"][A-Za-z0-9]/.test(src), false);
   assert.equal(src.includes('espeak-ng.js'), true);
   assert.equal(src.includes('espeak-ng.wasm'), true);
+  assert.equal(src.includes('fa_IR-mana-medium.onnx'), true);
+  assert.equal(src.includes('fa_IR-amir-medium.onnx'), true);
+  assert.equal(src.includes('در حال آماده‌کردن صدا…'), true);
+  assert.equal(src.includes("vendorUrl('speech/'"), false);
   assert.equal(src.includes('playbackRate'), true);
   assert.equal(src.includes("'-s', '175'"), true);
 });
