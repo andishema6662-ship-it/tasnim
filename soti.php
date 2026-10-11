@@ -2,8 +2,8 @@
 /**
  * Plugin Name: شنیدار (Shenidar)
  * Plugin URI: https://github.com/andishema6662-ship-it/tasnim
- * Description: خواندن بلند یک خبر فارسی روی نوشته‌های تکی. صدای منیژه همراه خود افزونه است.
- * Version: 1.4.0
+ * Description: خواندن بلند متن همان نوشته. صفحهٔ خبر، متن را به سرویس گفتار می‌فرستد و فایل صوتی را پخش می‌کند.
+ * Version: 1.5.0
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author: Soti
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SOTI_VERSION', '1.4.0');
+define('SOTI_VERSION', '1.5.0');
 define('SOTI_FILE', __FILE__);
 
 require_once __DIR__ . '/includes/class-soti-plugin.php';
