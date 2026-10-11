@@ -1,8 +1,8 @@
 /**
- * Shenidar (شنیدار) plays one bundled Mana recording, labeled منیژه.
- * The file is assets/shenidar.mp3. Speeds use playbackRate: 0.75, 1, 1.25.
- * The page does not call a speech API or download a model.
- * Neshan's proprietary Manijeh and Bijan recordings are not used.
+ * Shenidar (شنیدار) reads the open article and speaks that text.
+ * Play posts the article to https://api.tts.ai/v1/tts/ and plays the returned wav.
+ * منیژه is fa_IR-mana-medium. Speeds use playbackRate: 0.75, 1, 1.25.
+ * No bundled recording. Neshan's proprietary recordings are not used.
  */
 (function (root, factory) {
   'use strict';
@@ -49,6 +49,9 @@
 
   var ENGINE_FAILURE_MESSAGE = 'صدای فارسی در این مرورگر پیدا نشد.';
   var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
+  var UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
+  var TTS_ENDPOINT = 'https://api.tts.ai/v1/tts/';
+  var TTS_RESULT = 'https://api.tts.ai/v1/speech/results/?uuid=';
 
   var sharedAudioContext = null;
   var espeakAssetsPromise = null;
@@ -946,19 +949,110 @@
     if (!selector && script) {
       selector = script.getAttribute('data-selector') || script.getAttribute('data-article') || '';
     }
-    var audioUrl = typeof boot.audioUrl === 'string' ? boot.audioUrl : '';
-    if (!audioUrl && script && script.src) {
-      try {
-        audioUrl = new URL('shenidar.mp3', script.src).href;
-      } catch (error) {
-        audioUrl = '';
-      }
-    }
     return {
       selector: selector,
-      postId: boot.postId != null ? boot.postId : '',
-      audioUrl: audioUrl
+      postId: boot.postId != null ? boot.postId : ''
     };
+  }
+
+  function isSafeSpeechUrl(value) {
+    try {
+      var url = new URL(value);
+      if (url.protocol !== 'https:') {
+        return false;
+      }
+      var host = url.hostname.toLowerCase();
+      return host === 'tts.ai' || host.slice(-7) === '.tts.ai';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function wait(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function pollSpeech(uuid, isCurrent, tries) {
+    if (!isCurrent()) {
+      return Promise.reject(new Error('stale'));
+    }
+    if (tries > 120) {
+      return Promise.reject(new Error('http'));
+    }
+    return fetch(TTS_RESULT + encodeURIComponent(uuid), {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      headers: { Accept: 'application/json' }
+    }).then(function (response) {
+      if (!isCurrent()) {
+        throw new Error('stale');
+      }
+      if (!response.ok) {
+        throw new Error('http');
+      }
+      return response.json();
+    }).then(function (body) {
+      if (!isCurrent()) {
+        throw new Error('stale');
+      }
+      var status = String((body && body.status) || '').toLowerCase();
+      if (status === 'failed' || status === 'error') {
+        throw new Error('failed');
+      }
+      if (status === 'completed' || status === 'complete' || status === 'done' || status === 'success') {
+        var url = (body && (body.result_url || body.url)) || '';
+        if (!isSafeSpeechUrl(url)) {
+          throw new Error('url');
+        }
+        return url;
+      }
+      return wait(2000).then(function () {
+        return pollSpeech(uuid, isCurrent, tries + 1);
+      });
+    });
+  }
+
+  function fetchSpeechUrl(text, voiceId, isCurrent) {
+    if (typeof fetch !== 'function') {
+      return Promise.reject(new Error('http'));
+    }
+    var voice = voiceId === 'bijan' ? PIPER_MODELS.bijan : PIPER_MODELS.manijeh;
+    return fetch(TTS_ENDPOINT, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'piper',
+        text: text,
+        voice: voice,
+        language: 'fa',
+        format: 'wav'
+      })
+    }).then(function (response) {
+      if (!isCurrent()) {
+        throw new Error('stale');
+      }
+      if (!response.ok) {
+        throw new Error('http');
+      }
+      return response.json();
+    }).then(function (body) {
+      if (!isCurrent()) {
+        throw new Error('stale');
+      }
+      var uuid = body && body.uuid;
+      if (typeof uuid !== 'string' || !/^[a-f0-9]{16,64}$/i.test(uuid)) {
+        throw new Error('uuid');
+      }
+      return pollSpeech(uuid, isCurrent, 0);
+    });
   }
 
   function findArticle(selector) {
@@ -1116,15 +1210,15 @@
     var audio = document.createElement('audio');
     var voiceId = 'manijeh';
     var rate = 1;
-    var clip = absoluteUrl(config.audioUrl);
+    var generation = 0;
+    var preparing = false;
+    var clipCache = {};
 
-    audio.preload = 'metadata';
+    audio.preload = 'none';
     audio.setAttribute('playsinline', '');
     audio.hidden = true;
-    if (clip) {
-      audio.setAttribute('src', clip);
-    }
     player.appendChild(audio);
+    player.setAttribute('data-soti-spoken', extractArticleText(article));
 
     function showMessage(text) {
       message.hidden = !text;
@@ -1138,8 +1232,8 @@
       progress.setAttribute('aria-valuenow', String(percent));
       fill.style.width = percent + '%';
       playBtn.setAttribute('aria-pressed', playing ? 'true' : 'false');
-      pauseBtn.disabled = !playing;
-      stopBtn.disabled = !playing && audio.currentTime === 0;
+      pauseBtn.disabled = !playing && !preparing;
+      stopBtn.disabled = !playing && !preparing && audio.currentTime === 0;
       rateButtons.forEach(function (button) {
         button.setAttribute('aria-pressed', Number(button.getAttribute('data-rate')) === rate ? 'true' : 'false');
       });
@@ -1148,7 +1242,10 @@
         button.setAttribute('aria-checked', selected ? 'true' : 'false');
         button.tabIndex = selected ? 0 : -1;
       });
-      if (audio.ended) {
+      if (preparing) {
+        statusEl.textContent = PREPARING_MESSAGE;
+        progressText.textContent = PREPARING_MESSAGE;
+      } else if (audio.ended) {
         statusEl.textContent = 'پایان';
         progressText.textContent = 'پایان';
       } else if (playing) {
@@ -1170,23 +1267,8 @@
       paintChrome();
     }
 
-    function speak() {
-      if (!audio.getAttribute('src')) {
-        return;
-      }
-      showMessage('');
-      if (audio.paused && !audio.ended && audio.currentTime > 0) {
-        applyRate();
-        audio.play();
-        return;
-      }
-      if (audio.ended) {
-        try {
-          audio.currentTime = 0;
-        } catch (error) {
-          /* ignore */
-        }
-      }
+    function playClip(url) {
+      audio.setAttribute('src', url);
       applyRate();
       var played = audio.play();
       if (played && typeof played.catch === 'function') {
@@ -1196,13 +1278,93 @@
       }
     }
 
+    function haltJob() {
+      generation += 1;
+      preparing = false;
+    }
+
+    function speak() {
+      var text = extractArticleText(article);
+      player.setAttribute('data-soti-spoken', text);
+      if (!text) {
+        showMessage('');
+        paintChrome();
+        return;
+      }
+      var key = voiceId + '\n' + text;
+      var cached = clipCache[key];
+      if (cached && audio.getAttribute('src') === cached && !audio.paused && !audio.ended) {
+        return;
+      }
+      if (cached && audio.getAttribute('src') === cached && audio.paused && !audio.ended && audio.currentTime > 0) {
+        showMessage('');
+        applyRate();
+        var resumed = audio.play();
+        if (resumed && typeof resumed.catch === 'function') {
+          resumed.catch(function () {
+            paintChrome();
+          });
+        }
+        return;
+      }
+      generation += 1;
+      var token = generation;
+      if (cached) {
+        preparing = false;
+        showMessage('');
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch (error) {
+          /* ignore */
+        }
+        playClip(cached);
+        return;
+      }
+      preparing = true;
+      showMessage(PREPARING_MESSAGE);
+      try {
+        audio.pause();
+      } catch (error) {
+        /* ignore */
+      }
+      audio.removeAttribute('src');
+      paintChrome();
+      fetchSpeechUrl(text, voiceId, function () {
+        return token === generation;
+      }).then(function (url) {
+        if (token !== generation) {
+          return;
+        }
+        preparing = false;
+        clipCache[key] = url;
+        player.setAttribute('data-soti-audio', url);
+        showMessage('');
+        playClip(url);
+      }).catch(function (error) {
+        if (token !== generation || (error && error.message === 'stale')) {
+          return;
+        }
+        preparing = false;
+        showMessage(UNAVAILABLE_MESSAGE);
+        paintChrome();
+      });
+    }
+
     playBtn.addEventListener('click', function () {
       speak();
     });
     pauseBtn.addEventListener('click', function () {
+      if (preparing) {
+        haltJob();
+        showMessage('');
+        paintChrome();
+        return;
+      }
       audio.pause();
     });
     stopBtn.addEventListener('click', function () {
+      haltJob();
       showMessage('');
       audio.pause();
       try {
@@ -1210,6 +1372,7 @@
       } catch (error) {
         /* ignore */
       }
+      audio.removeAttribute('src');
       paintChrome();
     });
     rateButtons.forEach(function (button) {

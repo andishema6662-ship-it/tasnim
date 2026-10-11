@@ -317,9 +317,11 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(src.includes('.onnx'), false);
   assert.equal(src.includes('espeak-ng.js'), false);
   assert.equal(src.includes('ort.min.js'), false);
-  assert.equal(src.includes('shenidar.mp3'), true);
-  assert.equal(src.includes('صدا در این سایت در دسترس نیست.'), false);
-  assert.equal(src.includes('https://api.tts.ai'), false);
+  assert.equal(src.includes('shenidar.mp3'), false);
+  assert.equal(src.includes('صدا در این سایت در دسترس نیست.'), true);
+  assert.equal(src.includes('در حال آماده‌کردن صدا…'), true);
+  assert.equal(src.includes('https://api.tts.ai/v1/tts/'), true);
+  assert.equal(src.includes('https://api.tts.ai/v1/speech/results/?uuid='), true);
   assert.equal(src.includes('fa_IR-mana-medium'), true);
   assert.equal(src.includes('fetch(config.statusUrl'), false);
   assert.equal(src.includes('wp-json'), false);
@@ -340,7 +342,8 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(php.includes("if (self::runner() === '') {\n            return array(\n                'state' => 'unavailable'"), false);
   const plugin = fs.readFileSync(path.join(__dirname, '../includes/class-soti-plugin.php'), 'utf8');
   const main = fs.readFileSync(path.join(__dirname, '../soti.php'), 'utf8');
-  assert.equal(plugin.includes("plugins_url('assets/shenidar.mp3'"), true);
+  assert.equal(plugin.includes('shenidar.mp3'), false);
+  assert.equal(plugin.includes('audioUrl'), false);
   assert.equal(main.includes('class-soti-engine.php'), false);
   assert.equal(plugin.includes('statusUrl'), false);
   assert.equal(plugin.includes('Soti_Engine::step'), false);

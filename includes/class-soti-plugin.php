@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Enqueues the player and the bundled منیژه recording on single posts.
+ * Enqueues the player on single posts. The page reads that post and requests speech.
  */
 class Soti_Plugin {
 
@@ -30,7 +30,7 @@ class Soti_Plugin {
     }
 
     /**
-     * Loads CSS, JS, and the bundled recording only on singular posts.
+     * Loads CSS and JS only on singular posts.
      */
     public static function enqueue() {
         if (!is_singular('post')) {
@@ -67,7 +67,6 @@ class Soti_Plugin {
         $boot     = array(
             'selector' => $selector,
             'postId'   => (int) get_queried_object_id(),
-            'audioUrl' => plugins_url('assets/shenidar.mp3', SOTI_FILE),
         );
 
         wp_add_inline_script(
