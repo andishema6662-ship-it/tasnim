@@ -1,11 +1,7 @@
 /**
- * Shenidar (شنیدار) reads a Persian article in the browser.
- *
- * منیژه is fa_IR-mana-medium. بیژن is fa_IR-ganji-medium.
- * Play uses a stored wav when one exists. Otherwise the page asks
- * https://api.tts.ai/v1/tts/ for that article and plays the wav URL.
- * The browser does not download Piper or an ONNX model.
- * Speed buttons set playbackRate to 0.75, 1, or 1.25.
+ * Shenidar (شنیدار) plays one bundled Mana recording, labeled منیژه.
+ * The file is assets/shenidar.mp3. Speeds use playbackRate: 0.75, 1, 1.25.
+ * The page does not call a speech API or download a model.
  * Neshan's proprietary Manijeh and Bijan recordings are not used.
  */
 (function (root, factory) {
@@ -53,7 +49,6 @@
 
   var ENGINE_FAILURE_MESSAGE = 'صدای فارسی در این مرورگر پیدا نشد.';
   var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
-  var UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
 
   var sharedAudioContext = null;
   var espeakAssetsPromise = null;
@@ -951,14 +946,18 @@
     if (!selector && script) {
       selector = script.getAttribute('data-selector') || script.getAttribute('data-article') || '';
     }
+    var audioUrl = typeof boot.audioUrl === 'string' ? boot.audioUrl : '';
+    if (!audioUrl && script && script.src) {
+      try {
+        audioUrl = new URL('shenidar.mp3', script.src).href;
+      } catch (error) {
+        audioUrl = '';
+      }
+    }
     return {
       selector: selector,
       postId: boot.postId != null ? boot.postId : '',
-      statusUrl: typeof boot.statusUrl === 'string' ? boot.statusUrl : '',
-      clips: boot.clips && typeof boot.clips === 'object' ? {
-        manijeh: typeof boot.clips.manijeh === 'string' ? boot.clips.manijeh : '',
-        bijan: typeof boot.clips.bijan === 'string' ? boot.clips.bijan : ''
-      } : null
+      audioUrl: audioUrl
     };
   }
 
@@ -1045,16 +1044,6 @@
       'aria-label': 'منیژه، صدای زن',
       title: 'منیژه، صدای زن'
     }, [iconSvg('<circle cx="12" cy="9" r="2.15" fill="currentColor" stroke="none"/><path d="M8.4 8.3c.45-2.35 1.9-3.5 3.6-3.5s3.15 1.15 3.6 3.5"/><path d="M7.4 18.8c.55-2.7 2.3-4.2 4.6-4.2s4.05 1.5 4.6 4.2"/>')]));
-    voices.appendChild(el('button', {
-      type: 'button',
-      role: 'radio',
-      'data-voice': 'bijan',
-      'aria-checked': 'false',
-      'aria-label': 'بیژن، صدای مرد',
-      title: 'بیژن، صدای مرد',
-      tabindex: '-1'
-    }, [iconSvg('<circle cx="12" cy="7.4" r="2.45" fill="currentColor" stroke="none"/><path d="M12 10v1.5"/><path d="M6.4 18.8c.85-3.1 2.9-4.6 5.6-4.6s4.75 1.5 5.6 4.6"/>')]));
-
     var fill = el('span', { className: 'soti-progress-fill' });
     var progress = el('div', {
       className: 'soti-progress',
@@ -1100,108 +1089,6 @@
     }
   }
 
-  var TTS_ENDPOINT = 'https://api.tts.ai/v1/tts/';
-  var TTS_RESULT = 'https://api.tts.ai/v1/speech/results/?uuid=';
-
-  function speechText(article) {
-    var text = extractArticleText(article).replace(/\s+/g, ' ').trim();
-    if (text.length <= 800) {
-      return text;
-    }
-    var cut = text.slice(0, 800);
-    var mark = Math.max(cut.lastIndexOf('.'), cut.lastIndexOf('؟'), cut.lastIndexOf('!'), cut.lastIndexOf('؛'));
-    if (mark > 80) {
-      return cut.slice(0, mark + 1);
-    }
-    return cut;
-  }
-
-  function safeSpeechUrl(value) {
-    if (typeof value !== 'string' || value.indexOf('https://') !== 0) {
-      return '';
-    }
-    try {
-      var host = new URL(value).hostname.toLowerCase();
-      if (host === 'tts.ai' || host.slice(-7) === '.tts.ai') {
-        return value;
-      }
-    } catch (error) {
-      return '';
-    }
-    return '';
-  }
-
-  function wait(ms) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  function pollSpeech(uuid, isCurrent) {
-    return fetch(TTS_RESULT + encodeURIComponent(uuid), {
-      mode: 'cors',
-      credentials: 'omit',
-      cache: 'no-store'
-    }).then(function (response) {
-      if (!response || !response.ok) {
-        throw new Error('tts');
-      }
-      return response.json();
-    }).then(function (job) {
-      if (!isCurrent()) {
-        return '';
-      }
-      var status = job && job.status;
-      if (status === 'failed' || !status) {
-        throw new Error('tts');
-      }
-      if (status === 'completed') {
-        var url = safeSpeechUrl((job && (job.result_url || job.url)) || '');
-        if (!url) {
-          throw new Error('tts');
-        }
-        return url;
-      }
-      return wait(2000).then(function () {
-        if (!isCurrent()) {
-          return '';
-        }
-        return pollSpeech(uuid, isCurrent);
-      });
-    });
-  }
-
-  function fetchSpeechUrl(text, voiceId, isCurrent) {
-    var voice = voiceId === 'bijan' ? PIPER_MODELS.bijan : PIPER_MODELS.manijeh;
-    return fetch(TTS_ENDPOINT, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'omit',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'piper',
-        text: text,
-        voice: voice,
-        language: 'fa',
-        format: 'wav'
-      })
-    }).then(function (response) {
-      if (!response || !response.ok) {
-        throw new Error('tts');
-      }
-      return response.json();
-    }).then(function (data) {
-      var uuid = data && typeof data.uuid === 'string' ? data.uuid : '';
-      if (!/^[a-f0-9]{16,64}$/.test(uuid)) {
-        throw new Error('tts');
-      }
-      return pollSpeech(uuid, isCurrent);
-    });
-  }
-
   function absoluteUrl(value) {
     if (!value || typeof window === 'undefined') {
       return '';
@@ -1229,25 +1116,19 @@
     var audio = document.createElement('audio');
     var voiceId = 'manijeh';
     var rate = 1;
-    var generation = 0;
-    var state = 'idle';
-    var spoken = {
-      manijeh: config.clips && config.clips.manijeh ? config.clips.manijeh : '',
-      bijan: config.clips && config.clips.bijan ? config.clips.bijan : ''
-    };
+    var clip = absoluteUrl(config.audioUrl);
 
-    audio.preload = 'none';
+    audio.preload = 'metadata';
     audio.setAttribute('playsinline', '');
     audio.hidden = true;
+    if (clip) {
+      audio.setAttribute('src', clip);
+    }
     player.appendChild(audio);
 
     function showMessage(text) {
       message.hidden = !text;
       message.textContent = text || '';
-    }
-
-    function selectedClip() {
-      return spoken[voiceId] || '';
     }
 
     function paintChrome() {
@@ -1276,12 +1157,6 @@
       } else if (audio.currentTime > 0) {
         statusEl.textContent = 'مکث';
         progressText.textContent = 'مکث';
-      } else if (state === 'preparing') {
-        statusEl.textContent = PREPARING_MESSAGE;
-        progressText.textContent = PREPARING_MESSAGE;
-      } else if (state === 'unavailable' && !selectedClip()) {
-        statusEl.textContent = UNAVAILABLE_MESSAGE;
-        progressText.textContent = UNAVAILABLE_MESSAGE;
       } else {
         statusEl.textContent = 'آماده';
         progressText.textContent = 'آماده';
@@ -1295,22 +1170,21 @@
       paintChrome();
     }
 
-    function startClip(url) {
-      var abs = absoluteUrl(url);
-      if (!abs) {
-        state = 'unavailable';
-        showMessage(UNAVAILABLE_MESSAGE);
-        paintChrome();
+    function speak() {
+      if (!audio.getAttribute('src')) {
         return;
       }
       showMessage('');
-      if (audio.getAttribute('src') !== abs) {
-        audio.pause();
-        audio.setAttribute('src', abs);
+      if (audio.paused && !audio.ended && audio.currentTime > 0) {
+        applyRate();
+        audio.play();
+        return;
+      }
+      if (audio.ended) {
         try {
           audio.currentTime = 0;
         } catch (error) {
-          /* metadata not loaded yet */
+          /* ignore */
         }
       }
       applyRate();
@@ -1322,57 +1196,6 @@
       }
     }
 
-    function speak() {
-      var existing = selectedClip();
-      if (existing) {
-        var abs = absoluteUrl(existing);
-        if (audio.getAttribute('src') === abs && audio.paused && !audio.ended && audio.currentTime > 0) {
-          state = 'idle';
-          showMessage('');
-          applyRate();
-          audio.play();
-          return;
-        }
-        state = 'idle';
-        showMessage('');
-        startClip(existing);
-        return;
-      }
-      var text = speechText(article);
-      if (!text || typeof fetch !== 'function') {
-        state = 'unavailable';
-        showMessage(UNAVAILABLE_MESSAGE);
-        paintChrome();
-        return;
-      }
-      var token = ++generation;
-      var voice = voiceId;
-      state = 'preparing';
-      showMessage(PREPARING_MESSAGE);
-      paintChrome();
-      fetchSpeechUrl(text, voice, function () {
-        return token === generation;
-      }).then(function (url) {
-        if (token !== generation || !url) {
-          return;
-        }
-        spoken[voice] = url;
-        state = 'idle';
-        showMessage('');
-        if (voiceId === voice) {
-          startClip(url);
-        }
-        paintChrome();
-      }).catch(function () {
-        if (token !== generation) {
-          return;
-        }
-        state = 'unavailable';
-        showMessage(UNAVAILABLE_MESSAGE);
-        paintChrome();
-      });
-    }
-
     playBtn.addEventListener('click', function () {
       speak();
     });
@@ -1380,8 +1203,6 @@
       audio.pause();
     });
     stopBtn.addEventListener('click', function () {
-      generation += 1;
-      state = 'idle';
       showMessage('');
       audio.pause();
       try {
@@ -1399,13 +1220,8 @@
     });
     voiceButtons.forEach(function (button) {
       button.addEventListener('click', function () {
-        var wasPlaying = !audio.paused && !audio.ended;
-        voiceId = button.getAttribute('data-voice') === 'bijan' ? 'bijan' : 'manijeh';
-        audio.pause();
+        voiceId = 'manijeh';
         paintChrome();
-        if (wasPlaying) {
-          speak();
-        }
       });
     });
     rateGroup.addEventListener('keydown', function (event) {
@@ -1438,7 +1254,7 @@
         return;
       }
       event.preventDefault();
-      voiceId = voiceId === 'manijeh' ? 'bijan' : 'manijeh';
+      voiceId = 'manijeh';
       var next = voiceGroup.querySelector('[data-voice="' + voiceId + '"]');
       if (next) {
         next.focus();
@@ -1450,14 +1266,6 @@
     audio.addEventListener('ended', paintChrome);
     audio.addEventListener('timeupdate', paintChrome);
     audio.addEventListener('loadedmetadata', applyRate);
-    audio.addEventListener('error', function () {
-      if (!audio.getAttribute('src')) {
-        return;
-      }
-      state = 'unavailable';
-      showMessage(UNAVAILABLE_MESSAGE);
-      paintChrome();
-    });
 
     paintChrome();
     return { article: article };
