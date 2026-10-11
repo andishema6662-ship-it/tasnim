@@ -140,15 +140,14 @@ class Soti_Plugin {
 
         $selector = isset($config['selector']) ? (string) $config['selector'] : '.soti-article';
         $post_id  = (int) get_queried_object_id();
-        $post     = get_post($post_id);
-        if ($post instanceof WP_Post && $post->post_type === 'post' && $post->post_status === 'publish') {
-            Soti_Engine::step($post_id);
-        }
         $boot     = array(
-            'selector'  => $selector,
-            'postId'    => $post_id,
-            'statusUrl' => add_query_arg('post_id', $post_id, rest_url('shenidar/v1/status')),
+            'selector' => $selector,
+            'postId'   => $post_id,
         );
+        $saved = Soti_Engine::public_status($post_id);
+        if (!empty($saved['clips']['manijeh']) || !empty($saved['clips']['bijan'])) {
+            $boot['clips'] = $saved['clips'];
+        }
 
         wp_add_inline_script(
             'soti',
@@ -208,11 +207,7 @@ class Soti_Plugin {
      */
     public static function status($request) {
         $post_id = (int) $request->get_param('post_id');
-        $post    = get_post($post_id);
-        if ($post && $post->post_type === 'post' && $post->post_status === 'publish') {
-            Soti_Engine::step($post_id);
-        }
-        $body = Soti_Engine::public_status($post_id);
+        $body    = Soti_Engine::public_status($post_id);
         $response = rest_ensure_response($body);
         $response->header('Cache-Control', 'no-store');
         return $response;

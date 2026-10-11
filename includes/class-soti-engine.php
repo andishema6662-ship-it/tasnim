@@ -121,7 +121,6 @@ class Soti_Engine {
         if (self::runner() !== '' && !wp_next_scheduled('soti_generate_post', $args)) {
             wp_schedule_single_event(time() + 5, 'soti_generate_post', $args);
         }
-        self::step($post_id);
     }
 
     /**

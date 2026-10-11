@@ -319,7 +319,12 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(src.includes('ort.min.js'), false);
   assert.equal(src.includes('در حال آماده‌کردن صدا…'), true);
   assert.equal(src.includes('صدا در این سایت در دسترس نیست.'), true);
-  assert.equal(src.includes('statusUrl'), true);
+  assert.equal(src.includes('https://api.tts.ai/v1/tts/'), true);
+  assert.equal(src.includes('https://api.tts.ai/v1/speech/results/?uuid='), true);
+  assert.equal(src.includes('fa_IR-mana-medium'), true);
+  assert.equal(src.includes('fa_IR-ganji-medium'), true);
+  assert.equal(src.includes('fetch(config.statusUrl'), false);
+  assert.equal(src.includes('wp-json'), false);
   assert.equal(src.includes('playbackRate'), true);
   assert.equal(php.includes('download_url'), true);
   assert.equal(php.includes('fa_IR-mana-medium'), true);
@@ -336,7 +341,8 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(php.includes('soti_fails_'), false);
   assert.equal(php.includes("if (self::runner() === '') {\n            return array(\n                'state' => 'unavailable'"), false);
   const plugin = fs.readFileSync(path.join(__dirname, '../includes/class-soti-plugin.php'), 'utf8');
-  assert.equal(plugin.includes('Soti_Engine::step'), true);
+  assert.equal(plugin.includes('statusUrl'), false);
+  assert.equal(plugin.includes('Soti_Engine::step'), false);
   assert.equal(plugin.includes("'state' => 'unavailable'"), false);
   assert.equal(src.includes("return Promise.resolve({ state: 'unavailable', clips: {} });"), false);
 });

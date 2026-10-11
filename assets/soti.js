@@ -1,8 +1,10 @@
 /**
- * Shenidar (شنیدار) plays a Persian article the server already rendered.
+ * Shenidar (شنیدار) reads a Persian article in the browser.
  *
  * منیژه is fa_IR-mana-medium. بیژن is fa_IR-ganji-medium.
- * The visitor plays the stored wav. The browser does not download Piper.
+ * Play uses a stored wav when one exists. Otherwise the page asks
+ * https://api.tts.ai/v1/tts/ for that article and plays the wav URL.
+ * The browser does not download Piper or an ONNX model.
  * Speed buttons set playbackRate to 0.75, 1, or 1.25.
  * Neshan's proprietary Manijeh and Bijan recordings are not used.
  */
@@ -1098,6 +1100,108 @@
     }
   }
 
+  var TTS_ENDPOINT = 'https://api.tts.ai/v1/tts/';
+  var TTS_RESULT = 'https://api.tts.ai/v1/speech/results/?uuid=';
+
+  function speechText(article) {
+    var text = extractArticleText(article).replace(/\s+/g, ' ').trim();
+    if (text.length <= 800) {
+      return text;
+    }
+    var cut = text.slice(0, 800);
+    var mark = Math.max(cut.lastIndexOf('.'), cut.lastIndexOf('؟'), cut.lastIndexOf('!'), cut.lastIndexOf('؛'));
+    if (mark > 80) {
+      return cut.slice(0, mark + 1);
+    }
+    return cut;
+  }
+
+  function safeSpeechUrl(value) {
+    if (typeof value !== 'string' || value.indexOf('https://') !== 0) {
+      return '';
+    }
+    try {
+      var host = new URL(value).hostname.toLowerCase();
+      if (host === 'tts.ai' || host.slice(-7) === '.tts.ai') {
+        return value;
+      }
+    } catch (error) {
+      return '';
+    }
+    return '';
+  }
+
+  function wait(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function pollSpeech(uuid, isCurrent) {
+    return fetch(TTS_RESULT + encodeURIComponent(uuid), {
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store'
+    }).then(function (response) {
+      if (!response || !response.ok) {
+        throw new Error('tts');
+      }
+      return response.json();
+    }).then(function (job) {
+      if (!isCurrent()) {
+        return '';
+      }
+      var status = job && job.status;
+      if (status === 'failed' || !status) {
+        throw new Error('tts');
+      }
+      if (status === 'completed') {
+        var url = safeSpeechUrl((job && (job.result_url || job.url)) || '');
+        if (!url) {
+          throw new Error('tts');
+        }
+        return url;
+      }
+      return wait(2000).then(function () {
+        if (!isCurrent()) {
+          return '';
+        }
+        return pollSpeech(uuid, isCurrent);
+      });
+    });
+  }
+
+  function fetchSpeechUrl(text, voiceId, isCurrent) {
+    var voice = voiceId === 'bijan' ? PIPER_MODELS.bijan : PIPER_MODELS.manijeh;
+    return fetch(TTS_ENDPOINT, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'piper',
+        text: text,
+        voice: voice,
+        language: 'fa',
+        format: 'wav'
+      })
+    }).then(function (response) {
+      if (!response || !response.ok) {
+        throw new Error('tts');
+      }
+      return response.json();
+    }).then(function (data) {
+      var uuid = data && typeof data.uuid === 'string' ? data.uuid : '';
+      if (!/^[a-f0-9]{16,64}$/.test(uuid)) {
+        throw new Error('tts');
+      }
+      return pollSpeech(uuid, isCurrent);
+    });
+  }
+
   function absoluteUrl(value) {
     if (!value || typeof window === 'undefined') {
       return '';
@@ -1125,10 +1229,12 @@
     var audio = document.createElement('audio');
     var voiceId = 'manijeh';
     var rate = 1;
-    var clips = {};
-    var state = config.clips ? 'ready' : 'preparing';
-    var pollTimer = 0;
-    var wantPlay = false;
+    var generation = 0;
+    var state = 'idle';
+    var spoken = {
+      manijeh: config.clips && config.clips.manijeh ? config.clips.manijeh : '',
+      bijan: config.clips && config.clips.bijan ? config.clips.bijan : ''
+    };
 
     audio.preload = 'none';
     audio.setAttribute('playsinline', '');
@@ -1141,7 +1247,7 @@
     }
 
     function selectedClip() {
-      return clips[voiceId] || '';
+      return spoken[voiceId] || '';
     }
 
     function paintChrome() {
@@ -1170,12 +1276,12 @@
       } else if (audio.currentTime > 0) {
         statusEl.textContent = 'مکث';
         progressText.textContent = 'مکث';
-      } else if (!selectedClip() && state === 'unavailable') {
-        statusEl.textContent = UNAVAILABLE_MESSAGE;
-        progressText.textContent = UNAVAILABLE_MESSAGE;
-      } else if (!selectedClip()) {
+      } else if (state === 'preparing') {
         statusEl.textContent = PREPARING_MESSAGE;
         progressText.textContent = PREPARING_MESSAGE;
+      } else if (state === 'unavailable' && !selectedClip()) {
+        statusEl.textContent = UNAVAILABLE_MESSAGE;
+        progressText.textContent = UNAVAILABLE_MESSAGE;
       } else {
         statusEl.textContent = 'آماده';
         progressText.textContent = 'آماده';
@@ -1189,88 +1295,12 @@
       paintChrome();
     }
 
-    function stopPolling() {
-      if (pollTimer) {
-        window.clearInterval(pollTimer);
-        pollTimer = 0;
-      }
-    }
-
-    function hasStoredClips() {
-      return !!(config.clips && (config.clips.manijeh || config.clips.bijan));
-    }
-
-    function schedulePoll() {
-      if (pollTimer || state === 'unavailable' || state === 'ready' || hasStoredClips()) {
-        return;
-      }
-      pollTimer = window.setInterval(function () {
-        refresh();
-      }, 4000);
-    }
-
-    function applyClips(nextClips, nextState) {
-      clips = nextClips || {};
-      state = nextState === 'ready' || nextState === 'unavailable' ? nextState : 'preparing';
-      if (state === 'unavailable' && !selectedClip()) {
-        stopPolling();
-        showMessage(UNAVAILABLE_MESSAGE);
-      } else if (selectedClip()) {
-        if (message.textContent === PREPARING_MESSAGE || message.textContent === UNAVAILABLE_MESSAGE) {
-          showMessage('');
-        }
-        if (state === 'preparing') {
-          schedulePoll();
-        } else {
-          stopPolling();
-        }
-        if (wantPlay) {
-          wantPlay = false;
-          startClip(selectedClip());
-        }
-      } else {
-        showMessage(PREPARING_MESSAGE);
-        schedulePoll();
-      }
-      paintChrome();
-    }
-
-    function readStatus() {
-      if (hasStoredClips()) {
-        return Promise.resolve({ state: 'ready', clips: config.clips });
-      }
-      if (!config.statusUrl || typeof fetch !== 'function') {
-        return Promise.resolve({ state: 'preparing', clips: clips });
-      }
-      return fetch(config.statusUrl, { cache: 'no-store', credentials: 'same-origin' }).then(function (response) {
-        if (!response || !response.ok) {
-          throw new Error('status');
-        }
-        return response.json();
-      }).then(function (data) {
-        var next = data && data.state;
-        return {
-          state: next === 'ready' || next === 'unavailable' ? next : 'preparing',
-          clips: data && data.clips ? data.clips : {}
-        };
-      }).catch(function () {
-        return { state: 'preparing', clips: clips };
-      });
-    }
-
-    function refresh() {
-      return readStatus().then(function (data) {
-        applyClips(data.clips, data.state);
-      });
-    }
-
     function startClip(url) {
       var abs = absoluteUrl(url);
       if (!abs) {
-        showMessage(state === 'unavailable' ? UNAVAILABLE_MESSAGE : PREPARING_MESSAGE);
-        if (state !== 'unavailable') {
-          schedulePoll();
-        }
+        state = 'unavailable';
+        showMessage(UNAVAILABLE_MESSAGE);
+        paintChrome();
         return;
       }
       showMessage('');
@@ -1292,27 +1322,67 @@
       }
     }
 
+    function speak() {
+      var existing = selectedClip();
+      if (existing) {
+        var abs = absoluteUrl(existing);
+        if (audio.getAttribute('src') === abs && audio.paused && !audio.ended && audio.currentTime > 0) {
+          state = 'idle';
+          showMessage('');
+          applyRate();
+          audio.play();
+          return;
+        }
+        state = 'idle';
+        showMessage('');
+        startClip(existing);
+        return;
+      }
+      var text = speechText(article);
+      if (!text || typeof fetch !== 'function') {
+        state = 'unavailable';
+        showMessage(UNAVAILABLE_MESSAGE);
+        paintChrome();
+        return;
+      }
+      var token = ++generation;
+      var voice = voiceId;
+      state = 'preparing';
+      showMessage(PREPARING_MESSAGE);
+      paintChrome();
+      fetchSpeechUrl(text, voice, function () {
+        return token === generation;
+      }).then(function (url) {
+        if (token !== generation || !url) {
+          return;
+        }
+        spoken[voice] = url;
+        state = 'idle';
+        showMessage('');
+        if (voiceId === voice) {
+          startClip(url);
+        }
+        paintChrome();
+      }).catch(function () {
+        if (token !== generation) {
+          return;
+        }
+        state = 'unavailable';
+        showMessage(UNAVAILABLE_MESSAGE);
+        paintChrome();
+      });
+    }
+
     playBtn.addEventListener('click', function () {
-      var url = selectedClip();
-      if (!url) {
-        wantPlay = true;
-        showMessage(state === 'unavailable' ? UNAVAILABLE_MESSAGE : PREPARING_MESSAGE);
-        refresh();
-        return;
-      }
-      var abs = absoluteUrl(url);
-      if (audio.getAttribute('src') === abs && audio.paused && !audio.ended && audio.currentTime > 0) {
-        applyRate();
-        audio.play();
-        return;
-      }
-      startClip(url);
+      speak();
     });
     pauseBtn.addEventListener('click', function () {
       audio.pause();
     });
     stopBtn.addEventListener('click', function () {
-      wantPlay = false;
+      generation += 1;
+      state = 'idle';
+      showMessage('');
       audio.pause();
       try {
         audio.currentTime = 0;
@@ -1333,14 +1403,8 @@
         voiceId = button.getAttribute('data-voice') === 'bijan' ? 'bijan' : 'manijeh';
         audio.pause();
         paintChrome();
-        var url = selectedClip();
-        if (url && wasPlaying) {
-          startClip(url);
-          return;
-        }
-        if (!url) {
-          wantPlay = wasPlaying;
-          refresh();
+        if (wasPlaying) {
+          speak();
         }
       });
     });
@@ -1387,21 +1451,15 @@
     audio.addEventListener('timeupdate', paintChrome);
     audio.addEventListener('loadedmetadata', applyRate);
     audio.addEventListener('error', function () {
-      if (state === 'unavailable' && !selectedClip()) {
-        showMessage(UNAVAILABLE_MESSAGE);
-      } else if (!selectedClip()) {
-        showMessage(PREPARING_MESSAGE);
-        schedulePoll();
+      if (!audio.getAttribute('src')) {
+        return;
       }
+      state = 'unavailable';
+      showMessage(UNAVAILABLE_MESSAGE);
       paintChrome();
     });
 
     paintChrome();
-    if (!hasStoredClips()) {
-      showMessage(PREPARING_MESSAGE);
-      schedulePoll();
-    }
-    refresh();
     return { article: article };
   }
 
