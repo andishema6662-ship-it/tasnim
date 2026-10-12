@@ -51,7 +51,6 @@
   var PREPARING_MESSAGE = 'در حال آماده‌کردن صدا…';
   var UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
   var MISSING_MESSAGE = 'متن این خبر پیدا نشد.';
-  var BLOCKED_MESSAGE = 'این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.';
 
   var sharedAudioContext = null;
   var espeakAssetsPromise = null;
@@ -1024,7 +1023,7 @@
         return url;
       }
       var message = body && body.message ? String(body.message) : UNAVAILABLE_MESSAGE;
-      if (message !== BLOCKED_MESSAGE && message !== MISSING_MESSAGE) {
+      if (message !== MISSING_MESSAGE) {
         message = UNAVAILABLE_MESSAGE;
       }
       throw speechFailure(message);

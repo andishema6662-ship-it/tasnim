@@ -1,6 +1,6 @@
 <?php
 /**
- * Proves a blocked host says so in Persian and does not write a clip.
+ * Proves a blocked host still saves the article wav from the HTTP speech service.
  *
  * Run: php -d disable_functions=proc_open,exec tests/prove-remote-status.php
  *
@@ -142,46 +142,46 @@ function wp_strip_all_tags($content) {
 }
 
 /**
- * @param string               $method Method.
- * @param string               $url    URL.
- * @param array<string,mixed>  $args   Args.
+ * @return string
+ */
+function soti_tiny_wav() {
+    $data = str_repeat("\x00\x10", 200);
+    $size = strlen($data);
+    return 'RIFF' . pack('V', 36 + $size) . 'WAVE'
+        . 'fmt ' . pack('V', 16) . pack('v', 1) . pack('v', 1) . pack('V', 22050) . pack('V', 44100) . pack('v', 2) . pack('v', 16)
+        . 'data' . pack('V', $size) . $data;
+}
+
+/**
+ * @param string              $method Method.
+ * @param string              $url    URL.
+ * @param array<string,mixed> $args   Args.
  * @return array<string,mixed>|WP_Error
  */
 function soti_http($method, $url, $args) {
-    $headers = array();
-    if (!empty($args['headers']) && is_array($args['headers'])) {
-        foreach ($args['headers'] as $name => $value) {
-            $headers[] = $name . ': ' . $value;
-        }
-    }
-    $context = stream_context_create(
-        array(
-            'http' => array(
-                'method'          => $method,
-                'header'          => implode("\r\n", $headers),
-                'content'         => $method === 'POST' && isset($args['body']) ? $args['body'] : '',
-                'timeout'         => isset($args['timeout']) ? (int) $args['timeout'] : 20,
-                'ignore_errors'   => true,
-                'follow_location' => 1,
-            ),
-        )
-    );
-    $body = @file_get_contents($url, false, $context);
-    $code = 0;
-    if (isset($http_response_header) && is_array($http_response_header)) {
-        foreach ($http_response_header as $line) {
-            if (preg_match('#^HTTP/\\S+\\s+(\\d+)#', $line, $match)) {
-                $code = (int) $match[1];
-            }
-        }
-    }
-    if ($body === false) {
+    if (!empty($GLOBALS['soti_http_fail'])) {
         return new WP_Error('http_request_failed', 'request failed');
     }
-    return array(
-        'body'     => $body,
-        'response' => array('code' => $code),
-    );
+    if ($method === 'POST' && strpos($url, 'https://api.tts.ai/v1/tts/') === 0) {
+        $GLOBALS['soti_last_body'] = isset($args['body']) ? (string) $args['body'] : '';
+        return array(
+            'body'     => wp_json_encode(
+                array(
+                    'uuid'       => 'abc123abc123abc123abc123abc123ab',
+                    'status'     => 'completed',
+                    'result_url' => 'https://cdn.tts.ai/abc123abc123abc123abc123abc123ab/tts_output.wav',
+                )
+            ),
+            'response' => array('code' => 200),
+        );
+    }
+    if ($method === 'GET' && strpos($url, 'https://cdn.tts.ai/') === 0) {
+        return array(
+            'body'     => soti_tiny_wav(),
+            'response' => array('code' => 200),
+        );
+    }
+    return new WP_Error('http_request_failed', 'unexpected url');
 }
 
 /**
@@ -233,16 +233,46 @@ if ($runner !== '') {
     exit(1);
 }
 
-$result = Soti_Engine::speak(42, 'bijan');
-$wavs   = glob($uploads . '/shenidar/*/*.wav');
-$ok     = is_array($result)
-    && empty($result['ok'])
-    && empty($result['url'])
-    && isset($result['message'])
-    && $result['message'] === 'این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.'
+$blocked = 'این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.';
+$missing = 'صدا در این سایت در دسترس نیست.';
+
+$GLOBALS['soti_http_fail'] = true;
+$failed = Soti_Engine::speak(42, 'bijan');
+$wavs   = glob($uploads . '/shenidar/*/*/*.wav');
+$fail_ok = is_array($failed)
+    && empty($failed['ok'])
+    && empty($failed['url'])
+    && isset($failed['message'])
+    && $failed['message'] === $missing
+    && $failed['message'] !== $blocked
     && $wavs === array();
 
-echo 'message=' . (isset($result['message']) ? $result['message'] : '') . "\n";
-echo 'url=' . (isset($result['url']) ? $result['url'] : '') . "\n";
+$GLOBALS['soti_http_fail'] = false;
+$spoken = Soti_Engine::speak(42, 'bijan');
+$wavs   = glob($uploads . '/shenidar/*/*/*.wav');
+$body   = isset($GLOBALS['soti_last_body']) ? $GLOBALS['soti_last_body'] : '';
+$speak_ok = is_array($spoken)
+    && !empty($spoken['ok'])
+    && !empty($spoken['url'])
+    && strpos($spoken['url'], '/shenidar/42/bijan/') !== false
+    && substr($spoken['url'], -4) === '.wav'
+    && $spoken['message'] === ''
+    && $spoken['message'] !== $blocked
+    && is_array($wavs)
+    && count($wavs) === 1
+    && filesize($wavs[0]) > 44
+    && strpos($body, 'سلام دوستان.') !== false
+    && strpos($body, 'fa_IR-gyro-medium') !== false;
+
+$GLOBALS['soti_http_fail'] = true;
+$again = Soti_Engine::speak(42, 'bijan');
+$again_ok = is_array($again)
+    && !empty($again['ok'])
+    && $again['url'] === $spoken['url']
+    && $again['message'] === '';
+
+$ok = $fail_ok && $speak_ok && $again_ok;
+echo 'fail_message=' . (isset($failed['message']) ? $failed['message'] : '') . "\n";
+echo 'url=' . (isset($spoken['url']) ? $spoken['url'] : '') . "\n";
 echo $ok ? "PASS\n" : "FAIL\n";
 exit($ok ? 0 : 1);

@@ -325,7 +325,7 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(src.includes('fa_IR-gyro-medium'), true);
   assert.equal(src.includes('fa_IR-ganji-medium'), false);
   assert.equal(src.includes('متن این خبر پیدا نشد.'), true);
-  assert.equal(src.includes('این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.'), true);
+  assert.equal(src.includes('این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.'), false);
   assert.equal(src.includes('شهرداری رشت'), false);
   assert.equal(src.includes('shenidar.mp3'), false);
   assert.equal(src.includes('fetch(config.statusUrl'), false);
@@ -338,10 +338,10 @@ test('visitor script plays stored files and does not fetch a model', function ()
   assert.equal(php.includes('proc_open'), true);
   assert.equal(php.includes('shenidar-engine'), true);
   assert.equal(php.includes("'/shenidar/'"), true);
-  assert.equal(php.includes('https://api.tts.ai'), false);
-  assert.equal(php.includes('wp_remote_post'), false);
-  assert.equal(php.includes('این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.'), true);
-  assert.equal(php.includes('sleep('), false);
+  assert.equal(php.includes('https://api.tts.ai/v1/tts/'), true);
+  assert.equal(php.includes('wp_remote_post'), true);
+  assert.equal(php.includes('این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.'), false);
+  assert.equal(php.includes('fa_IR-gyro-medium'), true);
   assert.equal(php.includes('soti_fails_'), false);
   assert.equal(php.includes('add_menu_page'), false);
   const plugin = fs.readFileSync(path.join(__dirname, '../includes/class-soti-plugin.php'), 'utf8');

@@ -1,10 +1,10 @@
 <?php
 /**
- * Host-side Piper for one published post.
+ * Speaks one published post.
  *
- * Voice files and the Linux Piper build live in wp-content/uploads/shenidar-engine/.
- * Each article is written under wp-content/uploads/shenidar/. Nothing here calls a
- * remote speech API, and a missing exec permission never falls back to a recording.
+ * Piper runs when this host allows programs and the engine files are present.
+ * Otherwise PHP sends that post's own text to the HTTP speech service and stores
+ * the wav under wp-content/uploads/shenidar/{post}/{voice}/.
  *
  * @package Soti
  */
@@ -17,8 +17,6 @@ if (!defined('ABSPATH')) {
  * Synthesizes the open post with the uploaded Piper voices.
  */
 class Soti_Engine {
-
-    const BLOCKED_MESSAGE = 'این میزبان اجازهٔ اجرای برنامهٔ گفتار را نمی‌دهد.';
 
     const UNAVAILABLE_MESSAGE = 'صدا در این سایت در دسترس نیست.';
 
@@ -140,22 +138,15 @@ class Soti_Engine {
             $empty['message'] = self::MISSING_MESSAGE;
             return $empty;
         }
-        if (self::runner() === '') {
-            $empty['message'] = self::BLOCKED_MESSAGE;
-            return $empty;
-        }
-        if (!self::is_ready()) {
-            return $empty;
-        }
         $uploads = wp_upload_dir();
         if (!empty($uploads['error']) || empty($uploads['basedir']) || empty($uploads['baseurl'])) {
             return $empty;
         }
         $hash = substr(hash('sha256', $voice . "\n" . $text), 0, 16);
-        $dir  = $uploads['basedir'] . '/shenidar/' . $post_id;
-        $name = $voice . '-' . $hash . '.wav';
+        $dir  = $uploads['basedir'] . '/shenidar/' . $post_id . '/' . $voice;
+        $name = $hash . '.wav';
         $path = $dir . '/' . $name;
-        $url  = rtrim((string) $uploads['baseurl'], '/') . '/shenidar/' . $post_id . '/' . $name;
+        $url  = rtrim((string) $uploads['baseurl'], '/') . '/shenidar/' . $post_id . '/' . $voice . '/' . $name;
         if (is_file($path) && filesize($path) > 44) {
             return array(
                 'ok'      => true,
@@ -170,7 +161,14 @@ class Soti_Engine {
         if (is_file($tmp)) {
             unlink($tmp);
         }
-        if (!self::synthesize($text, $voice, $tmp) || !is_file($tmp) || filesize($tmp) < 44) {
+        $wrote = false;
+        if (self::runner() !== '' && self::is_ready()) {
+            $wrote = self::synthesize($text, $voice, $tmp);
+        }
+        if (!$wrote) {
+            $wrote = self::synthesize_http($text, $voice, $tmp);
+        }
+        if (!$wrote || !is_file($tmp) || filesize($tmp) < 44) {
             if (is_file($tmp)) {
                 unlink($tmp);
             }
@@ -288,5 +286,341 @@ class Soti_Engine {
         $env['LD_LIBRARY_PATH'] = $library_dir;
         $env['HOME']            = self::engine_dir() !== '' ? self::engine_dir() : sys_get_temp_dir();
         return $env;
+    }
+
+    /**
+     * Ask the HTTP speech service for this article and write one wav.
+     *
+     * @param string $text  Article text.
+     * @param string $voice manijeh or bijan.
+     * @param string $dest  Wav path.
+     * @return bool
+     */
+    private static function synthesize_http($text, $voice, $dest) {
+        $voices = self::voices();
+        $parts  = array();
+        foreach (self::text_chunks($text, 450) as $chunk) {
+            $wav = self::remote_wav($voices[$voice], $chunk);
+            if ($wav === '') {
+                return false;
+            }
+            $parts[] = $wav;
+        }
+        $joined = self::join_wavs($parts);
+        if ($joined === '' || strlen($joined) < 44) {
+            return false;
+        }
+        return file_put_contents($dest, $joined) !== false;
+    }
+
+    /**
+     * Pieces short enough for one anonymous request.
+     *
+     * @param string $text  Article text.
+     * @param int    $limit Character limit.
+     * @return array<int,string>
+     */
+    private static function text_chunks($text, $limit) {
+        $text = trim($text);
+        if ($text === '') {
+            return array();
+        }
+        if (self::char_len($text) <= $limit) {
+            return array($text);
+        }
+        $sentences = preg_split('/(?<=[\.!\?؟])\s+/u', $text);
+        if (!is_array($sentences) || $sentences === array()) {
+            $sentences = array($text);
+        }
+        $chunks = array();
+        $buf    = '';
+        foreach ($sentences as $sentence) {
+            foreach (self::split_long(trim((string) $sentence), $limit) as $piece) {
+                if ($piece === '') {
+                    continue;
+                }
+                if ($buf === '') {
+                    $buf = $piece;
+                    continue;
+                }
+                $joined = $buf . ' ' . $piece;
+                if (self::char_len($joined) <= $limit) {
+                    $buf = $joined;
+                    continue;
+                }
+                $chunks[] = $buf;
+                $buf      = $piece;
+            }
+        }
+        if ($buf !== '') {
+            $chunks[] = $buf;
+        }
+        return $chunks;
+    }
+
+    /**
+     * @param string $text  One sentence.
+     * @param int    $limit Character limit.
+     * @return array<int,string>
+     */
+    private static function split_long($text, $limit) {
+        if ($text === '') {
+            return array();
+        }
+        if (self::char_len($text) <= $limit) {
+            return array($text);
+        }
+        $words = preg_split('/\s+/u', $text);
+        if (!is_array($words)) {
+            $words = array($text);
+        }
+        $out = array();
+        $buf = '';
+        foreach ($words as $word) {
+            $word = trim((string) $word);
+            if ($word === '') {
+                continue;
+            }
+            if (self::char_len($word) > $limit) {
+                if ($buf !== '') {
+                    $out[] = $buf;
+                    $buf   = '';
+                }
+                $start = 0;
+                $len   = self::char_len($word);
+                while ($start < $len) {
+                    $out[]  = self::char_slice($word, $start, $limit);
+                    $start += $limit;
+                }
+                continue;
+            }
+            $joined = $buf === '' ? $word : $buf . ' ' . $word;
+            if (self::char_len($joined) <= $limit) {
+                $buf = $joined;
+                continue;
+            }
+            $out[] = $buf;
+            $buf   = $word;
+        }
+        if ($buf !== '') {
+            $out[] = $buf;
+        }
+        return $out;
+    }
+
+    /**
+     * @param string $voice_file Piper voice id.
+     * @param string $text       One short chunk of this article.
+     * @return string Wav bytes, or empty.
+     */
+    private static function remote_wav($voice_file, $text) {
+        $response = wp_remote_post(
+            'https://api.tts.ai/v1/tts/',
+            array(
+                'timeout' => 30,
+                'headers' => array(
+                    'Content-Type' => 'application/json',
+                    'Accept'       => 'application/json',
+                ),
+                'body'    => wp_json_encode(
+                    array(
+                        'model'    => 'piper',
+                        'text'     => $text,
+                        'voice'    => $voice_file,
+                        'language' => 'fa',
+                        'format'   => 'wav',
+                    )
+                ),
+            )
+        );
+        $job = self::decode_job($response);
+        if ($job === null) {
+            return '';
+        }
+        $audio = self::audio_url_from_job($job);
+        if ($audio === '' && !empty($job['uuid']) && is_string($job['uuid']) && preg_match('/^[a-f0-9]{16,64}$/', $job['uuid'])) {
+            for ($try = 0; $try < 12; $try++) {
+                sleep(1);
+                $poll = wp_remote_get(
+                    'https://api.tts.ai/v1/speech/results/?uuid=' . rawurlencode($job['uuid']),
+                    array(
+                        'timeout' => 20,
+                        'headers' => array(
+                            'Accept' => 'application/json',
+                        ),
+                    )
+                );
+                $status = self::decode_job($poll);
+                if ($status === null) {
+                    continue;
+                }
+                if (isset($status['status']) && $status['status'] === 'failed') {
+                    return '';
+                }
+                $audio = self::audio_url_from_job($status);
+                if ($audio !== '') {
+                    break;
+                }
+            }
+        }
+        if (!self::safe_tts_url($audio)) {
+            return '';
+        }
+        return self::download_wav($audio);
+    }
+
+    /**
+     * @param array<string,mixed>|WP_Error $response Response.
+     * @return array<string,mixed>|null
+     */
+    private static function decode_job($response) {
+        if (is_wp_error($response) || (int) wp_remote_retrieve_response_code($response) !== 200) {
+            return null;
+        }
+        $data = json_decode((string) wp_remote_retrieve_body($response), true);
+        return is_array($data) ? $data : null;
+    }
+
+    /**
+     * @param array<string,mixed> $job Job payload.
+     * @return string
+     */
+    private static function audio_url_from_job($job) {
+        if (isset($job['status']) && $job['status'] === 'failed') {
+            return '';
+        }
+        if (isset($job['status']) && $job['status'] !== 'completed') {
+            return '';
+        }
+        foreach (array('result_url', 'url') as $key) {
+            if (!empty($job[ $key ]) && is_string($job[ $key ])) {
+                return $job[ $key ];
+            }
+        }
+        return '';
+    }
+
+    /**
+     * @param string $url Download URL.
+     * @return bool
+     */
+    private static function safe_tts_url($url) {
+        if (!is_string($url) || $url === '') {
+            return false;
+        }
+        $parts = wp_parse_url($url);
+        if (!is_array($parts) || empty($parts['scheme']) || strtolower((string) $parts['scheme']) !== 'https') {
+            return false;
+        }
+        $host = isset($parts['host']) ? strtolower((string) $parts['host']) : '';
+        return $host === 'tts.ai' || substr($host, -7) === '.tts.ai';
+    }
+
+    /**
+     * @param string $url Wav URL on the speech host.
+     * @return string
+     */
+    private static function download_wav($url) {
+        $file = wp_remote_get(
+            $url,
+            array(
+                'timeout' => 60,
+            )
+        );
+        if (is_wp_error($file) || (int) wp_remote_retrieve_response_code($file) !== 200) {
+            return '';
+        }
+        $body = (string) wp_remote_retrieve_body($file);
+        if (strlen($body) < 44 || strlen($body) > 2000000 || self::wav_pcm($body) === null) {
+            return '';
+        }
+        return $body;
+    }
+
+    /**
+     * @param array<int,string> $parts Wav files.
+     * @return string
+     */
+    private static function join_wavs($parts) {
+        $fmt  = null;
+        $data = '';
+        foreach ($parts as $bytes) {
+            $parsed = self::wav_pcm($bytes);
+            if ($parsed === null) {
+                return '';
+            }
+            if ($fmt === null) {
+                $fmt = $parsed['fmt'];
+            } elseif ($parsed['fmt'] !== $fmt) {
+                return '';
+            }
+            $data .= $parsed['data'];
+        }
+        if ($fmt === null || $data === '') {
+            return '';
+        }
+        $body = 'WAVE' . 'fmt ' . pack('V', strlen($fmt)) . $fmt . 'data' . pack('V', strlen($data)) . $data;
+        return 'RIFF' . pack('V', strlen($body)) . $body;
+    }
+
+    /**
+     * @param string $bytes Wav bytes.
+     * @return array{fmt:string,data:string}|null
+     */
+    private static function wav_pcm($bytes) {
+        if (strlen($bytes) < 44 || substr($bytes, 0, 4) !== 'RIFF' || substr($bytes, 8, 4) !== 'WAVE') {
+            return null;
+        }
+        $offset = 12;
+        $length = strlen($bytes);
+        $fmt    = null;
+        $data   = null;
+        while ($offset + 8 <= $length) {
+            $id   = substr($bytes, $offset, 4);
+            $size = unpack('V', substr($bytes, $offset + 4, 4));
+            $size = isset($size[1]) ? (int) $size[1] : 0;
+            $offset += 8;
+            if ($size < 0 || $offset + $size > $length) {
+                return null;
+            }
+            $chunk = substr($bytes, $offset, $size);
+            if ($id === 'fmt ') {
+                $fmt = substr($chunk, 0, 16);
+            } elseif ($id === 'data') {
+                $data = $chunk;
+            }
+            $offset += $size + ($size % 2);
+        }
+        if ($fmt === null || strlen($fmt) < 16 || $data === null || strlen($data) < 2) {
+            return null;
+        }
+        return array(
+            'fmt'  => $fmt,
+            'data' => $data,
+        );
+    }
+
+    /**
+     * @param string $text Text.
+     * @return int
+     */
+    private static function char_len($text) {
+        if (function_exists('mb_strlen')) {
+            return (int) mb_strlen($text);
+        }
+        return strlen($text);
+    }
+
+    /**
+     * @param string $text  Text.
+     * @param int    $start Start.
+     * @param int    $len   Length.
+     * @return string
+     */
+    private static function char_slice($text, $start, $len) {
+        if (function_exists('mb_substr')) {
+            return (string) mb_substr($text, $start, $len);
+        }
+        return substr($text, $start, $len);
     }
 }
