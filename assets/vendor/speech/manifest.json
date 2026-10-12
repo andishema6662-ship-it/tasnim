@@ -1,0 +1,30 @@
+{
+  "manijeh": {
+    "ce14638-112": "manijeh/ce14638-112.wav",
+    "fcf91d00-68": "manijeh/fcf91d00-68.wav",
+    "74939f3d-118": "manijeh/74939f3d-118.wav",
+    "3ac47bfb-63": "manijeh/3ac47bfb-63.wav",
+    "d73c00fb-116": "manijeh/d73c00fb-116.wav",
+    "ddabfe43-50": "manijeh/ddabfe43-50.wav",
+    "d3edc283-74": "manijeh/d3edc283-74.wav",
+    "9193e3dc-106": "manijeh/9193e3dc-106.wav",
+    "9b9e143f-76": "manijeh/9b9e143f-76.wav",
+    "7df2e384-83": "manijeh/7df2e384-83.wav"
+  },
+  "bijan": {
+    "ce14638-112": "bijan/ce14638-112.wav",
+    "fcf91d00-68": "bijan/fcf91d00-68.wav",
+    "74939f3d-118": "bijan/74939f3d-118.wav",
+    "3ac47bfb-63": "bijan/3ac47bfb-63.wav",
+    "d73c00fb-116": "bijan/d73c00fb-116.wav",
+    "ddabfe43-50": "bijan/ddabfe43-50.wav",
+    "d3edc283-74": "bijan/d3edc283-74.wav",
+    "9193e3dc-106": "bijan/9193e3dc-106.wav",
+    "9b9e143f-76": "bijan/9b9e143f-76.wav",
+    "7df2e384-83": "bijan/7df2e384-83.wav"
+  },
+  "models": {
+    "manijeh": "fa_IR-mana-medium",
+    "bijan": "fa_IR-amir-medium"
+  }
+}
