@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+.DS_Store
+*.log
+tsconfig.tsbuildinfo
+test-results
+playwright-report
+tasnim-static-out.zip
+
+tasnim-static-stage.zip
+tasnim-full-*.zip
+tasnim-deploy-latest.zip

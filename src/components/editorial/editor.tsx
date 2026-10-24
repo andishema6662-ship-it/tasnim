@@ -1,0 +1,451 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { PRESETS } from "@/lib/cover";
+import { faNum, htmlToPlainText, wordCountFromHtml } from "@/lib/format";
+import { uid } from "@/lib/id";
+import { pitchVisibleToUser } from "@/lib/pitches";
+import { useNewsroom } from "@/lib/store";
+import { PITCH_CONTENT_LABELS, serviceIdForPitchContent } from "@/lib/pitch-content";
+import { canSetStoryGrade, STORY_GRADE_LABELS } from "@/lib/story-grade";
+import type { Status, Story, StoryGrade } from "@/lib/types";
+import {
+  actorLabel,
+  blankStory,
+  canEditCategory,
+  canEditStory,
+  canPublishCategory,
+  categoryName,
+  currentRole,
+  serviceName,
+  STATUSES,
+  statusLabel,
+  transitionsFrom,
+} from "@/lib/workflow";
+import { MediaLibraryModal } from "../media/media-library-modal";
+import { CoverThumb } from "../cover-thumb";
+import { AssistBar } from "./assist-bar";
+import { StoryBodyEditor } from "./body-editor";
+import { SocialPublishModal } from "./social-publish-modal";
+import { Button, Field, Flash, Input, Notice, Select, StatusBadge, TextArea } from "../ui";
+
+const forward: Partial<Record<Status, Status>> = {
+  draft: "editing",
+  editing: "review",
+  review: "ready",
+  ready: "published",
+  published: "archived",
+};
+
+export function Editor({ id }: { id: string }) {
+  const { data, update, commitStory } = useNewsroom();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pitchFromUrl = searchParams.get("pitch");
+  const isNew = id === "new";
+  const existing = data.stories.find((story) => story.id === id);
+  const [form, setForm] = useState<Story>(() => {
+    if (existing) return existing;
+    if (isNew && pitchFromUrl) {
+      const pitch = data.pitches.find((item) => item.id === pitchFromUrl);
+      if (pitch && pitchVisibleToUser(data, pitch)) {
+        const base = blankStory(data);
+        const serviceId = pitch.contentType ? serviceIdForPitchContent(pitch.contentType) : base.serviceId;
+        return {
+          ...base,
+          pitchId: pitch.id,
+          title: pitch.title,
+          categoryId: pitch.categoryId,
+          serviceId,
+          lead: pitch.description.slice(0, 240),
+          tags: pitch.topic ? [pitch.topic] : base.tags,
+        };
+      }
+    }
+    return blankStory(data);
+  });
+  const [tag, setTag] = useState("");
+  const [error, setError] = useState("");
+  const [flash, setFlash] = useState("");
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [socialOpen, setSocialOpen] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const role = currentRole(data);
+  const editable = canEditStory(data, form.status);
+  const transitions = transitionsFrom(data, form.status);
+  const others = data.transitions.filter((item) => item.enabled && item.from === form.status && !transitions.some((own) => own.id === item.id));
+
+  useEffect(() => {
+    if (isNew) return;
+    const key = `tasnim-opened-${id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    update((current) => ({
+      ...current,
+      stories: current.stories.map((story) => (story.id === id ? { ...story, views: story.views + 1 } : story)),
+    }));
+  }, [id, isNew, update]);
+
+  if (!isNew && !existing) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-3">
+        <h1 className="text-2xl font-bold">این خبر پیدا نشد</h1>
+        <Link href="/admin/editorial/cartable" className="text-sm text-rule">
+          بازگشت به کارتابل
+        </Link>
+      </div>
+    );
+  }
+
+  function patch(partial: Partial<Story>) {
+    setForm((current) => ({ ...current, ...partial }));
+  }
+
+  function isUploadedCover(cover: string): boolean {
+    return /^data:image\//i.test(cover) || /^https?:/i.test(cover);
+  }
+
+  function pickCoverFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !editable) return;
+    if (!file.type.startsWith("image/")) {
+      setFlash("فقط فایل تصویر قابل قبول است.");
+      return;
+    }
+    if (file.size > 2_500_000) {
+      setFlash("حجم تصویر زیاد است. فایل کوچک‌تر از ۲٫۵ مگابایت انتخاب کنید.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") patch({ cover: reader.result });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeCover() {
+    if (!editable) return;
+    patch({ cover: "sand" });
+    setFlash("عکس شاخص برداشته شد.");
+  }
+
+  function addTag() {
+    const next = tag.trim();
+    if (!next || form.tags.includes(next)) return;
+    patch({ tags: [...form.tags, next] });
+    setTag("");
+  }
+
+  function persist(to?: Status) {
+    const title = form.title.trim();
+    if (!title) {
+      setError("تیتر خبر را بنویسید.");
+      return;
+    }
+    if (!canEditCategory(data, form.categoryId)) {
+      setError("نقش شما اجازه ویرایش این دسته را ندارد. از کنترل دسترسی یا دسته دیگری استفاده کنید.");
+      return;
+    }
+    const status = to ?? form.status;
+    if (status === "published" && !canPublishCategory(data, form.categoryId)) {
+      setError("انتشار این دسته برای نقش شما بسته است.");
+      return;
+    }
+    const storyId = form.id || uid("story");
+    const ts = new Date().toISOString();
+    const story: Story = {
+      ...form,
+      id: storyId,
+      title,
+      status,
+      updatedAt: ts,
+      createdAt: form.createdAt || ts,
+      publishedAt: status === "published" ? form.publishedAt || ts : status === "archived" ? form.publishedAt : undefined,
+    };
+    const action = to
+      ? data.transitions.find((item) => item.from === form.status && item.to === to)?.label ?? statusLabel(data, to)
+      : form.status === "draft"
+        ? "ذخیره پیش‌نویس"
+        : "ذخیره تغییرات";
+    commitStory(story, { promote: to === "published", log: `${action}: ${title}` });
+    setForm(story);
+    setError("");
+    setFlash(`${action} انجام شد. وضعیت: ${statusLabel(data, status)}.`);
+    if (isNew) router.replace(`/admin/editorial/cartable/${storyId}`);
+  }
+
+  const desk = categoryName(data, form.categoryId);
+  const linkedPitch = form.pitchId ? data.pitches.find((item) => item.id === form.pitchId) : undefined;
+  const pitchOptions = data.pitches.filter((pitch) => pitchVisibleToUser(data, pitch) || pitch.id === form.pitchId);
+  const gradeEditable = editable && (canSetStoryGrade(data) || form.status === "draft" || form.status === "editing");
+
+  return (
+    <div className="mx-auto w-full max-w-5xl pb-24">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-rule">کارتابل و سردبیری</p>
+          <h1 className="text-2xl font-bold">{isNew ? "خبر تازه" : "ویرایش خبر"}</h1>
+        </div>
+        <Link href="/admin/editorial/cartable" className="text-sm text-rule">
+          بازگشت به فهرست
+        </Link>
+      </div>
+
+      <ol className="mb-4 flex flex-wrap gap-2">
+        {STATUSES.filter((status) => status !== "archived").map((status) => {
+          const index = STATUSES.indexOf(status);
+          const current = STATUSES.indexOf(form.status);
+          const active = form.status === status;
+          return (
+            <li key={status} className={`rounded-full px-2.5 py-1 text-xs ${active ? "bg-ink text-sheet" : current > index ? "bg-sand" : "text-muted"}`}>
+              {statusLabel(data, status)}
+            </li>
+          );
+        })}
+      </ol>
+      {form.status === "archived" ? <Notice>این خبر در آرشیو است.</Notice> : null}
+
+      <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="space-y-4">
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-muted">تیتر خبر</span>
+            <input
+              value={form.title}
+              disabled={!editable}
+              onChange={(event) => patch({ title: event.target.value })}
+              placeholder="تیتر خبر"
+              aria-label="تیتر خبر"
+              className="w-full bg-transparent text-3xl font-bold leading-snug outline-none placeholder:text-muted/50"
+            />
+          </label>
+          <TextArea
+            value={form.lead}
+            disabled={!editable}
+            onChange={(event) => patch({ lead: event.target.value })}
+            placeholder="لید"
+            className="min-h-24 text-base"
+            aria-label="لید"
+          />
+          <StoryBodyEditor value={form.body} disabled={!editable} onChange={(body) => patch({ body })} aria-label="متن خبر" />
+          <p className="text-sm text-muted">تعداد کلمات: {faNum(wordCountFromHtml(form.body))}</p>
+          {editable ? (
+            <AssistBar title={form.title} lead={form.lead} body={htmlToPlainText(form.body)} desk={desk} onApply={patch} />
+          ) : null}
+        </div>
+
+        <aside className="space-y-4 rounded-lg border border-line bg-sheet p-4">
+          <div className="flex items-center justify-between gap-2">
+            <StatusBadge status={form.status} label={statusLabel(data, form.status)} />
+            <span className="text-xs text-muted">نقش: {role.name}</span>
+          </div>
+          <Field label="نویسنده">
+            <Input value={form.author} disabled={!editable} onChange={(event) => patch({ author: event.target.value })} list="author-list" />
+            <datalist id="author-list">
+              {data.users.map((user) => (
+                <option key={user.id} value={user.name} />
+              ))}
+            </datalist>
+          </Field>
+          <Field label="دسته">
+            <Select value={form.categoryId} disabled={!editable} onChange={(event) => patch({ categoryId: event.target.value })}>
+              {data.categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="سرویس">
+            <Select value={form.serviceId} disabled={!editable} onChange={(event) => patch({ serviceId: event.target.value })}>
+              {data.services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {linkedPitch?.contentType ? (
+            <p className="text-xs text-muted">نوع محتوای سوژه: {PITCH_CONTENT_LABELS[linkedPitch.contentType]}</p>
+          ) : null}
+          <Field label="درجه خبر / کیفیت محتوا">
+            <Select
+              value={String(form.grade ?? 2)}
+              disabled={!gradeEditable}
+              data-testid="story-grade-select"
+              onChange={(event) => patch({ grade: Number(event.target.value) as StoryGrade })}
+            >
+              {([1, 2, 3] as StoryGrade[]).map((grade) => (
+                <option key={grade} value={grade}>{STORY_GRADE_LABELS[grade]}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="سوژه خبری">
+            <Select
+              value={form.pitchId ?? ""}
+              disabled={!editable}
+              onChange={(event) => patch({ pitchId: event.target.value || undefined })}
+            >
+              <option value="">بدون سوژه</option>
+              {pitchOptions.map((pitch) => (
+                <option key={pitch.id} value={pitch.id}>
+                  {pitch.title}
+                </option>
+              ))}
+            </Select>
+            {linkedPitch ? (
+              <Link href="/admin/editorial/pitches" className="mt-1 block text-xs text-rule">
+                مشاهده سوژه: {linkedPitch.title}
+              </Link>
+            ) : null}
+          </Field>
+          <Field label="برچسب‌ها">
+            <div className="flex gap-2">
+              <Input
+                value={tag}
+                disabled={!editable}
+                onChange={(event) => setTag(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addTag();
+                  }
+                }}
+                placeholder="برچسب و اینتر"
+              />
+              <Button tone="ghost" disabled={!editable} onClick={addTag}>
+                افزودن
+              </Button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {form.tags.map((item) => (
+                <button key={item} type="button" className="rounded-full bg-sand px-2 py-0.5 text-xs" disabled={!editable} onClick={() => patch({ tags: form.tags.filter((tagItem) => tagItem !== item) })}>
+                  {item} ×
+                </button>
+              ))}
+            </div>
+          </Field>
+          <div>
+            <p className="text-sm font-medium">عکس شاخص</p>
+            <CoverThumb cover={form.cover} className="mt-2 h-36 w-full rounded-md border border-line" />
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" disabled={!editable} onChange={pickCoverFile} />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button tone="ghost" disabled={!editable} onClick={() => setMediaOpen(true)}>
+                {isUploadedCover(form.cover) ? "تغییر عکس شاخص" : "انتخاب عکس شاخص"}
+              </Button>
+              <Button tone="ghost" disabled={!editable} onClick={() => coverInputRef.current?.click()}>
+                انتخاب سریع از رایانه
+              </Button>
+              {isUploadedCover(form.cover) ? (
+                <Button tone="quiet" disabled={!editable} onClick={removeCover}>
+                  برداشتن عکس
+                </Button>
+              ) : null}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  disabled={!editable}
+                  onClick={() => patch({ cover: preset.id })}
+                  className={`rounded-full px-2 py-0.5 text-xs ${form.cover === preset.id ? "bg-ink text-sheet" : "bg-sand"}`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <Input className="mt-2" disabled={!editable} value={/^https?:/i.test(form.cover) ? form.cover : ""} placeholder="یا نشانی تصویر" onChange={(event) => patch({ cover: event.target.value || "sand" })} />
+          </div>
+          {form.imagePrompt ? <p className="text-xs leading-6 text-muted">پرامپت تصویر: {form.imagePrompt}</p> : null}
+          {form.audioScript ? (
+            <div className="text-xs leading-6 text-muted">
+              <p>متن صوت: {form.audioScript}</p>
+              <button
+                type="button"
+                className="mt-1 text-rule"
+                onClick={() => {
+                  if (!window.speechSynthesis) return;
+                  window.speechSynthesis.cancel();
+                  const utterance = new SpeechSynthesisUtterance(form.audioScript);
+                  utterance.lang = "fa-IR";
+                  window.speechSynthesis.speak(utterance);
+                }}
+              >
+                پخش متن ذخیره‌شده
+              </button>
+            </div>
+          ) : null}
+          <p className="text-xs text-muted">
+            {desk} · {serviceName(data, form.serviceId)}
+          </p>
+          {error ? <p className="text-sm text-rule">{error}</p> : null}
+          <Flash>{flash}</Flash>
+          {!editable ? <Notice>در این وضعیت با نقش شما فقط خواندن ممکن است. {others.length ? `گام بعدی با ${[...new Set(others.map((item) => actorLabel(data, item.actor)))].join(" یا ")} است.` : ""}</Notice> : null}
+          {data.polls.length ? (
+            <Field label="درج نظرسنجی در متن">
+              <Select
+                defaultValue=""
+                disabled={!editable}
+                onChange={(event) => {
+                  const poll = data.polls.find((item) => item.id === event.target.value);
+                  if (!poll) return;
+                  const token = `[poll:${poll.shortCode ?? poll.id}]`;
+                  patch({ body: `${form.body}<p>${token}</p>` });
+                  setFlash(`کد ${token} به متن خبر افزوده شد.`);
+                }}
+              >
+                <option value="">انتخاب نظرسنجی…</option>
+                {data.polls.map((poll) => (
+                  <option key={poll.id} value={poll.id}>{poll.question}</option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
+          <div className="flex flex-col gap-2">
+            {!isNew ? (
+              <Button type="button" tone="ghost" data-testid="editor-social-publish" onClick={() => setSocialOpen(true)}>
+                انتشار در شبکه‌های اجتماعی
+              </Button>
+            ) : null}
+            {editable ? (
+              <Button tone="ghost" onClick={() => persist()}>
+                {form.status === "draft" ? "ذخیره پیش‌نویس" : "ذخیره تغییرات"}
+              </Button>
+            ) : null}
+            {transitions.map((transition) => (
+              <Button key={transition.id} tone={transition.to === "published" ? "accent" : transition.to === forward[form.status] ? "primary" : "ghost"} onClick={() => persist(transition.to)}>
+                {transition.label}
+              </Button>
+            ))}
+          </div>
+        </aside>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-20 flex gap-2 overflow-x-auto border-t border-line bg-sheet p-3 lg:hidden">
+        {editable ? (
+          <Button tone="ghost" onClick={() => persist()}>
+            {form.status === "draft" ? "ذخیره پیش‌نویس" : "ذخیره"}
+          </Button>
+        ) : null}
+        {transitions.map((transition) => (
+          <Button key={transition.id} tone={transition.to === "published" ? "accent" : "primary"} onClick={() => persist(transition.to)}>
+            {transition.label}
+          </Button>
+        ))}
+      </div>
+      {socialOpen && !isNew ? <SocialPublishModal story={form} onClose={() => setSocialOpen(false)} /> : null}
+      <MediaLibraryModal
+        open={mediaOpen}
+        onClose={() => setMediaOpen(false)}
+        onPick={(src) => {
+          patch({ cover: src });
+          setMediaOpen(false);
+          setFlash("عکس شاخص از کتابخانه رسانه تنظیم شد.");
+        }}
+      />
+    </div>
+  );
+}
