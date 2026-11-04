@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-electron/
+Output/
+.DS_Store
+*.log
+.vite/
+# Runtime binaries copied by scripts/fetch-tesseract-runtime.mjs after npm install
+public/tesseract/
+public/sql-wasm.wasm
+redist/*.exe
+!redist/.gitkeep
+resources/drivers/*
+!resources/drivers/README.txt
+# Keep Persian tessdata in git for true offline clones
+!ocr_models/fas/*.traineddata
+!public/tessdata/*.traineddata
