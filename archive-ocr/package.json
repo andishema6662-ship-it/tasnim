@@ -1,0 +1,83 @@
+{
+  "name": "archive-ocr",
+  "productName": "سندبان Archive OCR",
+  "version": "1.0.0",
+  "description": "سامانه بایگانی و نویسه‌خوان اسناد فارسی سندبان — آفلاین ویندوز",
+  "main": "electron/main.cjs",
+  "author": "توسعه‌دهندگان نرم‌افزار سندبان",
+  "license": "Proprietary",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "postinstall": "node scripts/fetch-tesseract-runtime.mjs",
+    "fetch:assets": "node scripts/fetch-tessdata.mjs && node scripts/fetch-tesseract-runtime.mjs",
+    "build:ui": "vite build",
+    "build": "npm run fetch:assets && vite build && electron-builder --win dir portable --x64 --publish never",
+    "build:linux-dir": "vite build && electron-builder --linux dir --x64 --publish never",
+    "pack:offline": "node scripts/pack-offline.mjs",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "sql.js": "^1.12.0",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.sandban.archiveocr",
+    "productName": "ArchiveOCR",
+    "copyright": "Copyright © سندبان",
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "ocr_models/fas",
+        "to": "tessdata",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/db",
+        "to": "db",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "portable", "arch": ["x64"] },
+        { "target": "dir", "arch": ["x64"] }
+      ],
+      "artifactName": "ArchiveOCR-${version}-portable.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1065",
+      "createDesktopShortcut": true
+    },
+    "portable": {
+      "artifactName": "ArchiveOCR_Portable_v${version}.exe"
+    },
+    "asar": true
+  }
+}
