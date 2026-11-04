@@ -5,7 +5,7 @@
 
 #define MyAppName "سامانه بایگانی و نویسه‌خوان اسناد فارسی سندبان"
 #define MyAppNameShort "سندبان Archive OCR"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "توسعه‌دهندگان نرم‌افزار سندبان"
 #define MyAppExeName "ArchiveOCR.exe"
 #define MyAppId "{{5E97D4B6-28D1-49AE-9DCE-9FA354BFB2E9}"
@@ -22,7 +22,7 @@ DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE_FA.txt
 InfoBeforeFile=..\installer\welcome-fa.txt
 OutputDir=..\Output
-OutputBaseFilename=ArchiveOCR_Setup_v1.0.0
+OutputBaseFilename=ArchiveOCR_Setup_v1.0.1
 SetupIconFile=..\build\app_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma

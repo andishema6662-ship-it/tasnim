@@ -1,7 +1,7 @@
 {
   "name": "archive-ocr",
   "productName": "سندبان Archive OCR",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "سامانه بایگانی و نویسه‌خوان اسناد فارسی سندبان — آفلاین ویندوز",
   "main": "electron/main.cjs",
   "author": "توسعه‌دهندگان نرم‌افزار سندبان",
