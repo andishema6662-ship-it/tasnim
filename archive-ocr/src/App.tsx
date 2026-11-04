@@ -56,18 +56,33 @@ export default function App() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const [statusMsg, setStatusMsg] = useState('آماده — حالت آفلاین');
   const [models, setModels] = useState<Array<{ name: string; size: number }>>([]);
-  const [paths, setPaths] = useState<{ version?: string; tessdata?: string; dbDir?: string }>({});
+  const [paths, setPaths] = useState<{
+    version?: string;
+    tessdata?: string;
+    dbDir?: string;
+    vaultPath?: string;
+    root?: string;
+    isPortable?: boolean;
+  }>({});
   const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
   const [authError, setAuthError] = useState('');
   const [pwd, setPwd] = useState('');
   const [pwd2, setPwd2] = useState('');
-  const [mode, setMode] = useState<'login' | 'setup' | 'recover'>('setup');
+  const [mode, setMode] = useState<'login' | 'setup' | 'recover'>('login');
 
   const selected = useMemo(
     () => docs.find((d) => d.id === selectedId) ?? null,
     [docs, selectedId],
   );
   const s = useMemo(() => stats(), [docs]);
+
+  function applyAdminGate(admin: boolean) {
+    setHasAdmin(admin);
+    setMode((prev) => {
+      if (admin) return prev === 'recover' ? 'recover' : 'login';
+      return 'setup';
+    });
+  }
 
   async function refresh(folder = selectedFolder, q = query) {
     setFolders(listFolders());
@@ -76,23 +91,42 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      await openArchiveDb();
       const api = window.archiveApi;
+      // Auth gate first — never open setup UI if vault already exists,
+      // even if SQLite init fails afterward.
       if (api) {
-        const admin = await api.hasAdmin();
-        setHasAdmin(admin);
-        setMode(admin ? 'login' : 'setup');
-        setPaths(await api.getPaths());
-        setModels(await api.listOcrModels());
+        try {
+          setPaths(await api.getPaths());
+        } catch (err) {
+          console.warn('getPaths failed', err);
+        }
+        try {
+          const admin = await api.hasAdmin();
+          applyAdminGate(admin);
+        } catch (err) {
+          console.warn('hasAdmin failed', err);
+          applyAdminGate(false);
+        }
+        try {
+          setModels(await api.listOcrModels());
+        } catch (err) {
+          console.warn('listOcrModels failed', err);
+        }
       } else {
-        setHasAdmin(false);
-        setMode('setup');
+        applyAdminGate(false);
       }
-      await refresh();
+
+      try {
+        await openArchiveDb();
+        await refresh();
+      } catch (err) {
+        console.error(err);
+        setStatusMsg('خطا در راه‌اندازی پایگاه محلی');
+      }
       setReady(true);
     })().catch((err) => {
       console.error(err);
-      setStatusMsg('خطا در راه‌اندازی پایگاه محلی');
+      setStatusMsg('خطا در راه‌اندازی');
       setReady(true);
     });
   }, []);
@@ -100,6 +134,14 @@ export default function App() {
   async function handleSetup(e: React.FormEvent) {
     e.preventDefault();
     setAuthError('');
+    if (window.archiveApi) {
+      const already = await window.archiveApi.hasAdmin();
+      if (already) {
+        applyAdminGate(true);
+        setAuthError('مدیر از قبل پیکربندی شده است. لطفاً وارد شوید یا بازیابی اضطراری را استفاده کنید.');
+        return;
+      }
+    }
     if (pwd.length < 10) {
       setAuthError('حداقل ۱۰ کاراکتر لازم است.');
       return;
@@ -111,15 +153,40 @@ export default function App() {
     if (!window.archiveApi) {
       // Browser/dev without Electron: accept local session only.
       setSession({ user: 'admin' });
-      setHasAdmin(true);
+      applyAdminGate(true);
       setRecoveryKey('DEV-ONLY-RECOVERY-KEY-' + uid().slice(0, 8));
       return;
     }
     try {
       const res = await window.archiveApi.setupAdmin(pwd);
       setRecoveryKey(res.recoveryKey);
-      setHasAdmin(true);
+      applyAdminGate(true);
       setSession({ user: res.user });
+    } catch (err) {
+      const msg = String(err);
+      if (msg.includes('Admin already configured') || msg.includes('ADMIN_EXISTS')) {
+        applyAdminGate(true);
+        setAuthError('مدیر از قبل پیکربندی شده است. لطفاً وارد شوید.');
+        return;
+      }
+      setAuthError(msg);
+    }
+  }
+
+  async function handleResetAdmin() {
+    if (!window.archiveApi?.resetAdmin) return;
+    const ok = window.confirm(
+      'بازنشانی ادمین محلی؟ فایل admin.vault.json حذف می‌شود و راه‌اندازی اولیه دوباره نمایش داده خواهد شد.',
+    );
+    if (!ok) return;
+    try {
+      const res = await window.archiveApi.resetAdmin();
+      setPwd('');
+      setPwd2('');
+      setSession(null);
+      applyAdminGate(false);
+      setPaths((p) => ({ ...p, vaultPath: res.vaultPath, root: res.root }));
+      setAuthError('ادمین محلی حذف شد. اکنون می‌توانید حساب سرپرست جدید بسازید.');
     } catch (err) {
       setAuthError(String(err));
     }
@@ -284,6 +351,15 @@ export default function App() {
   }
 
   if (!session) {
+    // Hard gate: if vault exists, never render/call setup — only login or recover.
+    const authMode: 'login' | 'setup' | 'recover' = hasAdmin
+      ? mode === 'recover'
+        ? 'recover'
+        : 'login'
+      : 'setup';
+    const onAuthSubmit =
+      authMode === 'setup' ? handleSetup : authMode === 'recover' ? handleRecover : handleLogin;
+
     return (
       <div className="auth-wrap">
         <div className="auth-card">
@@ -302,10 +378,7 @@ export default function App() {
             </span>
             <strong>ورود امن سندبان</strong>
           </div>
-          <form
-            style={{ padding: 24, display: 'grid', gap: 14 }}
-            onSubmit={mode === 'setup' ? handleSetup : mode === 'recover' ? handleRecover : handleLogin}
-          >
+          <form style={{ padding: 24, display: 'grid', gap: 14 }} onSubmit={onAuthSubmit}>
             <div style={{ textAlign: 'center' }}>
               <div
                 className="brand-mark"
@@ -314,32 +387,37 @@ export default function App() {
                 س
               </div>
               <h1 style={{ margin: '0 0 6px', fontSize: 22 }}>
-                {mode === 'setup'
+                {authMode === 'setup'
                   ? 'پیکربندی حساب سرپرست کل سامانه'
-                  : mode === 'recover'
+                  : authMode === 'recover'
                     ? 'بازیابی اضطراری مدیر'
                     : 'ورود مدیر بایگانی'}
               </h1>
               <p className="muted">
                 سندبان Archive OCR — پایگاه محلی SQLite و OCR فارسی بدون اینترنت
               </p>
+              {paths.vaultPath && (
+                <p className="muted mono" style={{ marginTop: 8, wordBreak: 'break-all' }} dir="ltr">
+                  vault: {paths.vaultPath}
+                </p>
+              )}
             </div>
 
-            {mode !== 'recover' && (
+            {authMode !== 'recover' && (
               <div className="field">
-                <label>کلمه عبور {mode === 'setup' ? 'جدید سرپرست' : 'مدیر'}</label>
+                <label>کلمه عبور {authMode === 'setup' ? 'جدید سرپرست' : 'مدیر'}</label>
                 <input
                   className="mono"
                   type="password"
                   dir="ltr"
                   value={pwd}
                   onChange={(e) => setPwd(e.target.value)}
-                  autoComplete={mode === 'setup' ? 'new-password' : 'current-password'}
+                  autoComplete={authMode === 'setup' ? 'new-password' : 'current-password'}
                 />
               </div>
             )}
 
-            {mode === 'setup' && (
+            {authMode === 'setup' && (
               <div className="field">
                 <label>تکرار کلمه عبور</label>
                 <input
@@ -352,7 +430,7 @@ export default function App() {
               </div>
             )}
 
-            {mode === 'recover' && (
+            {authMode === 'recover' && (
               <>
                 <div className="field">
                   <label>کلید بازیابی اضطراری</label>
@@ -384,20 +462,27 @@ export default function App() {
             )}
 
             <button className="btn btn-primary" type="submit">
-              {mode === 'setup' ? 'ایجاد حساب مدیر و ادامه' : mode === 'recover' ? 'بازیابی' : 'ورود'}
+              {authMode === 'setup'
+                ? 'ایجاد حساب مدیر و ادامه'
+                : authMode === 'recover'
+                  ? 'بازیابی'
+                  : 'ورود'}
             </button>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              {hasAdmin && mode !== 'recover' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              {hasAdmin && authMode !== 'recover' && (
                 <button className="btn btn-subtle" type="button" onClick={() => setMode('recover')}>
                   بازیابی اضطراری
                 </button>
               )}
-              {mode !== 'login' && hasAdmin && (
+              {authMode === 'recover' && hasAdmin && (
                 <button className="btn btn-subtle" type="button" onClick={() => setMode('login')}>
                   بازگشت به ورود
                 </button>
               )}
+              <button className="btn btn-subtle" type="button" onClick={handleResetAdmin}>
+                بازنشانی ادمین محلی
+              </button>
             </div>
           </form>
         </div>

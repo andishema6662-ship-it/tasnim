@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('archiveApi', {
   writeConfig: (config) => ipcRenderer.invoke('app:writeConfig', config),
   hasAdmin: () => ipcRenderer.invoke('auth:hasAdmin'),
   setupAdmin: (password) => ipcRenderer.invoke('auth:setupAdmin', password),
+  resetAdmin: () => ipcRenderer.invoke('auth:resetAdmin'),
   login: (password) => ipcRenderer.invoke('auth:login', password),
   recover: (recoveryKey, newPassword) =>
     ipcRenderer.invoke('auth:recover', recoveryKey, newPassword),

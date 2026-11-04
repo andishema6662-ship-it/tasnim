@@ -6,14 +6,78 @@ const crypto = require('node:crypto');
 const isDev = !app.isPackaged;
 let mainWindow = null;
 
+/**
+ * Pin a stable data directory BEFORE ready:
+ * - Portable (electron-builder): <dir-of-exe>\ArchiveOCR-Data\
+ * - Installed / normal: %APPDATA%\ArchiveOCR\
+ * Also migrates legacy vaults from older name/productName folders.
+ */
+function resolveUserDataRoot() {
+  if (process.env.PORTABLE_EXECUTABLE_DIR) {
+    return path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'ArchiveOCR-Data');
+  }
+  return path.join(app.getPath('appData'), 'ArchiveOCR');
+}
+
+const USER_DATA_ROOT = resolveUserDataRoot();
+try {
+  fs.mkdirSync(USER_DATA_ROOT, { recursive: true });
+  app.setPath('userData', USER_DATA_ROOT);
+  app.setName('ArchiveOCR');
+} catch (err) {
+  console.error('Failed to pin userData path', err);
+}
+
+function legacyVaultCandidates() {
+  const appData = app.getPath('appData');
+  const home = app.getPath('home');
+  const names = [
+    'ArchiveOCR',
+    'archive-ocr',
+    'سندبان Archive OCR',
+    'Sandban Archive OCR',
+  ];
+  const dirs = names.map((n) => path.join(appData, n));
+  // Older portable experiments / accidental next-to-exe data
+  if (process.env.PORTABLE_EXECUTABLE_DIR) {
+    dirs.push(path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'ArchiveOCR-Data'));
+    dirs.push(path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'archive-ocr'));
+    dirs.push(path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'data'));
+  }
+  dirs.push(path.join(home, 'AppData', 'Roaming', 'archive-ocr'));
+  dirs.push(path.join(home, 'AppData', 'Roaming', 'ArchiveOCR'));
+  return [...new Set(dirs)];
+}
+
+function migrateLegacyVaultIfNeeded(canonicalVaultPath) {
+  if (fs.existsSync(canonicalVaultPath)) return canonicalVaultPath;
+  for (const dir of legacyVaultCandidates()) {
+    const candidate = path.join(dir, 'admin.vault.json');
+    if (!fs.existsSync(candidate)) continue;
+    if (path.resolve(candidate) === path.resolve(canonicalVaultPath)) continue;
+    try {
+      fs.mkdirSync(path.dirname(canonicalVaultPath), { recursive: true });
+      fs.copyFileSync(candidate, canonicalVaultPath);
+      // Keep legacy file; user may delete manually. Prefer canonical going forward.
+      return canonicalVaultPath;
+    } catch (err) {
+      console.warn('Legacy vault migrate failed', candidate, err);
+    }
+  }
+  return canonicalVaultPath;
+}
+
 function userDataPaths() {
   const root = app.getPath('userData');
+  const vaultPath = migrateLegacyVaultIfNeeded(path.join(root, 'admin.vault.json'));
   return {
     root,
     dbDir: path.join(root, 'db'),
     docsDir: path.join(root, 'documents'),
     configPath: path.join(root, 'config.json'),
-    vaultPath: path.join(root, 'admin.vault.json'),
+    vaultPath,
+    isPortable: Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
+    portableDir: process.env.PORTABLE_EXECUTABLE_DIR || null,
   };
 }
 
@@ -76,6 +140,7 @@ ipcMain.handle('app:getPaths', async () => {
     tessdata: getTessdataPath(),
     version: app.getVersion(),
     offline: true,
+    appName: app.getName(),
   };
 });
 
@@ -103,13 +168,37 @@ ipcMain.handle('auth:hasAdmin', async () => {
   return fs.existsSync(vaultPath);
 });
 
+ipcMain.handle('auth:resetAdmin', async () => {
+  const p = ensureDirs();
+  const removed = [];
+  if (fs.existsSync(p.vaultPath)) {
+    fs.unlinkSync(p.vaultPath);
+    removed.push(p.vaultPath);
+  }
+  // Also clear known legacy vault copies so setup can run cleanly.
+  for (const dir of legacyVaultCandidates()) {
+    const candidate = path.join(dir, 'admin.vault.json');
+    if (!fs.existsSync(candidate)) continue;
+    if (path.resolve(candidate) === path.resolve(p.vaultPath)) continue;
+    try {
+      fs.unlinkSync(candidate);
+      removed.push(candidate);
+    } catch (err) {
+      console.warn('Could not remove legacy vault', candidate, err);
+    }
+  }
+  return { ok: true, removed, vaultPath: p.vaultPath, root: p.root };
+});
+
 ipcMain.handle('auth:setupAdmin', async (_e, password) => {
   if (!password || password.length < 10) {
     throw new Error('Password too short');
   }
   const { vaultPath } = ensureDirs();
   if (fs.existsSync(vaultPath)) {
-    throw new Error('Admin already configured');
+    const err = new Error('Admin already configured');
+    err.code = 'ADMIN_EXISTS';
+    throw err;
   }
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');

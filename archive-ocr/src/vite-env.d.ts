@@ -10,11 +10,15 @@ interface ArchiveApi {
     tessdata: string;
     version: string;
     offline: boolean;
+    isPortable?: boolean;
+    portableDir?: string | null;
+    appName?: string;
   }>;
   readConfig: () => Promise<Record<string, unknown>>;
   writeConfig: (config: Record<string, unknown>) => Promise<boolean>;
   hasAdmin: () => Promise<boolean>;
   setupAdmin: (password: string) => Promise<{ user: string; recoveryKey: string }>;
+  resetAdmin: () => Promise<{ ok: boolean; removed: string[]; vaultPath: string; root: string }>;
   login: (password: string) => Promise<{ ok: boolean; user?: string; reason?: string }>;
   recover: (
     recoveryKey: string,
